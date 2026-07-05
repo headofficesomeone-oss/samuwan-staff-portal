@@ -4,10 +4,11 @@ const LIFF_ID = "2009935343-GyNpF9lj";
 let clientListCache = null;
 let pendingShiftRequestData = null;
 let currentUser = null;
+let currentLineProfile = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
-	initLiff();
+	currentLineProfile = await initLiff();
 
     const savedUser = localStorage.getItem("staffPortalCurrentUser");
 
@@ -38,8 +39,13 @@ async function handleRegister(e) {
     const employeeName = document.getElementById("employeeName").value;
     const tempId = document.getElementById("tempId").value;
 
-    const lineId = "TEST_LINE_ID_FROM_WEB";
-    const lineName = "テスト表示名";
+	if (!currentLineProfile || !currentLineProfile.lineId) {
+	    alert("LINE情報を取得できません。LINEから開き直してください。");
+	    return;
+	}
+
+	const lineId = currentLineProfile.lineId;
+	const lineName = currentLineProfile.lineName;
 
     if (!employeeName || !tempId) {
         showMessage("氏名と仮登録IDを入力してください。", "error");
