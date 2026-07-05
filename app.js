@@ -531,3 +531,39 @@ async function initLiff() {
         return null;
     }
 }
+
+async function issueTempIdFromScreen() {
+    const employeeName = document.getElementById("employeeName").value;
+    const resultBox = document.getElementById("tempIdResult");
+
+    if (!employeeName) {
+        alert("氏名を選択してください。");
+        return;
+    }
+
+    try {
+        const response = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "issueTempId",
+                employeeName: employeeName
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            resultBox.classList.remove("hidden");
+            resultBox.innerHTML =
+                "仮登録ID：<strong>" + result.tempId + "</strong><br>" +
+                "このIDをコピーして、仮登録ID欄に入力してください。";
+
+            document.getElementById("tempId").value = result.tempId;
+        } else {
+            alert(result.message);
+        }
+
+    } catch (error) {
+        alert("仮登録IDの発行に失敗しました：" + error.message);
+    }
+}
