@@ -505,15 +505,20 @@ function showPortalUserName() {
 }
 
 async function initLiff() {
+    const status = document.getElementById("liffStatus");
+
     try {
         await liff.init({ liffId: LIFF_ID });
 
-        console.log("LIFF初期化完了");
+        if (status) status.textContent = "LIFF初期化完了";
 
         if (liff.isLoggedIn()) {
             const profile = await liff.getProfile();
 
-            console.log("LINEプロフィール:", profile);
+            if (status) {
+                status.textContent =
+                    "LINE取得成功：" + profile.displayName;
+            }
 
             return {
                 lineId: profile.userId,
@@ -521,11 +526,14 @@ async function initLiff() {
             };
         }
 
+        if (status) status.textContent = "LINEログインへ移動します";
         liff.login();
         return null;
 
     } catch (error) {
-        console.error("LIFF初期化エラー:", error);
+        if (status) {
+            status.textContent = "LIFFエラー：" + error.message;
+        }
         return null;
     }
 }
