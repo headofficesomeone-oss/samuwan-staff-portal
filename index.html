@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<title>LINE ID 登録</title>
+
+	<link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+	<header class="app-header">
+		<div class="logo">
+			<div class="logo-mark">✿</div>
+
+			<div class="logo-text">
+				訪問ケア<br />
+				ぷーどる
+			</div>
+		</div>
+
+		<div class="page-title">LINE ID 登録</div>
+
+		<button class="help-button" type="button">使い方</button>
+	</header>
+
+	<main class="page">
+		<section class="card">
+
+			<!-- 本人確認エリア -->
+			<div id="registerArea">
+				<div class="steps">
+					<div class="step active">
+						<div class="step-number">1</div>
+						<div class="step-label">本人確認</div>
+					</div>
+
+					<div class="step">
+						<div class="step-number">2</div>
+						<div class="step-label">LINE ID 登録</div>
+					</div>
+
+					<div class="step">
+						<div class="step-number">3</div>
+						<div class="step-label">登録完了</div>
+					</div>
+				</div>
+
+				<div class="section-title">
+					<div class="icon-circle">👤</div>
+
+					<div>
+						<h1>本人確認を行います</h1>
+						<p>ご自身の情報を入力して、LINE IDを登録してください。</p>
+					</div>
+				</div>
+
+				<form id="registerForm">
+					<div class="form-group">
+						<label for="employeeName">
+							氏名を選択してください
+							<span class="required">必須</span>
+						</label>
+
+						<select id="employeeName" name="employeeName" required>
+							<option value="">読み込み中...</option>
+						</select>
+					</div>
+
+					<div class="form-group">
+						<label for="tempId">
+							仮登録IDを入力してください
+							<span class="required">必須</span>
+						</label>
+
+						<input
+							type="password"
+							id="tempId"
+							name="tempId"
+							placeholder="仮登録IDを入力してください"
+							required
+						/>
+					</div>
+
+					<div class="info-box">
+						<div class="info-title">仮登録IDについて</div>
+
+						<p>
+							仮登録IDは、事前に会社からお伝えしている本人確認用の番号です。<br />
+							ご不明な場合は、管理者にご確認ください。
+						</p>
+					</div>
+
+					<button type="submit" class="main-button">
+						確認する
+					</button>
+				</form>
+
+				<div class="security-text">
+					ご登録いただいた情報は安全に管理されます。
+				</div>
+
+				<div class="support-box">
+					<div class="support-icon">?</div>
+
+					<div class="support-text">
+						<strong>お困りですか？</strong>
+						登録方法がわからない場合は、管理者までお問い合わせください。
+					</div>
+
+					<button type="button" class="sub-button">
+						お問い合わせ
+					</button>
+				</div>
+			</div>
+
+			<!-- 登録完了エリア -->
+			<div id="completeArea" class="complete-area hidden">
+				<div class="complete-icon">✓</div>
+
+				<h2>登録が完了しました</h2>
+
+				<p>
+					LINE IDの登録が完了しました。<br />
+					次回から職員ポータルを利用できます。
+				</p>
+
+				<button type="button" class="main-button" onclick="showPortalArea()">
+					ポータルへ進む
+				</button>
+			</div>
+
+			<!-- 職員ポータルエリア -->
+			<div id="portalArea" class="portal-area hidden">
+				<div class="section-title">
+					<div class="icon-circle">🏠</div>
+
+					<div>
+						<h1>職員ポータル</h1>
+						<p id="portalUserName"></p>
+						<p>利用するメニューを選択してください。</p>
+					</div>
+				</div>
+
+				<div class="quick-menu-grid">
+				  <button type="button" class="quick-menu-card">
+				    <div class="quick-menu-icon">🚶</div>
+				    <div class="quick-menu-title">向かいます</div>
+				  </button>
+
+				  <button type="button" class="quick-menu-card">
+				    <div class="quick-menu-icon">🏠</div>
+				    <div class="quick-menu-title">入りました</div>
+				  </button>
+
+				  <button type="button" class="quick-menu-card">
+				    <div class="quick-menu-icon">✅</div>
+				    <div class="quick-menu-title">終わりました</div>
+				  </button>
+				</div>
+
+				<div class="menu-grid">
+					<button type="button" class="menu-card" onclick="goShiftRequest()">
+						<div class="menu-icon">📅</div>
+						<div class="menu-title">利用者依頼受付</div>
+						<div class="menu-text">利用者の支援予定を登録します</div>
+					</button>
+
+					<button type="button" class="menu-card disabled">
+						<div class="menu-icon">📋</div>
+						<div class="menu-title">シフト確認</div>
+						<div class="menu-text">準備中</div>
+					</button>
+
+					<button type="button" class="menu-card disabled">
+						<div class="menu-icon">📝</div>
+						<div class="menu-title">実績入力</div>
+						<div class="menu-text">準備中</div>
+					</button>
+
+					<button type="button" class="menu-card disabled">
+						<div class="menu-icon">💴</div>
+						<div class="menu-title">給与明細</div>
+						<div class="menu-text">既存ポータルと連携予定</div>
+					</button>
+				</div>
+
+				<button type="button" class="back-button" onclick="logoutPortal()">
+				  登録情報を解除する
+				</button>				
+
+			</div>
+
+			<!-- シフト依頼エリア -->
+			<div id="shiftRequestArea" class="shift-request-area hidden">
+				<div class="section-title">
+					<div class="icon-circle">📅</div>
+
+					<div>
+						<h1>利用依頼受付</h1>
+						<p>利用者の支援予定を登録します。</p>
+					</div>
+				</div>
+
+				<form id="shiftRequestForm">
+					<div class="form-group">
+						<label for="clientName">
+							利用者
+							<span class="required">必須</span>
+						</label>
+
+						<select id="clientName" required>
+							<option value="">利用者を選択してください</option>
+						</select>
+					</div>
+
+					<div class="form-group">
+						<label for="requestType">
+							区分
+							<span class="required">必須</span>
+						</label>
+
+						<select id="requestType" required>
+							<option value="">区分を選択してください</option>
+							<option value="通院（通院）">通院（通院）</option>
+							<option value="通院（同行）">通院（同行）</option>
+							<option value="外出（同行）">外出（同行）</option>
+							<option value="外出（移動）">外出（移動）</option>
+							<option value="担当者会議">担当者会議</option>
+							<option value="支援ｷｬﾝｾﾙ">支援ｷｬﾝｾﾙ</option>
+							<option value="登録取消">登録取消</option>
+						</select>
+					</div>
+
+					<div class="form-group">
+					  <label>依頼方法</label>
+
+					  <div class="radio-group">
+					    <label class="radio-card">
+					      <input type="radio" name="requestMode" value="single" checked onchange="changeRequestMode()">
+					      <span>1日だけ</span>
+					    </label>
+
+					    <label class="radio-card">
+					      <input type="radio" name="requestMode" value="repeat" onchange="changeRequestMode()">
+					      <span>期間と曜日でまとめて依頼</span>
+					    </label>
+					  </div>
+					</div>
+
+					<div id="singleDateArea">
+					  <div class="form-group">
+					    <label for="requestDate">
+					      日時
+					      <span class="required">必須</span>
+					    </label>
+					    <input type="date" id="requestDate">
+					  </div>
+					</div>
+
+					<div id="repeatDateArea" class="hidden">
+					  <div class="time-row">
+					    <div class="form-group">
+					      <label for="periodStartDate">
+					        開始日
+					        <span class="required">必須</span>
+					      </label>
+					      <input type="date" id="periodStartDate">
+					    </div>
+
+					    <div class="form-group">
+					      <label for="periodEndDate">
+					        終了日
+					        <span class="required">必須</span>
+					      </label>
+					      <input type="date" id="periodEndDate">
+					    </div>
+					  </div>
+
+					  <div class="form-group">
+					    <label>
+					      曜日
+					      <span class="required">必須</span>
+					    </label>
+
+					    <div class="weekday-grid">
+					      <label><input type="checkbox" name="weekday" value="1"> 月</label>
+					      <label><input type="checkbox" name="weekday" value="2"> 火</label>
+					      <label><input type="checkbox" name="weekday" value="3"> 水</label>
+					      <label><input type="checkbox" name="weekday" value="4"> 木</label>
+					      <label><input type="checkbox" name="weekday" value="5"> 金</label>
+					      <label><input type="checkbox" name="weekday" value="6"> 土</label>
+					      <label><input type="checkbox" name="weekday" value="0"> 日</label>
+					    </div>
+					  </div>
+					</div>
+
+					<div class="time-row">
+						<div class="form-group">
+							<label for="startTime">
+								開始時刻
+								<span class="required">必須</span>
+							</label>
+
+							<input type="time" id="startTime" required />
+						</div>
+
+						<div class="form-group">
+							<label for="endTime">終了予定</label>
+
+							<input type="time" id="endTime" />
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="destination">行き先場所</label>
+
+						<input
+							type="text"
+							id="destination"
+							placeholder="例：○○病院"
+						/>
+					</div>
+
+					<div class="form-group">
+						<label for="meetingPlace">待合せ場所</label>
+
+						<input
+							type="text"
+							id="meetingPlace"
+							placeholder="例：自宅玄関"
+						/>
+					</div>
+
+					<div class="form-group">
+						<label for="transportation">移動手段</label>
+
+						<input
+							type="text"
+							id="transportation"
+							placeholder="例：徒歩、電車、有償運送"
+						/>
+					</div>
+
+					<div class="form-group">
+						<label for="specialNotes">特記事項</label>
+
+						<textarea
+							id="specialNotes"
+							rows="5"
+							placeholder="その他、伝えておきたい内容を入力してください"
+						></textarea>
+					</div>
+
+					<button type="submit" class="main-button">
+						依頼内容を確認する
+					</button>
+
+					<button
+						type="button"
+						class="back-button"
+						onclick="backToPortal()"
+					>
+						ポータルへ戻る
+					</button>
+				</form>
+			</div>
+
+			<div id="shiftConfirmArea" class="shift-request-area hidden">
+			  	<div class="section-title">
+			    	<div class="icon-circle">✅</div>
+			    	<div>
+			      		<h1>依頼内容の確認</h1>
+			      		<p>内容を確認して、問題なければ登録してください。</p>
+			    	</div>
+			  	</div>
+
+			  	<div id="shiftConfirmContent" class="confirm-box"></div>
+
+			  	<button
+			    	type="button"
+			    	id="submitShiftRequestButton"
+			    	class="main-button"
+			    	onclick="submitShiftRequest()"
+			  	>
+			    	この内容で登録する
+				</button>
+
+				<button type="button" class="back-button" onclick="backToShiftRequest()">
+			    入力画面へ戻る
+  				</button>
+			</div>
+
+			<div id="shiftCompleteArea" class="complete-area hidden">
+			  <div class="complete-icon">✓</div>
+
+			  <h2>利用依頼を登録しました</h2>
+
+			  <p id="shiftCompleteMessage">
+			    依頼内容を登録しました。
+			  </p>
+
+			  <button type="button" class="main-button" onclick="continueShiftRequest()">
+			    続けて依頼する
+			  </button>
+
+			  <button type="button" class="back-button" onclick="backToPortalFromComplete()">
+			    ポータルへ戻る
+			  </button>
+			</div>
+
+		</section>
+	</main>
+
+	<script src="app.js"></script>
+</body>
+</html>
