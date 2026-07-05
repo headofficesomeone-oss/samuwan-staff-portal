@@ -1,9 +1,14 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwoQp13Pi9DWYep8D-F9uUETF2YTjsXDBAwKTdGtclRqCZVuzfVtnJPPIbYhAV4b-YyZA/exec";
+const LIFF_ID = "2009935343-GyNpF9lj";
+
 let clientListCache = null;
 let pendingShiftRequestData = null;
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+
+	initLiff();
+
     const savedUser = localStorage.getItem("staffPortalCurrentUser");
 
     if (savedUser) {
@@ -497,4 +502,30 @@ function showPortalUserName() {
   if (nameArea && currentUser) {
     nameArea.textContent = currentUser.employeeName + " さん";
   }
+}
+
+async function initLiff() {
+    try {
+        await liff.init({ liffId: LIFF_ID });
+
+        console.log("LIFF初期化完了");
+
+        if (liff.isLoggedIn()) {
+            const profile = await liff.getProfile();
+
+            console.log("LINEプロフィール:", profile);
+
+            return {
+                lineId: profile.userId,
+                lineName: profile.displayName
+            };
+        }
+
+        liff.login();
+        return null;
+
+    } catch (error) {
+        console.error("LIFF初期化エラー:", error);
+        return null;
+    }
 }
