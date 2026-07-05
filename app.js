@@ -546,22 +546,22 @@ async function issueTempIdFromScreen() {
             method: "POST",
             body: JSON.stringify({
                 action: "issueTempId",
-                employeeName: employeeName
+                employeeName: employeeName ,
+                lineId: currentLineProfile.lineId
             })
         });
 
         const result = await response.json();
 
-        if (result.success) {
-            resultBox.classList.remove("hidden");
-            resultBox.innerHTML =
-                "仮登録ID：<strong>" + result.tempId + "</strong><br>" +
-                "このIDをコピーして、仮登録ID欄に入力してください。";
+		if (result.success) {
+		    alert("LINEに仮登録IDを送信しました。LINEのメッセージを確認してください。");
 
-            document.getElementById("tempId").value = result.tempId;
-        } else {
-            alert(result.message);
-        }
+		    if (liff.isInClient()) {
+		        liff.closeWindow();
+		    }
+		} else {
+		    alert(result.message);
+		}
 
     } catch (error) {
         alert("仮登録IDの発行に失敗しました：" + error.message);
