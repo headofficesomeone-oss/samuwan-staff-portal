@@ -521,11 +521,6 @@ async function initLiff() {
         if (liff.isLoggedIn()) {
             const profile = await liff.getProfile();
 
-            if (status) {
-                status.textContent =
-                    "LINE取得成功：" + profile.displayName;
-            }
-
             return {
                 lineId: profile.userId,
                 lineName: profile.displayName
