@@ -8,29 +8,51 @@ let currentLineProfile = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-	currentLineProfile = await initLiff();
+    const form = document.getElementById("registerForm");
+    if (form) form.addEventListener("submit", handleRegister);
+
+    const shiftForm = document.getElementById("shiftRequestForm");
+    if (shiftForm) shiftForm.addEventListener("submit", handleShiftRequestSubmit);
+
+    currentLineProfile = await initLiff();
+
+    if (currentLineProfile && currentLineProfile.lineId) {
+        const loginResult = await loginByLineId(currentLineProfile.lineId);
+
+        if (loginResult.success) {
+            currentUser = {
+                employeeId: loginResult.employeeId,
+                employeeName: loginResult.employeeName
+            };
+
+            localStorage.setItem("staffPortalCurrentUser", JSON.stringify(currentUser));
+
+            const registerArea = document.getElementById("registerArea");
+            const portalArea = document.getElementById("portalArea");
+
+            if (registerArea) registerArea.classList.add("hidden");
+            if (portalArea) portalArea.classList.remove("hidden");
+
+            showPortalUserName();
+            return;
+        }
+    }
 
     const savedUser = localStorage.getItem("staffPortalCurrentUser");
 
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
 
-		showPortalUserName();
-
         const registerArea = document.getElementById("registerArea");
         const portalArea = document.getElementById("portalArea");
 
         if (registerArea) registerArea.classList.add("hidden");
         if (portalArea) portalArea.classList.remove("hidden");
+
+        showPortalUserName();
     } else {
         loadEmployeeList();
     }
-
-    const form = document.getElementById("registerForm");
-    if (form) form.addEventListener("submit", handleRegister);
-
-    const shiftForm = document.getElementById("shiftRequestForm");
-    if (shiftForm) shiftForm.addEventListener("submit", handleShiftRequestSubmit);
 });
 
 async function handleRegister(e) {
@@ -529,6 +551,28 @@ async function initLiff() {
 
     } catch (error) {
         return null;
+    }
+}
+
+async function loginByLineId(lineId) {
+    try {
+        const response = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "loginByLineId",
+                lineId: lineId
+            })
+        });
+
+        return await response.json();
+
+    } catch (error) {
+        console.error("LINE IDログインエラー:", error);
+
+        return {
+            success: false,
+            message: "ログイン確認に失敗しました。"
+        };
     }
 }
 
