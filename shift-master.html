@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト規定値 登録・編集</title>
+  <link rel="stylesheet" href="shift-master.css">
+</head>
+
+<body>
+  <header class="page-header">
+    <div>
+      <h1>シフト規定値 登録・編集</h1>
+      <p>毎週の基本となる支援予定を管理します</p>
+    </div>
+    <button class="new-button">＋ 新しい規定値</button>
+  </header>
+
+  <main class="main-layout">
+
+    <section class="panel">
+      <div class="panel-title">規定値一覧</div>
+
+      <div class="search-area">
+        <div class="search-grid">
+          <select>
+            <option>すべての利用者</option>
+            <option>山田 太郎</option>
+            <option>鈴木 花子</option>
+          </select>
+
+          <select>
+            <option>全曜日</option>
+            <option>月</option>
+            <option>火</option>
+            <option>水</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="shift-list">
+        <div class="shift-item selected">
+          <div class="shift-name">山田 太郎</div>
+          <div class="shift-summary">
+            月曜日　10:00～12:00<br>
+            居宅介護 ／ 2人介助
+          </div>
+        </div>
+
+        <div class="shift-item">
+          <div class="shift-name">山田 太郎</div>
+          <div class="shift-summary">
+            木曜日　14:00～16:00<br>
+            通院等介助 ／ 1人
+          </div>
+        </div>
+
+        <div class="shift-item">
+          <div class="shift-name">鈴木 花子</div>
+          <div class="shift-summary">
+            金曜日　09:00～10:30<br>
+            訪問介護 ／ 1人
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">規定値の内容</div>
+
+      <div class="edit-area">
+
+        <div class="section">
+          <div class="section-heading">基本情報</div>
+
+          <div class="form-grid">
+            <div class="field w-2">
+              <label>予定ID</label>
+              <input class="id-box" value="S000001" readonly>
+            </div>
+
+            <div class="field w-2">
+              <label>履歴ID</label>
+              <input class="id-box" value="H000001" readonly>
+            </div>
+
+            <div class="field w-2">
+              <label>適用開始日</label>
+              <input type="date" value="2026-07-01">
+            </div>
+
+            <div class="field w-2">
+              <label>適用終了日</label>
+              <input type="date">
+            </div>
+
+            <div class="field w-3">
+              <label>利用者</label>
+              <select>
+                <option>山田 太郎</option>
+              </select>
+            </div>
+
+            <div class="field w-1">
+              <label>曜日</label>
+              <select>
+                <option>月</option>
+                <option>火</option>
+                <option>水</option>
+                <option>木</option>
+                <option>金</option>
+                <option>土</option>
+                <option>日</option>
+              </select>
+            </div>
+
+            <div class="field w-1">
+              <label>開始</label>
+              <input type="time" value="10:00">
+            </div>
+
+            <div class="field w-1">
+              <label>終了</label>
+              <input type="time" value="12:00">
+            </div>
+
+            <div class="field w-1">
+              <label>人数</label>
+              <select>
+                <option>1人</option>
+                <option selected>2人</option>
+                <option>3人</option>
+              </select>
+            </div>
+
+            <div class="field w-2">
+              <label>サービス区分</label>
+              <select>
+                <option>居宅介護</option>
+                <option>重度訪問</option>
+                <option>同行援護</option>
+                <option>訪問介護</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-heading">支援内容</div>
+
+          <div class="form-grid">
+            <div class="field w-8">
+              <label>支援内容</label>
+              <textarea>買い物同行、帰宅後の整理</textarea>
+            </div>
+
+            <div class="field w-3">
+              <label>行き先場所</label>
+              <input value="○○スーパー">
+            </div>
+
+            <div class="field w-3">
+              <label>待合せ場所</label>
+              <input value="利用者宅">
+            </div>
+
+            <div class="field w-2">
+              <label>移動手段</label>
+              <input value="徒歩">
+            </div>
+
+            <div class="field w-8">
+              <label>特記事項</label>
+              <textarea></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-heading">担当者</div>
+
+          <table class="staff-table">
+            <thead>
+              <tr>
+                <th>順</th>
+                <th>担当者</th>
+                <th>担当区分</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>
+                  <select>
+                    <option>塩田 美穂</option>
+                  </select>
+                </td>
+                <td>
+                  <select>
+                    <option>ヘルパー</option>
+                    <option>運転手</option>
+                  </select>
+                </td>
+                <td><button class="small-button">削除</button></td>
+              </tr>
+
+              <tr>
+                <td>2</td>
+                <td>
+                  <select>
+                    <option>井滝 友宏</option>
+                  </select>
+                </td>
+                <td>
+                  <select>
+                    <option>ヘルパー</option>
+                    <option>運転手</option>
+                  </select>
+                </td>
+                <td><button class="small-button">削除</button></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <button class="add-staff-button">＋ 担当者を追加</button>
+        </div>
+
+        <div class="action-area">
+          <button class="secondary-button">変更を取り消す</button>
+          <button class="save-button">この内容で保存</button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
