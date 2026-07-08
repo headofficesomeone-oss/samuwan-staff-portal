@@ -3,26 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>シフト規定値 登録・編集</title>
+
   <link rel="stylesheet" href="shift-master.css">
 </head>
 
 <body>
+
   <header class="page-header">
     <div>
       <h1>シフト規定値 登録・編集</h1>
       <p>毎週の基本となる支援予定を管理します</p>
     </div>
-    <button class="new-button">＋ 新しい規定値</button>
+
+    <button type="button" class="new-button">
+      ＋ 新しい規定値
+    </button>
   </header>
+
 
   <main class="main-layout">
 
-    <section class="panel">
-      <div class="panel-title">規定値一覧</div>
+    <!-- ============================= -->
+    <!-- 左側：規定値一覧 -->
+    <!-- ============================= -->
+
+    <section class="panel list-panel">
+
+      <div class="panel-title">
+        規定値一覧
+      </div>
 
       <div class="search-area">
+
         <div class="search-grid">
+
           <select>
             <option>すべての利用者</option>
             <option>山田 太郎</option>
@@ -34,206 +50,358 @@
             <option>月</option>
             <option>火</option>
             <option>水</option>
+            <option>木</option>
+            <option>金</option>
+            <option>土</option>
+            <option>日</option>
           </select>
+
         </div>
+
       </div>
+
 
       <div class="shift-list">
+
         <div class="shift-item selected">
-          <div class="shift-name">山田 太郎</div>
-          <div class="shift-summary">
-            月曜日　10:00～12:00<br>
-            居宅介護 ／ 2人介助
+
+          <div class="shift-line1">
+            <span>月曜日</span>
+            <span>10:00～12:00</span>
+            <span class="shift-name">山田 考太郎</span>
           </div>
+
+          <div class="shift-line2">
+            <span>居宅介護</span>
+            <span>2人介助</span>
+          </div>
+
         </div>
 
-        <div class="shift-item">
-          <div class="shift-name">山田 太郎</div>
-          <div class="shift-summary">
-            木曜日　14:00～16:00<br>
-            通院等介助 ／ 1人
-          </div>
-        </div>
 
         <div class="shift-item">
-          <div class="shift-name">鈴木 花子</div>
-          <div class="shift-summary">
-            金曜日　09:00～10:30<br>
-            訪問介護 ／ 1人
+
+          <div class="shift-line1">
+            <span>木曜日</span>
+            <span>14:00～16:00</span>
+            <span class="shift-name">山田 太郎</span>
           </div>
+
+          <div class="shift-line2">
+            <span>通院等介助</span>
+            <span>1人</span>
+          </div>
+
         </div>
+
+
+        <div class="shift-item">
+
+          <div class="shift-line1">
+            <span>金曜日</span>
+            <span>09:00～10:30</span>
+            <span class="shift-name">鈴木 花子</span>
+          </div>
+
+          <div class="shift-line2">
+            <span>訪問介護</span>
+            <span>1人</span>
+          </div>
+
+        </div>
+
       </div>
+
     </section>
 
-    <section class="panel">
-      <div class="panel-title">規定値の内容</div>
+
+    <!-- ============================= -->
+    <!-- 右側：規定値内容 -->
+    <!-- ============================= -->
+
+    <section class="panel edit-panel">
+
+      <div class="panel-title title-row">
+        <span>規定値の内容</span>
+        <span class="sub-title">基本情報</span>
+      </div>
+
 
       <div class="edit-area">
 
+        <!-- ============================= -->
+        <!-- 基本情報 -->
+        <!-- ============================= -->
+
         <div class="section">
-          <div class="section-heading">基本情報</div>
 
           <div class="form-grid">
-            <div class="field w-2">
+
+            <!-- 1行目 -->
+
+            <div class="field col-1">
               <label>予定ID</label>
-              <input class="id-box" value="S000001" readonly>
+              <input
+                class="id-box"
+                value="S000001"
+                readonly
+              >
             </div>
 
-            <div class="field w-2">
+
+            <div class="field col-1">
               <label>履歴ID</label>
-              <input class="id-box" value="H000001" readonly>
+              <input
+                class="id-box"
+                value="H000001"
+                readonly
+              >
             </div>
 
-            <div class="field w-2">
-              <label>適用開始日</label>
-              <input type="date" value="2026-07-01">
-            </div>
 
-            <div class="field w-2">
-              <label>適用終了日</label>
-              <input type="date">
-            </div>
-
-            <div class="field w-3">
+            <div class="field col-2">
               <label>利用者</label>
               <select>
                 <option>山田 太郎</option>
               </select>
             </div>
 
-            <div class="field w-1">
-              <label>曜日</label>
+
+            <div class="field col-2">
+              <label>適用開始日</label>
+              <input
+                type="date"
+                value="2026-07-01"
+              >
+            </div>
+
+
+            <div class="field col-2">
+              <label>適用終了日</label>
+              <input type="date">
+            </div>
+
+
+            <!-- 2行目 -->
+
+<div class="field s">
+  <label>曜日</label>
+  <select>
+    <option>月</option>
+    <option>火</option>
+    <option>水</option>
+    <option>木</option>
+    <option>金</option>
+    <option>土</option>
+    <option>日</option>
+  </select>
+</div>
+
+<div class="field s">
+  <label>開始</label>
+  <input type="time" value="10:00">
+</div>
+
+<div class="field s">
+  <label>終了</label>
+  <input type="time" value="12:00">
+</div>
+
+<div class="field s">
+  <label>人数</label>
+  <select>
+    <option>1人</option>
+    <option selected>2人</option>
+  </select>
+</div>
+
+<div class="field m">
+  <label>サービス区分</label>
+  <select>
+    <option>居宅介護</option>
+    <option>重度訪問</option>
+    <option>同行援護</option>
+    <option>訪問介護</option>
+  </select>
+</div>
+
+<div class="field week-field">
+  <label>週P</label>
+  <div class="week-row">
+    <button type="button" class="week-button" onclick="toggleWeekPanel()">
+      設定
+    </button>
+    <input id="weekPatternText" class="week-pattern-box" value="" readonly>
+  </div>
+</div>
+
+<div class="field half">
+  <label>交代</label>
+  <select>
+    <option>通常</option>
+    <option>交代</option>
+  </select>
+</div>
+
+<div id="weekPanel" class="week-panel hidden">
+  <label><input type="checkbox" value="毎" onchange="updateWeekPattern()"> 毎週</label>
+  <label><input type="checkbox" value="1" onchange="updateWeekPattern()"> 第1</label>
+  <label><input type="checkbox" value="2" onchange="updateWeekPattern()"> 第2</label>
+  <label><input type="checkbox" value="3" onchange="updateWeekPattern()"> 第3</label>
+  <label><input type="checkbox" value="4" onchange="updateWeekPattern()"> 第4</label>
+  <label><input type="checkbox" value="5" onchange="updateWeekPattern()"> 第5</label>
+  <label><input type="checkbox" value="隔A" onchange="updateWeekPattern()"> 隔A</label>
+  <label><input type="checkbox" value="隔B" onchange="updateWeekPattern()"> 隔B</label>
+</div>
+
+            <!-- 3行目：担当者 -->
+
+            <div class="field col-2">
+              <label>担当1</label>
+
               <select>
-                <option>月</option>
-                <option>火</option>
-                <option>水</option>
-                <option>木</option>
-                <option>金</option>
-                <option>土</option>
-                <option>日</option>
+                <option>塩田 美穂</option>
+                <option>井滝 友宏</option>
+                <option>井滝 一江</option>
               </select>
             </div>
 
-            <div class="field w-1">
-              <label>開始</label>
-              <input type="time" value="10:00">
-            </div>
 
-            <div class="field w-1">
-              <label>終了</label>
-              <input type="time" value="12:00">
-            </div>
+            <div class="field col-1">
+              <label>区分1</label>
 
-            <div class="field w-1">
-              <label>人数</label>
               <select>
-                <option>1人</option>
-                <option selected>2人</option>
-                <option>3人</option>
+                <option>ヘルパー</option>
+                <option>運転手</option>
               </select>
             </div>
 
-            <div class="field w-2">
-              <label>サービス区分</label>
+
+            <div class="field col-2">
+              <label>担当2</label>
+
               <select>
-                <option>居宅介護</option>
-                <option>重度訪問</option>
-                <option>同行援護</option>
-                <option>訪問介護</option>
+                <option value="">未設定</option>
+                <option selected>井滝 友宏</option>
+                <option>塩田 美穂</option>
+                <option>井滝 一江</option>
               </select>
             </div>
+
+
+            <div class="field col-1">
+              <label>区分2</label>
+
+              <select>
+                <option>ヘルパー</option>
+                <option>運転手</option>
+              </select>
+            </div>
+
           </div>
+
         </div>
 
+
+        <!-- ============================= -->
+        <!-- 支援内容 -->
+        <!-- ============================= -->
+
         <div class="section">
-          <div class="section-heading">支援内容</div>
+
+          <div class="section-heading">
+            支援内容
+          </div>
+
 
           <div class="form-grid">
-            <div class="field w-8">
+
+            <div class="field col-8">
               <label>支援内容</label>
+
               <textarea>買い物同行、帰宅後の整理</textarea>
             </div>
 
-            <div class="field w-3">
+
+            <div class="field col-3">
               <label>行き先場所</label>
               <input value="○○スーパー">
             </div>
 
-            <div class="field w-3">
+
+            <div class="field col-3">
               <label>待合せ場所</label>
               <input value="利用者宅">
             </div>
 
-            <div class="field w-2">
+
+            <div class="field col-2">
               <label>移動手段</label>
               <input value="徒歩">
             </div>
 
-            <div class="field w-8">
+
+            <div class="field col-8">
               <label>特記事項</label>
               <textarea></textarea>
             </div>
+
           </div>
+
         </div>
 
-        <div class="section">
-          <div class="section-heading">担当者</div>
 
-          <table class="staff-table">
-            <thead>
-              <tr>
-                <th>順</th>
-                <th>担当者</th>
-                <th>担当区分</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1</td>
-                <td>
-                  <select>
-                    <option>塩田 美穂</option>
-                  </select>
-                </td>
-                <td>
-                  <select>
-                    <option>ヘルパー</option>
-                    <option>運転手</option>
-                  </select>
-                </td>
-                <td><button class="small-button">削除</button></td>
-              </tr>
-
-              <tr>
-                <td>2</td>
-                <td>
-                  <select>
-                    <option>井滝 友宏</option>
-                  </select>
-                </td>
-                <td>
-                  <select>
-                    <option>ヘルパー</option>
-                    <option>運転手</option>
-                  </select>
-                </td>
-                <td><button class="small-button">削除</button></td>
-              </tr>
-            </tbody>
-          </table>
-
-          <button class="add-staff-button">＋ 担当者を追加</button>
-        </div>
+        <!-- ============================= -->
+        <!-- 保存ボタン -->
+        <!-- ============================= -->
 
         <div class="action-area">
-          <button class="secondary-button">変更を取り消す</button>
-          <button class="save-button">この内容で保存</button>
+
+          <button
+            type="button"
+            class="secondary-button"
+          >
+            変更を取り消す
+          </button>
+
+
+          <button
+            type="button"
+            class="save-button"
+          >
+            この内容で保存
+          </button>
+
         </div>
 
       </div>
+
     </section>
 
   </main>
+  
+  <script>
+function toggleWeekPanel() {
+  const panel = document.getElementById("weekPanel");
+  panel.classList.toggle("hidden");
+}
+
+function updateWeekPattern() {
+  const checks = Array.from(
+    document.querySelectorAll("#weekPanel input:checked")
+  ).map(cb => cb.value);
+
+  let text = "";
+
+  if (checks.includes("毎")) {
+    text = "";
+  } else {
+    text = checks.join("");
+  }
+
+  document.getElementById("weekPatternText").value = text;
+}
+</script>
+
 </body>
 </html>
