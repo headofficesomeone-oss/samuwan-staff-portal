@@ -2,269 +2,537 @@
   box-sizing: border-box;
 }
 
+
 body {
   margin: 0;
+
   background: #f5f7f6;
   color: #1f2924;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
   font-size: 16px;
 }
 
+
+/* =================================
+   上部ヘッダー
+================================= */
+
 .page-header {
   height: 73px;
+
   background: #ffffff;
+
   border-bottom: 1px solid #d9e3dd;
+
   padding: 12px 24px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+
 .page-header h1 {
   margin: 0;
+
   font-size: 26px;
+  font-weight: 700;
 }
+
 
 .page-header p {
   margin: 4px 0 0;
+
   color: #5f6f67;
+
   font-size: 15px;
 }
+
 
 .new-button {
   border: none;
   border-radius: 10px;
+
   padding: 12px 20px;
+
   background: #4f8f72;
   color: white;
+
   font-size: 16px;
   font-weight: 700;
+
   cursor: pointer;
 }
 
+
+/* =================================
+   画面全体
+================================= */
+
 .main-layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+
+  grid-template-columns:
+    360px
+    minmax(0, 1fr);
+
   gap: 18px;
+
   padding: 18px;
+
   max-width: 1500px;
+
   height: calc(100vh - 73px);
+
   margin: 0 auto;
+
   overflow: hidden;
 }
 
+
+/* =================================
+   左右共通パネル
+================================= */
+
 .panel {
+  min-height: 0;
+
   background: white;
+
   border: 1px solid #dce7e1;
   border-radius: 14px;
-  box-shadow: 0 5px 18px rgba(30, 50, 40, 0.05);
-  min-height: 0;
+
+  box-shadow:
+    0 5px 18px
+    rgba(30, 50, 40, 0.05);
+
   display: flex;
   flex-direction: column;
 }
 
+
 .panel-title {
-  padding: 16px 18px;
-  border-bottom: 1px solid #edf1ee;
+  padding: 14px 18px;
+
+  border-bottom:
+    1px solid #edf1ee;
+
   font-size: 19px;
   font-weight: 700;
 }
 
-.search-area {
-  padding: 14px;
-  border-bottom: 1px solid #edf1ee;
+
+/* =================================
+   右側タイトル
+================================= */
+
+.title-row {
+  display: flex;
+  align-items: center;
+
+  gap: 18px;
 }
+
+
+.sub-title {
+  color: #4f8f72;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+
+/* =================================
+   左側：検索
+================================= */
+
+.search-area {
+  padding: 10px;
+
+  border-bottom:
+    1px solid #edf1ee;
+}
+
 
 .search-grid {
   display: grid;
-  grid-template-columns: 1fr 100px;
+
+  grid-template-columns:
+    1fr
+    100px;
+
   gap: 8px;
 }
+
+
+/* =================================
+   入力欄共通
+================================= */
 
 input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid #aebdb5;
+
+  border:
+    1px solid #aebdb5;
+
   border-radius: 8px;
-  padding: 9px 10px;
-  font-size: 16px;
-  color: #1f2924;
+
+  padding: 8px 9px;
+
   background: white;
+  color: #1f2924;
+
+  font-size: 16px;
 }
 
+
 textarea {
+  min-height: 64px;
+
   resize: vertical;
-  min-height: 72px;
 }
+
+
+/* =================================
+   左側：規定値一覧
+================================= */
 
 .shift-list {
   flex: 1;
+
   overflow-y: auto;
-  padding: 8px;
+
+  padding: 7px;
 }
 
+
 .shift-item {
-  padding: 12px;
-  margin-bottom: 7px;
-  border: 1px solid #e1e9e4;
-  border-radius: 10px;
+  padding: 6px 9px;
+
+  margin-bottom: 4px;
+
+  border:
+    1px solid #e1e9e4;
+
+  border-radius: 8px;
+
   cursor: pointer;
 }
+
 
 .shift-item:hover {
   background: #f3f8f5;
 }
 
+
 .shift-item.selected {
   border-color: #67a787;
+
   background: #eef7f2;
 }
 
-.shift-name {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 5px;
+
+.shift-line1,
+.shift-line2 {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  white-space: nowrap;
 }
 
-.shift-summary {
-  color: #5f6f67;
-  font-size: 15px;
-  line-height: 1.5;
+
+.shift-line1 {
+  font-size: 14px;
+  line-height: 1.25;
 }
+
+
+.shift-line2 {
+  margin-top: 2px;
+
+  color: #5f6f67;
+
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+
+.shift-name {
+  margin: 0;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+
+/* =================================
+   右側：編集部分
+================================= */
 
 .edit-area {
   flex: 1;
+
   overflow-y: auto;
-  padding: 18px;
+
+  padding: 14px 18px 18px;
 }
+
 
 .section {
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
+
 .section-heading {
+  margin-bottom: 10px;
+
+  padding-bottom: 6px;
+
+  border-bottom:
+    2px solid #e4eee8;
+
   font-size: 18px;
   font-weight: 700;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
-  border-bottom: 2px solid #e4eee8;
 }
+
+
+/* =================================
+   8分割入力レイアウト
+================================= */
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(70px, 1fr));
+
+  grid-template-columns:
+    repeat(8, minmax(0, 1fr));
+
   gap: 10px 12px;
+
   align-items: end;
 }
+
 
 .field {
   min-width: 0;
 }
 
+
 .field label {
   display: block;
-  margin-bottom: 6px;
+
+  margin-bottom: 5px;
+
+  color: #35453d;
+
   font-size: 15px;
   font-weight: 700;
-  color: #35453d;
 }
 
-.field.w-1 { grid-column: span 1; }
-.field.w-2 { grid-column: span 2; }
-.field.w-3 { grid-column: span 3; }
-.field.w-4 { grid-column: span 4; }
-.field.w-8 { grid-column: span 8; }
+
+/* =================================
+   項目幅
+================================= */
+
+.col-1 {
+  grid-column: span 1;
+}
+
+
+.col-2 {
+  grid-column: span 2;
+}
+
+
+.col-3 {
+  grid-column: span 3;
+}
+
+
+.col-4 {
+  grid-column: span 4;
+}
+
+
+.col-8 {
+  grid-column: span 8;
+}
+
 
 .id-box {
   background: #f4f6f5;
 }
 
-.staff-table {
-  width: 100%;
-  border-collapse: collapse;
-}
 
-.staff-table th,
-.staff-table td {
-  border-bottom: 1px solid #e8eeea;
-  padding: 9px 7px;
-  text-align: left;
-  font-size: 15px;
-}
-
-.staff-table th {
-  background: #f6f8f7;
-  color: #35453d;
-  font-weight: 700;
-}
-
-.small-button {
-  border: 1px solid #cfdad4;
-  background: white;
-  border-radius: 7px;
-  padding: 7px 10px;
-  cursor: pointer;
-}
-
-.add-staff-button {
-  margin-top: 10px;
-  border: 1px dashed #79a98f;
-  background: #f5faf7;
-  color: #42765e;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
+/* =================================
+   保存ボタン
+================================= */
 
 .action-area {
   display: flex;
+
   justify-content: flex-end;
+
   gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid #e5ebe7;
+
+  padding-top: 14px;
+
+  border-top:
+    1px solid #e5ebe7;
 }
 
+
 .secondary-button {
-  border: 1px solid #cbd6d0;
-  background: white;
+  border:
+    1px solid #cbd6d0;
+
   border-radius: 9px;
-  padding: 11px 18px;
+
+  padding: 10px 18px;
+
+  background: white;
+
   font-size: 15px;
+
   cursor: pointer;
 }
 
+
 .save-button {
   border: none;
+
+  border-radius: 9px;
+
+  padding: 10px 24px;
+
   background: #4f8f72;
   color: white;
-  border-radius: 9px;
-  padding: 11px 24px;
+
   font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =================================
+   タブレット
+================================= */
+
+@media (max-width: 1000px) {
+
+  .main-layout {
+    grid-template-columns:
+      300px
+      minmax(0, 1fr);
+  }
+
+
+  .form-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+
+
+  .col-8 {
+    grid-column: span 4;
+  }
+
+
+  .col-4 {
+    grid-column: span 4;
+  }
+
+
+  .col-3 {
+    grid-column: span 2;
+  }
+
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 10px 10px;
+  align-items: end;
+}
+
+.field.s {
+  grid-column: span 2;
+}
+
+.field.half {
+  grid-column: span 1;
+}
+
+.field.week-field {
+  grid-column: span 3;
+}
+
+.field.m {
+  grid-column: span 4;
+}
+
+.field.l {
+  grid-column: span 6;
+}
+
+.field.full {
+  grid-column: span 24;
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 4px;
+}
+
+.week-button {
+  height: 38px;
+  border: 1px solid #aebdb5;
+  border-radius: 8px;
+  background: #f5faf7;
+  color: #42765e;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
 
-@media (max-width: 1000px) {
-  .main-layout {
-    grid-template-columns: 300px minmax(0, 1fr);
-  }
+.week-pattern-box {
+  text-align: center;
+  padding: 8px 4px;
+}
 
-  .form-grid {
-    grid-template-columns: repeat(4, minmax(70px, 1fr));
-  }
+.week-panel {
+  grid-column: span 24;
+  background: #f5faf7;
+  border: 1px solid #d9e7df;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 
-  .field.w-8 {
-    grid-column: span 4;
-  }
+.week-panel label {
+  font-size: 15px;
+  font-weight: 700;
+}
 
-  .field.w-4 {
-    grid-column: span 4;
-  }
+.week-panel input {
+  width: auto;
+}
 
-  .field.w-3 {
-    grid-column: span 2;
-  }
+.hidden {
+  display: none;
 }
