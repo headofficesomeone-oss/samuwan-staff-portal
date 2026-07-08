@@ -299,24 +299,23 @@ textarea {
 
 .support-main {
   grid-row: 1 / span 2;
-  grid-column: 1 / span 12;
+  grid-column: 1 / span 10;
 }
 
 .place-field {
   grid-row: 1;
-  grid-column: span 6;
+  grid-column: span 7;
 }
 
 .move-field {
   grid-row: 2;
-  grid-column: 13 / span 4;
+  grid-column: 11 / span 5;
 }
 
 .memo-field {
   grid-row: 3;
   grid-column: 1 / -1;
 }
-
 .action-area {
   display: flex;
   justify-content: flex-end;
