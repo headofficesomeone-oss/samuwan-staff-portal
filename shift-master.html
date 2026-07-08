@@ -1,398 +1,356 @@
-/* =================================
-   共通
-================================= */
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト規定値 登録・編集</title>
+  <link rel="stylesheet" href="shift-master.css">
+</head>
 
-* {
-  box-sizing: border-box;
+<body>
+
+<header class="page-header">
+  <div>
+    <h1>シフト規定値 登録・編集</h1>
+    <p>毎週の基本となる支援予定を管理します</p>
+  </div>
+
+  <button type="button" class="new-button">
+    ＋ 新しい規定値
+  </button>
+</header>
+
+<main class="main-layout">
+
+  <!-- 左側：規定値一覧 -->
+  <section class="panel list-panel">
+
+    <div class="panel-title">
+      規定値一覧
+    </div>
+
+    <div class="search-area">
+      <div class="search-grid">
+        <select>
+          <option>すべての利用者</option>
+          <option>山田 太郎</option>
+          <option>鈴木 花子</option>
+        </select>
+
+        <select>
+          <option>全曜日</option>
+          <option>月</option>
+          <option>火</option>
+          <option>水</option>
+          <option>木</option>
+          <option>金</option>
+          <option>土</option>
+          <option>日</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="shift-list">
+
+      <div class="shift-item selected">
+        <div class="shift-line1">
+          <span>月曜日</span>
+          <span>10:00～12:00</span>
+          <span class="shift-name">山田 考太郎</span>
+        </div>
+        <div class="shift-line2">
+          <span>居宅介護</span>
+          <span>2人介助</span>
+        </div>
+      </div>
+
+      <div class="shift-item">
+        <div class="shift-line1">
+          <span>木曜日</span>
+          <span>14:00～16:00</span>
+          <span class="shift-name">山田 太郎</span>
+        </div>
+        <div class="shift-line2">
+          <span>通院等介助</span>
+          <span>1人</span>
+        </div>
+      </div>
+
+      <div class="shift-item">
+        <div class="shift-line1">
+          <span>金曜日</span>
+          <span>09:00～10:30</span>
+          <span class="shift-name">鈴木 花子</span>
+        </div>
+        <div class="shift-line2">
+          <span>訪問介護</span>
+          <span>1人</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 右側：規定値内容 -->
+  <section class="panel edit-panel">
+
+    <div class="panel-title title-row">
+      <span>規定値の内容</span>
+      <span class="sub-title">基本情報</span>
+    </div>
+
+    <div class="edit-area">
+
+      <!-- 基本情報 -->
+      <div class="section">
+        <div class="form-grid basic-grid">
+
+          <div class="field id-field">
+            <label>予定ID</label>
+            <input class="id-box" value="S000001" readonly>
+          </div>
+
+          <div class="field id-field">
+            <label>履歴ID</label>
+            <input class="id-box" value="H000001" readonly>
+          </div>
+
+          <div class="field user-field">
+            <label>利用者</label>
+            <select>
+              <option>山田 太郎</option>
+              <option>鈴木 花子</option>
+            </select>
+          </div>
+
+          <div class="field date-field">
+            <label>適用開始日</label>
+            <input type="date" value="2026-07-01">
+          </div>
+
+          <div class="field date-field">
+            <label>適用終了日</label>
+            <input type="date">
+          </div>
+
+          <div class="field weekday-field">
+            <label>曜日</label>
+            <select>
+              <option>月</option>
+              <option>火</option>
+              <option>水</option>
+              <option>木</option>
+              <option>金</option>
+              <option>土</option>
+              <option>日</option>
+            </select>
+          </div>
+
+          <div class="field time-field">
+            <label>開始</label>
+            <input type="time" value="10:00">
+          </div>
+
+          <div class="field time-field">
+            <label>終了</label>
+            <input type="time" value="12:00">
+          </div>
+
+          <div class="field people-field">
+            <label>人数</label>
+            <select>
+              <option>1人</option>
+              <option selected>2人</option>
+            </select>
+          </div>
+
+          <div class="field service-field">
+            <label>サービス区分</label>
+            <select>
+              <option>居宅介護</option>
+              <option>重度訪問</option>
+              <option>同行援護</option>
+              <option>訪問介護</option>
+            </select>
+          </div>
+
+          <div class="field week-field">
+            <label>週P</label>
+            <div class="week-row">
+              <button type="button" class="week-button" onclick="toggleWeekPanel()">設定</button>
+              <input id="weekPatternText" class="week-pattern-box" value="" readonly>
+            </div>
+          </div>
+
+          <div class="field change-field">
+            <label>交代</label>
+            <select>
+              <option>通常</option>
+              <option>交代</option>
+            </select>
+          </div>
+
+          <div id="weekPanel" class="week-panel hidden">
+            <label><input type="checkbox" value="毎" onchange="updateWeekPattern()"> 毎週</label>
+            <label><input type="checkbox" value="1" onchange="updateWeekPattern()"> 第1</label>
+            <label><input type="checkbox" value="2" onchange="updateWeekPattern()"> 第2</label>
+            <label><input type="checkbox" value="3" onchange="updateWeekPattern()"> 第3</label>
+            <label><input type="checkbox" value="4" onchange="updateWeekPattern()"> 第4</label>
+            <label><input type="checkbox" value="5" onchange="updateWeekPattern()"> 第5</label>
+            <label><input type="checkbox" value="隔A" onchange="updateWeekPattern()"> 隔A</label>
+            <label><input type="checkbox" value="隔B" onchange="updateWeekPattern()"> 隔B</label>
+          </div>
+
+          <div class="field staff-field">
+            <label>担当1</label>
+            <select>
+              <option>塩田 美穂</option>
+              <option>井滝 友宏</option>
+              <option>井滝 一江</option>
+            </select>
+          </div>
+
+          <div class="field role-field">
+            <label>区分1</label>
+            <select>
+              <option>ヘルパー</option>
+              <option>運転手</option>
+            </select>
+          </div>
+
+          <div class="field staff-field">
+            <label>担当2</label>
+            <select>
+              <option value="">未設定</option>
+              <option selected>井滝 友宏</option>
+              <option>塩田 美穂</option>
+              <option>井滝 一江</option>
+            </select>
+          </div>
+
+          <div class="field role-field">
+            <label>区分2</label>
+            <select>
+              <option>ヘルパー</option>
+              <option>運転手</option>
+            </select>
+          </div>
+
+          <div class="field staff-field">
+            <label>担当3</label>
+            <select>
+              <option value="">未設定</option>
+              <option>塩田 美穂</option>
+              <option>井滝 友宏</option>
+              <option>井滝 一江</option>
+            </select>
+          </div>
+
+          <div class="field role-field">
+            <label>区分3</label>
+            <select>
+              <option value="">未設定</option>
+              <option>ヘルパー</option>
+              <option>運転手</option>
+            </select>
+          </div>
+
+          <div class="field staff-field">
+            <label>担当4</label>
+            <select>
+              <option value="">未設定</option>
+              <option>塩田 美穂</option>
+              <option>井滝 友宏</option>
+              <option>井滝 一江</option>
+            </select>
+          </div>
+
+          <div class="field role-field">
+            <label>区分4</label>
+            <select>
+              <option value="">未設定</option>
+              <option>ヘルパー</option>
+              <option>運転手</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 支援内容 -->
+      <div class="section">
+        <div class="section-heading">
+          支援内容
+        </div>
+
+        <div class="form-grid support-grid">
+
+          <div class="field support-main">
+            <label>支援内容</label>
+            <textarea>買い物同行、帰宅後の整理</textarea>
+          </div>
+
+          <div class="field place-field">
+            <label>行き先場所</label>
+            <input value="○○スーパー">
+          </div>
+
+          <div class="field place-field">
+            <label>待合せ場所</label>
+            <input value="利用者宅">
+          </div>
+
+          <div class="field move-field">
+            <label>移動手段</label>
+            <input value="徒歩">
+          </div>
+
+          <div class="field memo-field">
+            <label>特記事項</label>
+            <textarea></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 保存ボタン -->
+      <div class="action-area">
+        <button type="button" class="secondary-button">
+          変更を取り消す
+        </button>
+
+        <button type="button" class="save-button">
+          この内容で保存
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script>
+function toggleWeekPanel() {
+  const panel = document.getElementById("weekPanel");
+  panel.classList.toggle("hidden");
 }
 
-body {
-  margin: 0;
-  background: #f5f7f6;
-  color: #1f2924;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 16px;
-}
-
-/* =================================
-   上部ヘッダー
-================================= */
-
-.page-header {
-  height: 73px;
-  background: #ffffff;
-  border-bottom: 1px solid #d9e3dd;
-  padding: 12px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-}
-
-.page-header p {
-  margin: 4px 0 0;
-  color: #5f6f67;
-  font-size: 15px;
-}
-
-.new-button {
-  border: none;
-  border-radius: 10px;
-  padding: 12px 20px;
-  background: #4f8f72;
-  color: white;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* =================================
-   画面全体
-================================= */
-
-.main-layout {
-  display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 18px;
-  padding: 18px;
-  max-width: 1500px;
-  height: calc(100vh - 73px);
-  margin: 0 auto;
-  overflow: hidden;
-}
-
-/* =================================
-   左右共通パネル
-================================= */
-
-.panel {
-  min-height: 0;
-  background: white;
-  border: 1px solid #dce7e1;
-  border-radius: 14px;
-  box-shadow: 0 5px 18px rgba(30, 50, 40, 0.05);
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-title {
-  padding: 14px 18px;
-  border-bottom: 1px solid #edf1ee;
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.sub-title {
-  color: #4f8f72;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-/* =================================
-   左側：検索・一覧
-================================= */
-
-.search-area {
-  padding: 10px;
-  border-bottom: 1px solid #edf1ee;
-}
-
-.search-grid {
-  display: grid;
-  grid-template-columns: 1fr 100px;
-  gap: 8px;
-}
-
-.shift-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 7px;
-}
-
-.shift-item {
-  padding: 6px 9px;
-  margin-bottom: 4px;
-  border: 1px solid #e1e9e4;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.shift-item:hover {
-  background: #f3f8f5;
-}
-
-.shift-item.selected {
-  border-color: #67a787;
-  background: #eef7f2;
-}
-
-.shift-line1,
-.shift-line2 {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  white-space: nowrap;
-}
-
-.shift-line1 {
-  font-size: 14px;
-  line-height: 1.25;
-}
-
-.shift-line2 {
-  margin-top: 2px;
-  color: #5f6f67;
-  font-size: 13px;
-  line-height: 1.2;
-}
-
-.shift-name {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-/* =================================
-   入力欄共通
-================================= */
-
-input,
-select,
-textarea {
-  width: 100%;
-  border: 1px solid #aebdb5;
-  border-radius: 8px;
-  padding: 7px 7px;
-  background: white;
-  color: #1f2924;
-  font-size: 15px;
-}
-
-textarea {
-  min-height: 58px;
-  resize: vertical;
-}
-
-.field {
-  min-width: 0;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 4px;
-  color: #35453d;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.id-box {
-  background: #f4f6f5;
-  font-size: 13px;
-  padding: 7px 4px;
-  text-align: center;
-}
-
-/* =================================
-   右側：編集部分
-================================= */
-
-.edit-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 18px 18px;
-}
-
-.section {
-  margin-bottom: 18px;
-}
-
-.section-heading {
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #e4eee8;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-/* =================================
-   基本情報レイアウト
-================================= */
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(24, minmax(0, 1fr));
-  gap: 8px 8px;
-  align-items: end;
-}
-
-.id-field {
-  grid-column: span 2;
-}
-
-.user-field {
-  grid-column: span 5;
-}
-
-.date-field {
-  grid-column: span 4;
-}
-
-.weekday-field {
-  grid-column: span 2;
-}
-
-.time-field {
-  grid-column: span 3;
-}
-
-.people-field {
-  grid-column: span 2;
-}
-
-.service-field {
-  grid-column: span 5;
-}
-
-.week-field {
-  grid-column: span 4;
-}
-
-.change-field {
-  grid-column: span 2;
-}
-
-.staff-field,
-.wide-staff {
-  grid-column: span 6;
-}
-
-/* =================================
-   週パターン
-================================= */
-
-.week-row {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 4px;
-}
-
-.week-button {
-  height: 36px;
-  border: 1px solid #aebdb5;
-  border-radius: 8px;
-  background: #f5faf7;
-  color: #42765e;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.week-pattern-box {
-  text-align: center;
-  padding: 7px 4px;
-}
-
-.week-panel {
-  grid-column: span 24;
-  background: #f5faf7;
-  border: 1px solid #d9e7df;
-  border-radius: 10px;
-  padding: 8px 10px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.week-panel label {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.week-panel input {
-  width: auto;
-}
-
-.hidden {
-  display: none;
-}
-
-/* =================================
-   支援内容レイアウト
-================================= */
-
-.support-main {
-  grid-column: span 12;
-}
-
-.place-field {
-  grid-column: span 4;
-}
-
-.move-field {
-  grid-column: span 4;
-}
-
-.memo-field {
-  grid-column: span 12;
-}
-
-/* =================================
-   保存ボタン
-================================= */
-
-.action-area {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid #e5ebe7;
-}
-
-.secondary-button {
-  border: 1px solid #cbd6d0;
-  border-radius: 9px;
-  padding: 10px 18px;
-  background: white;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.save-button {
-  border: none;
-  border-radius: 9px;
-  padding: 10px 24px;
-  background: #4f8f72;
-  color: white;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* =================================
-   タブレット
-================================= */
-
-@media (max-width: 1000px) {
-  .main-layout {
-    grid-template-columns: 300px minmax(0, 1fr);
+function updateWeekPattern() {
+  const checks = Array.from(
+    document.querySelectorAll("#weekPanel input:checked")
+  ).map(cb => cb.value);
+
+  let text = "";
+
+  if (checks.includes("毎")) {
+    text = "";
+  } else {
+    text = checks.join("");
   }
 
-  .page-header h1 {
-    font-size: 23px;
-  }
-
-  .staff-field,
-  .wide-staff {
-    grid-column: span 6;
-  }
+  document.getElementById("weekPatternText").value = text;
 }
+</script>
+
+</body>
+</html>
