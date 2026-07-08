@@ -299,17 +299,17 @@ textarea {
 
 .support-main {
   grid-row: 1;
-  grid-column: 1 / span 10;
+  grid-column: 1 / span 8;
 }
 
 .place-field {
   grid-row: 1;
-  grid-column: span 5;
+  grid-column: span 6;
 }
 
 .move-field {
   grid-row: 1;
-  grid-column: span 4;
+  grid-column: span 3;
 }
 
 .memo-field {
