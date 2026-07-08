@@ -211,7 +211,7 @@ textarea {
 /* 2段目 */
 .weekday-field {
   grid-row: 2;
-  grid-column: 1 / span 2;
+  grid-column: span 3;
 }
 
 .time-field {
@@ -221,7 +221,7 @@ textarea {
 
 .people-field {
   grid-row: 2;
-  grid-column: span 2;
+  grid-column: span 3;
 }
 
 .service-field {
