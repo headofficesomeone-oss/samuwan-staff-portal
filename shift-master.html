@@ -15,19 +15,13 @@
     <p>毎週の基本となる支援予定を管理します</p>
   </div>
 
-  <button type="button" class="new-button">
-    ＋ 新しい規定値
-  </button>
+  <button type="button" class="new-button">＋ 新しい規定値</button>
 </header>
 
 <main class="main-layout">
 
-  <!-- 左側：規定値一覧 -->
   <section class="panel list-panel">
-
-    <div class="panel-title">
-      規定値一覧
-    </div>
+    <div class="panel-title">規定値一覧</div>
 
     <div class="search-area">
       <div class="search-grid">
@@ -91,7 +85,6 @@
     </div>
   </section>
 
-  <!-- 右側：規定値内容 -->
   <section class="panel edit-panel">
 
     <div class="panel-title title-row">
@@ -101,7 +94,6 @@
 
     <div class="edit-area">
 
-      <!-- 基本情報 -->
       <div class="section">
         <div class="form-grid basic-grid">
 
@@ -201,20 +193,12 @@
             <label><input type="checkbox" value="隔B" onchange="updateWeekPattern()"> 隔B</label>
           </div>
 
-          <div class="field staff-field">
+          <div class="field staff-field staff-row-start">
             <label>担当1</label>
             <select>
               <option>塩田 美穂</option>
               <option>井滝 友宏</option>
               <option>井滝 一江</option>
-            </select>
-          </div>
-
-          <div class="field role-field">
-            <label>区分1</label>
-            <select>
-              <option>ヘルパー</option>
-              <option>運転手</option>
             </select>
           </div>
 
@@ -228,14 +212,6 @@
             </select>
           </div>
 
-          <div class="field role-field">
-            <label>区分2</label>
-            <select>
-              <option>ヘルパー</option>
-              <option>運転手</option>
-            </select>
-          </div>
-
           <div class="field staff-field">
             <label>担当3</label>
             <select>
@@ -243,15 +219,6 @@
               <option>塩田 美穂</option>
               <option>井滝 友宏</option>
               <option>井滝 一江</option>
-            </select>
-          </div>
-
-          <div class="field role-field">
-            <label>区分3</label>
-            <select>
-              <option value="">未設定</option>
-              <option>ヘルパー</option>
-              <option>運転手</option>
             </select>
           </div>
 
@@ -265,23 +232,11 @@
             </select>
           </div>
 
-          <div class="field role-field">
-            <label>区分4</label>
-            <select>
-              <option value="">未設定</option>
-              <option>ヘルパー</option>
-              <option>運転手</option>
-            </select>
-          </div>
-
         </div>
       </div>
 
-      <!-- 支援内容 -->
       <div class="section">
-        <div class="section-heading">
-          支援内容
-        </div>
+        <div class="section-heading">支援内容</div>
 
         <div class="form-grid support-grid">
 
@@ -313,15 +268,9 @@
         </div>
       </div>
 
-      <!-- 保存ボタン -->
       <div class="action-area">
-        <button type="button" class="secondary-button">
-          変更を取り消す
-        </button>
-
-        <button type="button" class="save-button">
-          この内容で保存
-        </button>
+        <button type="button" class="secondary-button">変更を取り消す</button>
+        <button type="button" class="save-button">この内容で保存</button>
       </div>
 
     </div>
