@@ -1,10 +1,14 @@
+もちろんです。
+まず **`shift-master.html` 完全版** です。次にCSS、最後にJSを出します。
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>シフト規定値 登録・編集</title>
-  <link rel="stylesheet" href="shift-master.css">
+  <link rel="stylesheet" href="shift-master-style.css">
 </head>
 
 <body>
@@ -15,7 +19,10 @@
     <p>毎週の基本となる支援予定を管理します</p>
   </div>
 
-  <button type="button" class="new-button">＋ 新しい規定値</button>
+  <div class="header-buttons">
+    <button type="button" class="copy-button">コピーして新規作成</button>
+    <button type="button" class="new-button">＋ 新しい規定値</button>
+  </div>
 </header>
 
 <main class="main-layout">
@@ -25,64 +32,24 @@
 
     <div class="search-area">
       <div class="search-grid">
-        <select>
-          <option>すべての利用者</option>
-          <option>山田 太郎</option>
-          <option>鈴木 花子</option>
+        <select id="filterUser">
+          <option value="">すべての利用者</option>
         </select>
 
-        <select>
-          <option>全曜日</option>
-          <option>月</option>
-          <option>火</option>
-          <option>水</option>
-          <option>木</option>
-          <option>金</option>
-          <option>土</option>
-          <option>日</option>
+        <select id="filterWeekday">
+          <option value="">すべての曜日</option>
+          <option value="月">月</option>
+          <option value="火">火</option>
+          <option value="水">水</option>
+          <option value="木">木</option>
+          <option value="金">金</option>
+          <option value="土">土</option>
+          <option value="日">日</option>
         </select>
       </div>
     </div>
 
-    <div class="shift-list">
-
-      <div class="shift-item selected">
-        <div class="shift-line1">
-          <span>月曜日</span>
-          <span>10:00～12:00</span>
-          <span class="shift-name">山田 考太郎</span>
-        </div>
-        <div class="shift-line2">
-          <span>居宅介護</span>
-          <span>2人介助</span>
-        </div>
-      </div>
-
-      <div class="shift-item">
-        <div class="shift-line1">
-          <span>木曜日</span>
-          <span>14:00～16:00</span>
-          <span class="shift-name">山田 太郎</span>
-        </div>
-        <div class="shift-line2">
-          <span>通院等介助</span>
-          <span>1人</span>
-        </div>
-      </div>
-
-      <div class="shift-item">
-        <div class="shift-line1">
-          <span>金曜日</span>
-          <span>09:00～10:30</span>
-          <span class="shift-name">鈴木 花子</span>
-        </div>
-        <div class="shift-line2">
-          <span>訪問介護</span>
-          <span>1人</span>
-        </div>
-      </div>
-
-    </div>
+    <div class="shift-list"></div>
   </section>
 
   <section class="panel edit-panel">
@@ -98,71 +65,74 @@
         <div class="form-grid basic-grid">
 
           <div class="field id-field">
-            <label>予定ID</label>
-            <input class="id-box" value="S000001" readonly>
+            <label>規定値ID</label>
+            <input id="masterId" class="id-box" readonly>
           </div>
 
           <div class="field id-field">
             <label>履歴ID</label>
-            <input class="id-box" value="H000001" readonly>
+            <input id="historyId" class="id-box" readonly>
           </div>
 
           <div class="field user-field">
-            <label>利用者</label>
-            <select>
-              <option>山田 太郎</option>
-              <option>鈴木 花子</option>
+            <label>利用者※</label>
+            <select id="userSelect">
+              <option value="">選択してください</option>
             </select>
           </div>
 
           <div class="field date-field">
             <label>適用開始日</label>
-            <input type="date" value="2026-07-01">
+            <input id="startDate" type="date">
           </div>
 
           <div class="field date-field">
             <label>適用終了日</label>
-            <input type="date">
+            <input id="endDate" type="date">
           </div>
 
           <div class="field weekday-field">
-            <label>曜日</label>
-            <select>
-              <option>月</option>
-              <option>火</option>
-              <option>水</option>
-              <option>木</option>
-              <option>金</option>
-              <option>土</option>
-              <option>日</option>
+            <label>曜日※</label>
+            <select id="weekdaySelect">
+              <option value="">選択</option>
+              <option value="月">月</option>
+              <option value="火">火</option>
+              <option value="水">水</option>
+              <option value="木">木</option>
+              <option value="金">金</option>
+              <option value="土">土</option>
+              <option value="日">日</option>
             </select>
           </div>
 
           <div class="field time-field">
-            <label>開始</label>
-            <input type="time" value="10:00">
+            <label>開始※</label>
+            <input id="startTime" type="time">
           </div>
 
           <div class="field time-field">
-            <label>終了</label>
-            <input type="time" value="12:00">
+            <label>終了※</label>
+            <input id="endTime" type="time">
           </div>
 
           <div class="field people-field">
             <label>人数</label>
-            <select>
-              <option>1人</option>
-              <option selected>2人</option>
+            <select id="peopleSelect">
+              <option value="1人">1人</option>
+              <option value="2人">2人</option>
+              <option value="3人">3人</option>
+              <option value="4人">4人</option>
             </select>
           </div>
 
           <div class="field service-field">
-            <label>サービス区分</label>
-            <select>
-              <option>居宅介護</option>
-              <option>重度訪問</option>
-              <option>同行援護</option>
-              <option>訪問介護</option>
+            <label>サービス※</label>
+            <select id="serviceSelect">
+              <option value="">選択してください</option>
+              <option value="居宅介護">居宅介護</option>
+              <option value="重度訪問">重度訪問</option>
+              <option value="同行援護">同行援護</option>
+              <option value="訪問介護">訪問介護</option>
             </select>
           </div>
 
@@ -170,15 +140,15 @@
             <label>週P</label>
             <div class="week-row">
               <button type="button" class="week-button" onclick="toggleWeekPanel()">設定</button>
-              <input id="weekPatternText" class="week-pattern-box" value="" readonly>
+              <input id="weekPatternText" class="week-pattern-box" readonly>
             </div>
           </div>
 
           <div class="field change-field">
             <label>交代</label>
-            <select>
-              <option>通常</option>
-              <option>交代</option>
+            <select id="changeType">
+              <option value="通常">通常</option>
+              <option value="交代">交代</option>
             </select>
           </div>
 
@@ -194,42 +164,23 @@
           </div>
 
           <div class="field staff-field staff-row-start">
-            <label>担当1</label>
-            <select>
-              <option>塩田 美穂</option>
-              <option>井滝 友宏</option>
-              <option>井滝 一江</option>
-            </select>
+            <label>主担当</label>
+            <input id="staff1">
           </div>
 
           <div class="field staff-field">
-            <label>担当2</label>
-            <select>
-              <option value="">未設定</option>
-              <option selected>井滝 友宏</option>
-              <option>塩田 美穂</option>
-              <option>井滝 一江</option>
-            </select>
+            <label>副担当</label>
+            <input id="staff2">
           </div>
 
           <div class="field staff-field">
             <label>担当3</label>
-            <select>
-              <option value="">未設定</option>
-              <option>塩田 美穂</option>
-              <option>井滝 友宏</option>
-              <option>井滝 一江</option>
-            </select>
+            <input id="staff3">
           </div>
 
           <div class="field staff-field">
             <label>担当4</label>
-            <select>
-              <option value="">未設定</option>
-              <option>塩田 美穂</option>
-              <option>井滝 友宏</option>
-              <option>井滝 一江</option>
-            </select>
+            <input id="staff4">
           </div>
 
         </div>
@@ -242,27 +193,27 @@
 
           <div class="field support-main">
             <label>支援内容</label>
-            <textarea>買い物同行、帰宅後の整理</textarea>
+            <textarea id="support"></textarea>
           </div>
 
           <div class="field place-field">
-            <label>行き先場所</label>
-            <input value="○○スーパー">
+            <label>行き先</label>
+            <input id="destination">
           </div>
 
           <div class="field place-field">
-            <label>待合せ場所</label>
-            <input value="利用者宅">
+            <label>待合せ</label>
+            <input id="meeting">
           </div>
 
           <div class="field move-field">
             <label>移動手段</label>
-            <input value="徒歩">
+            <input id="transport">
           </div>
 
           <div class="field memo-field">
-            <label>特記事項</label>
-            <textarea></textarea>
+            <label>備考</label>
+            <textarea id="note"></textarea>
           </div>
 
         </div>
@@ -282,3 +233,4 @@
 
 </body>
 </html>
+```

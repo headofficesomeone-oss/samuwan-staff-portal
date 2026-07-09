@@ -1,10 +1,9 @@
 const GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbzGVnN7yHSfhO4jGmhED-HfTyZZCMEHNmaOr6ltDq9l-voFd8T-5rq_CWXUnpYxVYDkxA/exec";
-  
-const shiftData = [];
 
-let selectedIndex = 0;
-let editMode = "update";
+let shiftData = [];
+let selectedIndex = -1;
+let editMode = "new";
 
 function qs(selector) {
   return document.querySelector(selector);
@@ -14,49 +13,40 @@ function qsa(selector) {
   return Array.from(document.querySelectorAll(selector));
 }
 
-function setValue(labelText, value) {
-  const fields = qsa(".field");
-  const field = fields.find(f => {
-    const label = f.querySelector("label");
-    return label && label.textContent.trim() === labelText;
-  });
-
-  if (!field) return;
-
-  const input = field.querySelector("input, select, textarea");
-  if (input) input.value = value || "";
+function setInput(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value || "";
 }
 
-function getValue(labelText) {
-  const fields = qsa(".field");
-  const field = fields.find(f => {
-    const label = f.querySelector("label");
-    return label && label.textContent.trim() === labelText;
-  });
-
-  if (!field) return "";
-
-  const input = field.querySelector("input, select, textarea");
-  return input ? input.value : "";
+function getInput(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : "";
 }
 
 function renderList() {
   const list = qs(".shift-list");
+  const filterUser = getInput("filterUser");
+  const filterWeekday = getInput("filterWeekday");
+
   list.innerHTML = "";
 
   shiftData.forEach((item, index) => {
+    if (filterUser && item.user !== filterUser) return;
+    if (filterWeekday && item.weekday !== filterWeekday) return;
+
     const div = document.createElement("div");
-    div.className = "shift-item" + (index === selectedIndex ? " selected" : "");
+    div.className =
+      "shift-item" + (index === selectedIndex ? " selected" : "");
 
     div.innerHTML = `
       <div class="shift-line1">
-        <span>${item.weekday}曜日</span>
-        <span>${item.startTime}～${item.endTime}</span>
-        <span class="shift-name">${item.user}</span>
+        <span>${item.weekday || ""}曜日</span>
+        <span>${item.startTime || ""}～${item.endTime || ""}</span>
+        <span class="shift-name">${item.user || ""}</span>
       </div>
       <div class="shift-line2">
-        <span>${item.service}</span>
-        <span>${item.people}</span>
+        <span>${item.service || ""}</span>
+        <span>${item.people || ""}</span>
       </div>
     `;
 
@@ -71,126 +61,215 @@ function renderList() {
   });
 }
 
-function loadToForm(item) {
-  setValue("予定ID", item.id);
-  setValue("履歴ID", item.historyId);
-  setValue("利用者", item.user);
-  setValue("適用開始日", item.startDate);
-  setValue("適用終了日", item.endDate);
-  setValue("曜日", item.weekday);
-  setValue("開始", item.startTime);
-  setValue("終了", item.endTime);
-  setValue("人数", item.people);
-  setValue("サービス区分", item.service);
-  setValue("交代", item.changeType);
-  setValue("担当1", item.staff1);
-  setValue("担当2", item.staff2);
-  setValue("担当3", item.staff3);
-  setValue("担当4", item.staff4);
-  setValue("支援内容", item.support);
-  setValue("行き先場所", item.destination);
-  setValue("待合せ場所", item.meeting);
-  setValue("移動手段", item.transport);
-  setValue("特記事項", item.note);
+function updateFilterOptions() {
+  const filterUser = qs("#filterUser");
+  const currentValue = filterUser.value;
 
-  qs("#weekPatternText").value = item.weekPattern || "";
+  const users = [...new Set(
+    shiftData
+      .map(item => item.user)
+      .filter(name => name)
+  )].sort();
+
+  filterUser.innerHTML = `<option value="">すべての利用者</option>`;
+
+  users.forEach(user => {
+    const option = document.createElement("option");
+    option.value = user;
+    option.textContent = user;
+    filterUser.appendChild(option);
+  });
+
+  filterUser.value = currentValue;
+}
+
+function updateUserSelectOptions() {
+  const userSelect = qs("#userSelect");
+  const currentValue = userSelect.value;
+
+  const users = [...new Set(
+    shiftData
+      .map(item => item.user)
+      .filter(name => name)
+  )].sort();
+
+  userSelect.innerHTML = `<option value="">選択してください</option>`;
+
+  users.forEach(user => {
+    const option = document.createElement("option");
+    option.value = user;
+    option.textContent = user;
+    userSelect.appendChild(option);
+  });
+
+  userSelect.value = currentValue;
+}
+
+function loadToForm(item) {
+  setInput("masterId", item.id);
+  setInput("historyId", item.historyId);
+  setInput("userSelect", item.user);
+  setInput("startDate", formatDateForInput(item.startDate));
+  setInput("endDate", formatDateForInput(item.endDate));
+  setInput("weekdaySelect", item.weekday);
+  setInput("startTime", formatTimeForInput(item.startTime));
+  setInput("endTime", formatTimeForInput(item.endTime));
+  setInput("peopleSelect", item.people || "1人");
+  setInput("serviceSelect", item.service);
+  setInput("weekPatternText", item.weekPattern || "");
+  setInput("changeType", item.changeType || "通常");
+  setInput("staff1", item.staff1);
+  setInput("staff2", item.staff2);
+  setInput("staff3", item.staff3);
+  setInput("staff4", item.staff4);
+  setInput("support", item.support);
+  setInput("destination", item.destination);
+  setInput("meeting", item.meeting);
+  setInput("transport", item.transport);
+  setInput("note", item.note);
 
   qsa("#weekPanel input").forEach(cb => {
     cb.checked = false;
-    if (item.weekPattern === "" && cb.value === "毎") cb.checked = true;
-    if (item.weekPattern && item.weekPattern.includes(cb.value)) cb.checked = true;
+
+    if ((item.weekPattern || "") === "" && cb.value === "毎") {
+      cb.checked = true;
+    }
+
+    if (item.weekPattern && item.weekPattern.includes(cb.value)) {
+      cb.checked = true;
+    }
   });
 }
 
 function formToData() {
   return {
-    id: getValue("予定ID") || createNewId(),
-    historyId: getValue("履歴ID") || createNewHistoryId(),
-    user: getValue("利用者"),
-    startDate: getValue("適用開始日"),
-    endDate: getValue("適用終了日"),
-    weekday: getValue("曜日"),
-    startTime: getValue("開始"),
-    endTime: getValue("終了"),
-    people: getValue("人数"),
-    service: getValue("サービス区分"),
-    weekPattern: qs("#weekPatternText").value,
-    changeType: getValue("交代"),
-    staff1: getValue("担当1"),
-    staff2: getValue("担当2"),
-    staff3: getValue("担当3"),
-    staff4: getValue("担当4"),
-    support: getValue("支援内容"),
-    destination: getValue("行き先場所"),
-    meeting: getValue("待合せ場所"),
-    transport: getValue("移動手段"),
-    note: getValue("特記事項")
+    id: getInput("masterId") || createNewId(),
+    historyId: getInput("historyId") || createNewHistoryId(),
+    startDate: getInput("startDate"),
+    endDate: getInput("endDate"),
+    weekPattern: getInput("weekPatternText"),
+    weekday: getInput("weekdaySelect"),
+    order: "",
+    user: getInput("userSelect"),
+    service: getInput("serviceSelect"),
+    startTime: getInput("startTime"),
+    endTime: getInput("endTime"),
+    people: getInput("peopleSelect"),
+    changeType: getInput("changeType"),
+    staff1: getInput("staff1"),
+    staff2: getInput("staff2"),
+    staff3: getInput("staff3"),
+    staff4: getInput("staff4"),
+    support: getInput("support"),
+    destination: getInput("destination"),
+    meeting: getInput("meeting"),
+    meetingPoint: "",
+    transport: getInput("transport"),
+    detailNote: "",
+    simpleMemo: "",
+    note: getInput("note")
   };
 }
 
 function clearForm() {
-  setValue("予定ID", createNewId());
-  setValue("履歴ID", createNewHistoryId());
-  setValue("利用者", "");
-  setValue("適用開始日", "");
-  setValue("適用終了日", "");
-  setValue("曜日", "月");
-  setValue("開始", "");
-  setValue("終了", "");
-  setValue("人数", "1人");
-  setValue("サービス区分", "居宅介護");
-  setValue("交代", "通常");
-  setValue("担当1", "");
-  setValue("担当2", "");
-  setValue("担当3", "");
-  setValue("担当4", "");
-  setValue("支援内容", "");
-  setValue("行き先場所", "");
-  setValue("待合せ場所", "");
-  setValue("移動手段", "");
-  setValue("特記事項", "");
+  setInput("masterId", createNewId());
+  setInput("historyId", createNewHistoryId());
+  setInput("userSelect", "");
+  setInput("startDate", "");
+  setInput("endDate", "");
+  setInput("weekdaySelect", "");
+  setInput("startTime", "");
+  setInput("endTime", "");
+  setInput("peopleSelect", "1人");
+  setInput("serviceSelect", "");
+  setInput("weekPatternText", "");
+  setInput("changeType", "通常");
+  setInput("staff1", "");
+  setInput("staff2", "");
+  setInput("staff3", "");
+  setInput("staff4", "");
+  setInput("support", "");
+  setInput("destination", "");
+  setInput("meeting", "");
+  setInput("transport", "");
+  setInput("note", "");
 
-  qs("#weekPatternText").value = "";
   qsa("#weekPanel input").forEach(cb => cb.checked = false);
 }
 
+function validateData(data) {
+  if (!data.user) return "利用者を選択してください";
+  if (!data.weekday) return "曜日を選択してください";
+  if (!data.startTime) return "開始時刻を入力してください";
+  if (!data.endTime) return "終了時刻を入力してください";
+  if (!data.service) return "サービスを選択してください";
+  return "";
+}
+
 function createNewId() {
-  return "S" + String(shiftData.length + 1).padStart(6, "0");
+  return "SK" + String(shiftData.length + 1).padStart(6, "0");
 }
 
 function createNewHistoryId() {
-  return "H" + String(shiftData.length + 1).padStart(6, "0");
+  return "SKH" + String(Date.now()).slice(-10);
 }
 
 function saveCurrent() {
   const data = formToData();
 
+  const errorMessage = validateData(data);
+  if (errorMessage) {
+    alert(errorMessage);
+    return;
+  }
+
   if (editMode === "new") {
     shiftData.push(data);
     selectedIndex = shiftData.length - 1;
     editMode = "update";
-  } else {
+  } else if (selectedIndex >= 0) {
     shiftData[selectedIndex] = data;
   }
 
+  updateFilterOptions();
+  updateUserSelectOptions();
   renderList();
+
   alert("保存しました");
 }
 
 function cancelEdit() {
   if (editMode === "new") {
-    if (shiftData.length > 0) {
-      selectedIndex = 0;
-      editMode = "update";
-      loadToForm(shiftData[0]);
-      renderList();
-    } else {
-      clearForm();
-    }
+    selectedIndex = -1;
+    clearForm();
+    renderList();
     return;
   }
 
-  loadToForm(shiftData[selectedIndex]);
+  if (selectedIndex >= 0) {
+    loadToForm(shiftData[selectedIndex]);
+  }
+}
+
+function copyToNew() {
+  if (selectedIndex < 0) {
+    alert("コピー元を一覧から選択してください");
+    return;
+  }
+
+  const source = shiftData[selectedIndex];
+
+  const copied = {
+    ...source,
+    id: createNewId(),
+    historyId: createNewHistoryId()
+  };
+
+  editMode = "new";
+  selectedIndex = -1;
+
+  loadToForm(copied);
+  renderList();
 }
 
 function toggleWeekPanel() {
@@ -209,7 +288,70 @@ function updateWeekPattern() {
     text = checks.join("");
   }
 
-  qs("#weekPatternText").value = text;
+  setInput("weekPatternText", text);
+}
+
+async function loadShiftDataFromGas() {
+  try {
+    const response = await fetch(GAS_API_URL + "?action=list");
+    const result = await response.json();
+
+    if (!result.success) {
+      alert(result.message || "データの読み込みに失敗しました");
+      return;
+    }
+
+    shiftData = result.data || [];
+
+  } catch (error) {
+    alert("GASからデータを読み込めませんでした");
+    console.error(error);
+  }
+}
+
+function formatDateForInput(value) {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(value)) {
+      const parts = value.split("/");
+      return [
+        parts[0],
+        parts[1].padStart(2, "0"),
+        parts[2].padStart(2, "0")
+      ].join("-");
+    }
+  }
+
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "";
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function formatTimeForInput(value) {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    if (/^\d{1,2}:\d{2}$/.test(value)) {
+      const parts = value.split(":");
+      return parts[0].padStart(2, "0") + ":" + parts[1];
+    }
+  }
+
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "";
+
+  return (
+    String(date.getHours()).padStart(2, "0") +
+    ":" +
+    String(date.getMinutes()).padStart(2, "0")
+  );
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -229,32 +371,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadShiftDataFromGas();
 
+  updateFilterOptions();
+  updateUserSelectOptions();
   renderList();
 
   if (shiftData.length > 0) {
     selectedIndex = 0;
+    editMode = "update";
     loadToForm(shiftData[0]);
+    renderList();
   } else {
     selectedIndex = -1;
     editMode = "new";
     clearForm();
   }
 });
-
-async function loadShiftDataFromGas() {
-  try {
-    const response = await fetch(GAS_API_URL + "?action=list");
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "データの読み込みに失敗しました");
-      return;
-    }
-
-    shiftData = result.data || [];
-
-  } catch (error) {
-    alert("GASからデータを読み込めませんでした");
-    console.error(error);
-  }
-}
