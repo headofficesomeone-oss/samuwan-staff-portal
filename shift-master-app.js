@@ -1,5 +1,5 @@
 const GAS_API_URL =
-  "https://script.google.com/macros/s/AKfycbzGVnN7yHSfhO4jGmhED-HfTyZZCMEHNmaOr6ltDq9l-voFd8T-5rq_CWXUnpYxVYDkxA/exec";
+  "https://script.google.com/macros/s/AKfycbzXe0a2PrSplqPlgWx6BfqN3bZrNZVhVYyvjksehAsHr7glW6p93SKKv3TQKJPFBGqp/exec";
 
 let shiftData = [];
 let selectedIndex = -1;
@@ -311,20 +311,28 @@ async function loadShiftDataFromGas() {
   }
 }
 
-function formatDateForInput(value) {
-  if (!value) return "";
+function formatTimeForInput(value) {
+  if (value === "" || value === null || value === undefined) return "";
+
+  if (typeof value === "number") {
+    const text = String(value).padStart(4, "0");
+    return text.slice(0, 2) + ":" + text.slice(2, 4);
+  }
 
   if (typeof value === "string") {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-    if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(value)) {
-      const parts = value.split("/");
-      return [
-        parts[0],
-        parts[1].padStart(2, "0"),
-        parts[2].padStart(2, "0")
-      ].join("-");
+    if (/^\d{1,2}:\d{2}$/.test(value)) {
+      const parts = value.split(":");
+      return parts[0].padStart(2, "0") + ":" + parts[1];
+    }
+
+    if (/^\d{1,4}$/.test(value)) {
+      const text = value.padStart(4, "0");
+      return text.slice(0, 2) + ":" + text.slice(2, 4);
     }
   }
+
+  return "";
+}
 
   const date = new Date(value);
   if (isNaN(date.getTime())) return "";
