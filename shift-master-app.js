@@ -5,6 +5,11 @@ let shiftData = [];
 let selectedIndex = -1;
 let editMode = "new";
 
+let masterData = {
+  staff: [],
+  choices: {}
+};
+
 function qs(selector) {
   return document.querySelector(selector);
 }
@@ -139,6 +144,9 @@ function loadToForm(item) {
       cb.checked = true;
     }
   });
+
+	document.getElementById("userSelect").disabled = editMode === "update";
+
 }
 
 function formToData() {
@@ -195,6 +203,8 @@ function clearForm() {
   setInput("note", "");
 
   qsa("#weekPanel input").forEach(cb => cb.checked = false);
+
+	document.getElementById("userSelect").disabled = false;
 }
 
 function validateData(data) {
@@ -407,6 +417,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   qs("#filterUser").addEventListener("change", renderList);
   qs("#filterWeekday").addEventListener("change", renderList);
 
+	await loadMasterDataFromGas();
+	applyMasterOptions();
+
   await loadShiftDataFromGas();
 
   updateFilterOptions();
@@ -424,3 +437,70 @@ document.addEventListener("DOMContentLoaded", async () => {
     clearForm();
   }
 });
+
+function setSelectOptions(id, list, firstText = "選択してください") {
+  const select = document.getElementById(id);
+  if (!select) return;
+
+  const currentValue = select.value;
+  select.innerHTML = "";
+
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = firstText;
+  select.appendChild(empty);
+
+  list.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+
+  select.value = currentValue;
+}
+
+function applyMasterOptions() {
+  setSelectOptions("staff1", masterData.staff);
+  setSelectOptions("staff2", masterData.staff);
+  setSelectOptions("staff3", masterData.staff);
+  setSelectOptions("staff4", masterData.staff);
+
+  setSelectOptions("serviceSelect", masterData.choices["サービス"] || []);
+  setSelectOptions("transport", masterData.choices["移動手段"] || [], "選択");
+}
+
+function loadMasterDataFromGas() {
+  return new Promise((resolve) => {
+    const callbackName = "masterCallback_" + Date.now();
+    const script = document.createElement("script");
+
+    window[callbackName] = function(result) {
+      if (result.success) {
+        masterData.staff = result.staff || [];
+        masterData.choices = result.choices || {};
+      } else {
+        alert(result.message || "マスタ情報の読み込みに失敗しました");
+      }
+
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve();
+    };
+
+    script.src =
+      GAS_API_URL +
+      "?action=masters&callback=" +
+      encodeURIComponent(callbackName);
+
+    script.onerror = function() {
+      alert("マスタ情報を読み込めませんでした");
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve();
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
