@@ -399,6 +399,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   qs(".save-button").addEventListener("click", saveCurrent);
   qs(".secondary-button").addEventListener("click", cancelEdit);
 
+  qs("#weekButton").addEventListener("click", toggleWeekPanel);
+
   qs("#filterUser").addEventListener("change", renderList);
   qs("#filterWeekday").addEventListener("change", renderList);
 
