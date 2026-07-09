@@ -291,24 +291,44 @@ function updateWeekPattern() {
   setInput("weekPatternText", text);
 }
 
-async function loadShiftDataFromGas() {
-  try {
-    const response = await fetch(GAS_API_URL + "?action=list");
-    const result = await response.json();
+function loadShiftDataFromGas() {
+  return new Promise((resolve) => {
+    const callbackName = "shiftKCallback_" + Date.now();
 
-    if (!result.success) {
-      alert(result.message || "データの読み込みに失敗しました");
+    window[callbackName] = function(result) {
+      try {
+        if (!result.success) {
+          alert(result.message || "データの読み込みに失敗しました");
+          shiftData = [];
+          resolve();
+          return;
+        }
+
+        shiftData = result.data || [];
+        resolve();
+
+      } finally {
+        delete window[callbackName];
+        script.remove();
+      }
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      GAS_API_URL +
+      "?action=list&callback=" +
+      encodeURIComponent(callbackName);
+
+    script.onerror = function() {
+      alert("GASからデータを読み込めませんでした。空の一覧で開始します。");
       shiftData = [];
-      return;
-    }
+      delete window[callbackName];
+      script.remove();
+      resolve();
+    };
 
-    shiftData = result.data || [];
-
-  } catch (error) {
-    alert("GASからデータを読み込めませんでした。空の一覧で開始します。");
-    console.error(error);
-    shiftData = [];
-  }
+    document.body.appendChild(script);
+  });
 }
 
 function formatTimeForInput(value) {
