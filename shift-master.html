@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>シフト規定値 登録・編集</title>
-  <link rel="stylesheet" href="shift-master.css">
+  <link rel="stylesheet" href="shift-master-style.css">
 </head>
 
 <body>
@@ -278,28 +278,7 @@
 
 </main>
 
-<script>
-function toggleWeekPanel() {
-  const panel = document.getElementById("weekPanel");
-  panel.classList.toggle("hidden");
-}
-
-function updateWeekPattern() {
-  const checks = Array.from(
-    document.querySelectorAll("#weekPanel input:checked")
-  ).map(cb => cb.value);
-
-  let text = "";
-
-  if (checks.includes("")) {
-    text = "未設定";
-  } else {
-    text = checks.join("");
-  }
-
-  document.getElementById("weekPatternText").value = text;
-}
-</script>
+<script src="shift-master-app.js"></script>
 
 </body>
 </html>
