@@ -298,14 +298,16 @@ async function loadShiftDataFromGas() {
 
     if (!result.success) {
       alert(result.message || "データの読み込みに失敗しました");
+      shiftData = [];
       return;
     }
 
     shiftData = result.data || [];
 
   } catch (error) {
-    alert("GASからデータを読み込めませんでした");
+    alert("GASからデータを読み込めませんでした。空の一覧で開始します。");
     console.error(error);
+    shiftData = [];
   }
 }
 
