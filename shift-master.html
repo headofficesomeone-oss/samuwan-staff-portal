@@ -15,7 +15,16 @@
     <p>毎週の基本となる支援予定を管理します</p>
   </div>
 
-  <button type="button" class="new-button">＋ 新しい規定値</button>
+  <div class="header-buttons">
+    <button type="button" class="copy-button">
+      コピーして新規作成
+    </button>
+
+    <button type="button" class="new-button">
+      ＋ 新しい規定値
+    </button>
+  </div>
+
 </header>
 
 <main class="main-layout">
@@ -25,22 +34,24 @@
 
     <div class="search-area">
       <div class="search-grid">
-        <select>
-          <option>すべての利用者</option>
-          <option>山田 太郎</option>
-          <option>鈴木 花子</option>
+
+        <select id="filterUser">
+          <option value="">すべての利用者</option>
+          <option value="山田 太郎">山田 太郎</option>
+          <option value="鈴木 花子">鈴木 花子</option>
         </select>
 
-        <select>
-          <option>全曜日</option>
-          <option>月</option>
-          <option>火</option>
-          <option>水</option>
-          <option>木</option>
-          <option>金</option>
-          <option>土</option>
-          <option>日</option>
+        <select id="filterWeekday">
+          <option value="">すべての曜日</option>
+          <option value="月">月</option>
+          <option value="火">火</option>
+          <option value="水">水</option>
+          <option value="木">木</option>
+          <option value="金">金</option>
+          <option value="土">土</option>
+          <option value="日">日</option>
         </select>
+
       </div>
     </div>
 
@@ -98,7 +109,7 @@
         <div class="form-grid basic-grid">
 
           <div class="field id-field">
-            <label>予定ID</label>
+            <label>規定値ID</label>
             <input class="id-box" value="S000001" readonly>
           </div>
 
@@ -159,6 +170,7 @@
           <div class="field service-field">
             <label>サービス区分</label>
             <select>
+              <option>未選択</option>
               <option>居宅介護</option>
               <option>重度訪問</option>
               <option>同行援護</option>

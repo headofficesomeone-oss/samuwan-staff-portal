@@ -1,5 +1,7 @@
-<script>
-const shiftData = [
+const GAS_API_URL =
+  "https://script.google.com/macros/s/AKfycbzGVnN7yHSfhO4jGmhED-HfTyZZCMEHNmaOr6ltDq9l-voFd8T-5rq_CWXUnpYxVYDkxA/exec";
+  
+const shiftData2 = [
   {
     id: "S000001",
     historyId: "H000001",
@@ -25,6 +27,9 @@ const shiftData = [
   }
 ];
 
+
+const shiftData = [];
+
 let selectedIndex = 0;
 let editMode = "update";
 
@@ -37,7 +42,7 @@ function qsa(selector) {
 }
 
 function setValue(labelText, value) {
-  const fields = qsa(".field");
+  const fields = qsa(".edit-panel .field");
   const field = fields.find(f => {
     const label = f.querySelector("label");
     return label && label.textContent.trim() === labelText;
@@ -50,7 +55,7 @@ function setValue(labelText, value) {
 }
 
 function getValue(labelText) {
-  const fields = qsa(".field");
+  const fields = qsa(".edit-panel .field");
   const field = fields.find(f => {
     const label = f.querySelector("label");
     return label && label.textContent.trim() === labelText;
@@ -64,11 +69,26 @@ function getValue(labelText) {
 
 function renderList() {
   const list = qs(".shift-list");
+  const filterUser = qs("#filterUser").value;
+  const filterWeekday = qs("#filterWeekday").value;
+
   list.innerHTML = "";
 
   shiftData.forEach((item, index) => {
+
+    if (filterUser && item.user !== filterUser) {
+      return;
+    }
+
+    if (filterWeekday && item.weekday !== filterWeekday) {
+      return;
+    }
+
     const div = document.createElement("div");
-    div.className = "shift-item" + (index === selectedIndex ? " selected" : "");
+
+    div.className =
+      "shift-item" +
+      (index === selectedIndex ? " selected" : "");
 
     div.innerHTML = `
       <div class="shift-line1">
@@ -76,6 +96,7 @@ function renderList() {
         <span>${item.startTime}～${item.endTime}</span>
         <span class="shift-name">${item.user}</span>
       </div>
+
       <div class="shift-line2">
         <span>${item.service}</span>
         <span>${item.people}</span>
@@ -94,7 +115,7 @@ function renderList() {
 }
 
 function loadToForm(item) {
-  setValue("予定ID", item.id);
+  setValue("規定値ID", item.id);
   setValue("履歴ID", item.historyId);
   setValue("利用者", item.user);
   setValue("適用開始日", item.startDate);
@@ -126,7 +147,7 @@ function loadToForm(item) {
 
 function formToData() {
   return {
-    id: getValue("予定ID") || createNewId(),
+    id: getValue("規定値ID") || createNewId(),
     historyId: getValue("履歴ID") || createNewHistoryId(),
     user: getValue("利用者"),
     startDate: getValue("適用開始日"),
@@ -151,7 +172,7 @@ function formToData() {
 }
 
 function clearForm() {
-  setValue("予定ID", createNewId());
+  setValue("規定値ID", createNewId());
   setValue("履歴ID", createNewHistoryId());
   setValue("利用者", "");
   setValue("適用開始日", "");
@@ -187,6 +208,21 @@ function createNewHistoryId() {
 function saveCurrent() {
   const data = formToData();
 
+  function validateData(data) {
+    if (!data.user) return "利用者を選択してください";
+    if (!data.weekday) return "曜日を選択してください";
+    if (!data.startTime) return "開始時刻を入力してください";
+    if (!data.endTime) return "終了時刻を入力してください";
+    if (!data.service) return "サービス区分を選択してください";
+    return "";
+  }
+
+  const errorMessage = validateData(data);
+  if (errorMessage) {
+    alert(errorMessage);
+    return;
+  }
+
   if (editMode === "new") {
     shiftData.push(data);
     selectedIndex = shiftData.length - 1;
@@ -201,18 +237,16 @@ function saveCurrent() {
 
 function cancelEdit() {
   if (editMode === "new") {
-    if (shiftData.length > 0) {
-      selectedIndex = 0;
-      editMode = "update";
-      loadToForm(shiftData[0]);
-      renderList();
-    } else {
-      clearForm();
-    }
+    selectedIndex = -1;
+    editMode = "new";
+    clearForm();
+    renderList();
     return;
   }
 
-  loadToForm(shiftData[selectedIndex]);
+  if (selectedIndex >= 0) {
+    loadToForm(shiftData[selectedIndex]);
+  }
 }
 
 function toggleWeekPanel() {
@@ -234,7 +268,7 @@ function updateWeekPattern() {
   qs("#weekPatternText").value = text;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   qs(".new-button").addEventListener("click", () => {
     editMode = "new";
     selectedIndex = -1;
@@ -242,10 +276,63 @@ document.addEventListener("DOMContentLoaded", () => {
     renderList();
   });
 
+  qs(".copy-button").addEventListener("click", copyToNew);
   qs(".save-button").addEventListener("click", saveCurrent);
   qs(".secondary-button").addEventListener("click", cancelEdit);
 
+  qs("#filterUser").addEventListener("change", renderList);
+  qs("#filterWeekday").addEventListener("change", renderList);
+
+  await loadShiftDataFromGas();
+
   renderList();
-  loadToForm(shiftData[0]);
+
+  if (shiftData.length > 0) {
+    selectedIndex = 0;
+    loadToForm(shiftData[0]);
+  } else {
+    selectedIndex = -1;
+    editMode = "new";
+    clearForm();
+  }
 });
-</script>
+
+function copyToNew() {
+  if (selectedIndex < 0) {
+    alert("コピー元を一覧から選択してください");
+    return;
+  }
+
+  const source = shiftData[selectedIndex];
+
+  const copied = {
+    ...source,
+    id: createNewId(),
+    historyId: createNewHistoryId()
+  };
+
+  editMode = "new";
+  selectedIndex = -1;
+
+  loadToForm(copied);
+  renderList();
+}
+
+async function loadShiftDataFromGas() {
+  try {
+    const response = await fetch(GAS_API_URL + "?action=list");
+    const result = await response.json();
+
+    if (!result.success) {
+      alert(result.message || "データの読み込みに失敗しました");
+      return;
+    }
+
+    shiftData = result.data || [];
+
+  } catch (error) {
+    alert("GASからデータを読み込めませんでした");
+    console.error(error);
+  }
+}
+

@@ -90,7 +90,7 @@ body {
 
 .search-grid {
   display: grid;
-  grid-template-columns: 1fr 100px;
+  grid-template-columns: 1fr 120px;
   gap: 8px;
 }
 
@@ -353,3 +353,20 @@ textarea {
     font-size: 23px;
   }
 }
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.copy-button {
+  border: 1px solid #4f8f72;
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: white;
+  color: #4f8f72;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
