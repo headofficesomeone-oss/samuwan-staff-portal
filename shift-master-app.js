@@ -294,26 +294,25 @@ function updateWeekPattern() {
 function loadShiftDataFromGas() {
   return new Promise((resolve) => {
     const callbackName = "shiftKCallback_" + Date.now();
+    const script = document.createElement("script");
 
     window[callbackName] = function(result) {
-      try {
-        if (!result.success) {
-          alert(result.message || "データの読み込みに失敗しました");
-          shiftData = [];
-          resolve();
-          return;
-        }
-
+      if (!result.success) {
+        alert(result.message || "データの読み込みに失敗しました");
+        shiftData = [];
+      } else {
         shiftData = result.data || [];
-        resolve();
-
-      } finally {
-        delete window[callbackName];
-        script.remove();
       }
+
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      resolve();
     };
 
-    const script = document.createElement("script");
     script.src =
       GAS_API_URL +
       "?action=list&callback=" +
@@ -323,7 +322,11 @@ function loadShiftDataFromGas() {
       alert("GASからデータを読み込めませんでした。空の一覧で開始します。");
       shiftData = [];
       delete window[callbackName];
-      script.remove();
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
       resolve();
     };
 
