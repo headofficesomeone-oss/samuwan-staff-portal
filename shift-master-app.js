@@ -224,28 +224,65 @@ function createNewHistoryId() {
   return "SKH" + String(Date.now()).slice(-10);
 }
 
-function saveCurrent() {
+async function saveCurrent() {
   const data = formToData();
 
   const errorMessage = validateData(data);
+
   if (errorMessage) {
     alert(errorMessage);
     return;
   }
 
-  if (editMode === "new") {
-    shiftData.push(data);
-    selectedIndex = shiftData.length - 1;
-    editMode = "update";
-  } else if (selectedIndex >= 0) {
-    shiftData[selectedIndex] = data;
+  const saveButton = qs(".save-button");
+
+  saveButton.disabled = true;
+  saveButton.textContent = "保存中...";
+
+  try {
+    const result =
+      await saveShiftDataToGas(data);
+
+    alert(result.message || "保存しました");
+
+    /*
+     * 保存後はシートから再読み込みする。
+     * 画面内配列を直接更新せず、
+     * スプレッドシートを正として扱う。
+     */
+    await loadShiftDataFromGas();
+
+    updateFilterOptions();
+    updateUserSelectOptions();
+
+    const savedIndex =
+      shiftData.findIndex(item => {
+        return (
+          item.id === result.id &&
+          item.historyId === result.historyId
+        );
+      });
+
+    if (savedIndex >= 0) {
+      selectedIndex = savedIndex;
+      editMode = "update";
+      loadToForm(shiftData[savedIndex]);
+    } else {
+      selectedIndex = -1;
+      editMode = "new";
+      clearForm();
+    }
+
+    renderList();
+
+  } catch (error) {
+    console.error(error);
+    alert(error.message);
+
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = "この内容で保存";
   }
-
-  updateFilterOptions();
-  updateUserSelectOptions();
-  renderList();
-
-  alert("保存しました");
 }
 
 function cancelEdit() {
@@ -275,7 +312,7 @@ function copyToNew() {
     historyId: createNewHistoryId()
   };
 
-  editMode = "new";
+  editMode = "copy";
   selectedIndex = -1;
 
   loadToForm(copied);
@@ -498,6 +535,77 @@ function loadMasterDataFromGas() {
       delete window[callbackName];
       if (script.parentNode) script.parentNode.removeChild(script);
       resolve();
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
+function saveShiftDataToGas(data) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      "saveShiftKCallback_" + Date.now();
+
+    const script =
+      document.createElement("script");
+
+    window[callbackName] = function(result) {
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      if (!result.success) {
+        reject(
+          new Error(
+            result.message || "保存に失敗しました"
+          )
+        );
+        return;
+      }
+
+      resolve(result);
+    };
+
+    const sourceItem =
+      selectedIndex >= 0
+        ? shiftData[selectedIndex]
+        : null;
+
+    const requestData = {
+      mode: editMode,
+      sourceRow:
+        sourceItem && sourceItem.sourceRow
+          ? sourceItem.sourceRow
+          : 0,
+      data: data
+    };
+
+    script.src =
+      GAS_API_URL +
+      "?action=save" +
+      "&payload=" +
+      encodeURIComponent(
+        JSON.stringify(requestData)
+      ) +
+      "&callback=" +
+      encodeURIComponent(callbackName) +
+      "&_=" +
+      Date.now();
+
+    script.onerror = function() {
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      reject(
+        new Error(
+          "GASへ保存データを送信できませんでした"
+        )
+      );
     };
 
     document.body.appendChild(script);
