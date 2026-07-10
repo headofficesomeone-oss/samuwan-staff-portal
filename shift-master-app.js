@@ -46,7 +46,13 @@ function renderList() {
     div.innerHTML = `
       <div class="shift-line1">
         <span>${item.weekday || ""}曜日</span>
-        <span>${item.startTime || ""}～${item.endTime || ""}</span>
+        
+				<span>
+				  ${formatTimeForList(item.startTime)}
+				  ～
+				  ${formatTimeForList(item.endTime)}
+				</span>
+        
         <span class="shift-name">${item.user || ""}</span>
       </div>
       <div class="shift-line2">
@@ -64,6 +70,46 @@ function renderList() {
 
     list.appendChild(div);
   });
+}
+
+function formatTimeForList(value) {
+  if (value === "" || value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "number") {
+    const text = String(value).padStart(4, "0");
+    return text.slice(0, 2) + ":" + text.slice(2, 4);
+  }
+
+  const text = String(value).trim();
+
+  if (text === "") {
+    return "";
+  }
+
+  if (/^\d{1,2}:\d{2}$/.test(text)) {
+    const parts = text.split(":");
+    return parts[0].padStart(2, "0") + ":" + parts[1].padStart(2, "0");
+  }
+
+  if (/^\d{1,4}$/.test(text)) {
+    const padded = text.padStart(4, "0");
+    return padded.slice(0, 2) + ":" + padded.slice(2, 4);
+  }
+
+  return text;
+}
+
+function formatTimeRange(startTime, endTime) {
+  const start = formatTimeForList(startTime);
+  const end = formatTimeForList(endTime);
+
+  if (start === "" && end === "") {
+    return "";
+  }
+
+  return start + " ～ " + end;
 }
 
 function updateFilterOptions() {
@@ -610,5 +656,55 @@ function saveShiftDataToGas(data) {
 
     document.body.appendChild(script);
   });
+}
+
+function formatTimeForList(value) {
+  if (value === "" || value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "number") {
+    const text = String(value).padStart(4, "0");
+    return text.slice(0, 2) + ":" + text.slice(2, 4);
+  }
+
+  const text = String(value).trim();
+
+  if (text === "") {
+    return "";
+  }
+
+  if (/^\d{1,2}:\d{2}$/.test(text)) {
+    const parts = text.split(":");
+
+    return (
+      parts[0].padStart(2, "0") +
+      ":" +
+      parts[1].padStart(2, "0")
+    );
+  }
+
+  if (/^\d{1,4}$/.test(text)) {
+    const padded = text.padStart(4, "0");
+
+    return (
+      padded.slice(0, 2) +
+      ":" +
+      padded.slice(2, 4)
+    );
+  }
+
+  return text;
+}
+
+function formatTimeRange(startTime, endTime) {
+  const start = formatTimeForList(startTime);
+  const end = formatTimeForList(endTime);
+
+  if (start === "" && end === "") {
+    return "";
+  }
+
+  return start + " ～ " + end;
 }
 
