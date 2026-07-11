@@ -104,10 +104,20 @@ body {
   border-bottom: 1px solid #edf1ee;
 }
 
-.search-grid {
-  display: grid;
-  grid-template-columns: 1fr 100px;
-  gap: 8px;
+@media (max-width: 1000px) {
+  .search-grid {
+    grid-template-columns:
+      minmax(100px, 1fr)
+      68px
+      105px;
+    gap: 5px;
+  }
+
+  .search-grid select {
+    padding-left: 5px;
+    padding-right: 5px;
+    font-size: 14px;
+  }
 }
 
 .shift-list {

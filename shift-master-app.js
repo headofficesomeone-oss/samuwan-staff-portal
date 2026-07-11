@@ -28,45 +28,187 @@ function getInput(id) {
   return el ? el.value : "";
 }
 
+const WEEKDAY_ORDER = {
+  "月": 1,
+  "火": 2,
+  "水": 3,
+  "木": 4,
+  "金": 5,
+  "土": 6,
+  "日": 7
+};
+
+function compareText(a, b) {
+  return String(a || "").localeCompare(
+    String(b || ""),
+    "ja",
+    {
+      numeric: true,
+      sensitivity: "base"
+    }
+  );
+}
+
+function getTimeSortValue(value) {
+  if (
+    value === "" ||
+    value === null ||
+    value === undefined
+  ) {
+    // 空欄は時刻が入っているデータより後ろ
+    return 24 * 60 + 1;
+  }
+
+  if (typeof value === "number") {
+    const text = String(Math.trunc(value)).padStart(4, "0");
+    const hour = Number(text.slice(0, 2));
+    const minute = Number(text.slice(2, 4));
+
+    return hour * 60 + minute;
+  }
+
+  const text = String(value).trim();
+
+  if (/^\d{1,2}:\d{2}$/.test(text)) {
+    const [hour, minute] = text.split(":").map(Number);
+    return hour * 60 + minute;
+  }
+
+  if (/^\d{1,4}$/.test(text)) {
+    const padded = text.padStart(4, "0");
+    const hour = Number(padded.slice(0, 2));
+    const minute = Number(padded.slice(2, 4));
+
+    return hour * 60 + minute;
+  }
+
+  return 24 * 60 + 1;
+}
+
+function compareWeekday(a, b) {
+  return (
+    (WEEKDAY_ORDER[a.weekday] || 99) -
+    (WEEKDAY_ORDER[b.weekday] || 99)
+  );
+}
+
+function compareShiftItems(a, b, sortMode) {
+  let result = compareWeekday(a, b);
+  if (result !== 0) return result;
+
+  if (sortMode === "staff") {
+    // 曜日 → 主担当 → 開始
+    result = compareText(a.staff1, b.staff1);
+    if (result !== 0) return result;
+
+    result =
+      getTimeSortValue(a.startTime) -
+      getTimeSortValue(b.startTime);
+
+    if (result !== 0) return result;
+
+  } else if (sortMode === "user") {
+    // 曜日 → 利用者 → 開始
+    result = compareText(a.user, b.user);
+    if (result !== 0) return result;
+
+    result =
+      getTimeSortValue(a.startTime) -
+      getTimeSortValue(b.startTime);
+
+    if (result !== 0) return result;
+
+  } else {
+    // シフト順：曜日 → 開始 → 主担当
+    result =
+      getTimeSortValue(a.startTime) -
+      getTimeSortValue(b.startTime);
+
+    if (result !== 0) return result;
+
+    result = compareText(a.staff1, b.staff1);
+    if (result !== 0) return result;
+  }
+
+  // 同順位の場合の安定した並び
+  result = compareText(a.user, b.user);
+  if (result !== 0) return result;
+
+  return compareText(a.id, b.id);
+}
+
 function renderList() {
   const list = qs(".shift-list");
   const filterUser = getInput("filterUser");
   const filterWeekday = getInput("filterWeekday");
+  const sortMode = getInput("sortMode") || "shift";
 
   list.innerHTML = "";
 
-  shiftData.forEach((item, index) => {
-    if (filterUser && item.user !== filterUser) return;
-    if (filterWeekday && item.weekday !== filterWeekday) return;
+  const displayItems = shiftData
+    .map((item, originalIndex) => ({
+      item,
+      originalIndex
+    }))
+    .filter(({ item }) => {
+      if (
+        filterUser &&
+        item.user !== filterUser
+      ) {
+        return false;
+      }
 
+      if (
+        filterWeekday &&
+        item.weekday !== filterWeekday
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      return compareShiftItems(
+        a.item,
+        b.item,
+        sortMode
+      );
+    });
+
+  displayItems.forEach(({ item, originalIndex }) => {
     const div = document.createElement("div");
+
     div.className =
-      "shift-item" + (index === selectedIndex ? " selected" : "");
+      "shift-item" +
+      (
+        originalIndex === selectedIndex
+          ? " selected"
+          : ""
+      );
 
     div.innerHTML = `
       <div class="shift-line1">
         <span>${item.weekday || ""}曜日</span>
-        
-				<span>
-				  ${formatTimeForList(item.startTime)}
-				  ～
-				  ${formatTimeForList(item.endTime)}
-				</span>
-        
+        <span>${formatTimeRange(
+          item.startTime,
+          item.endTime
+        )}</span>
         <span class="shift-name">${item.user || ""}</span>
       </div>
+
       <div class="shift-line2">
         <span>${item.service || ""}</span>
+        <span>${item.staff1 || ""}</span>
         <span>${item.people || ""}</span>
       </div>
     `;
 
     div.addEventListener("click", () => {
-    
-    	closeWeekPanel();
-    
-      selectedIndex = index;
+      closeWeekPanel();
+
+      selectedIndex = originalIndex;
       editMode = "update";
+
       loadToForm(item);
       renderList();
     });
@@ -558,6 +700,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   qs("#filterUser").addEventListener("change", renderList);
   qs("#filterWeekday").addEventListener("change", renderList);
+	qs("#sortMode").addEventListener("change", renderList);
 
 	await loadMasterDataFromGas();
 	applyMasterOptions();

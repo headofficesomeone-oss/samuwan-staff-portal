@@ -27,22 +27,32 @@
     <div class="panel-title">規定値一覧</div>
 
     <div class="search-area">
-      <div class="search-grid">
-        <select id="filterUser">
-          <option value="">すべての利用者</option>
-        </select>
+    
+			<div class="search-grid">
 
-        <select id="filterWeekday">
-          <option value="">すべての曜日</option>
-          <option value="月">月</option>
-          <option value="火">火</option>
-          <option value="水">水</option>
-          <option value="木">木</option>
-          <option value="金">金</option>
-          <option value="土">土</option>
-          <option value="日">日</option>
-        </select>
-      </div>
+			  <select id="filterUser">
+			    <option value="">すべての利用者</option>
+			  </select>
+
+			  <select id="filterWeekday">
+			    <option value="">全曜日</option>
+			    <option value="月">月</option>
+			    <option value="火">火</option>
+			    <option value="水">水</option>
+			    <option value="木">木</option>
+			    <option value="金">金</option>
+			    <option value="土">土</option>
+			    <option value="日">日</option>
+			  </select>
+
+			  <select id="sortMode">
+			    <option value="shift">シフト順</option>
+			    <option value="staff">ヘルパー順</option>
+			    <option value="user">利用者順</option>
+			  </select>
+
+			</div>
+
     </div>
 
     <div class="shift-list"></div>
