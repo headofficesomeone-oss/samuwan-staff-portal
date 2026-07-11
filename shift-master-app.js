@@ -150,30 +150,31 @@ function renderList() {
       item,
       originalIndex
     }))
-    .filter(({ item }) => {
-      if (
-        filterUser &&
-        item.user !== filterUser
-      ) {
-        return false;
-      }
 
-      if (
-        filterWeekday &&
-        item.weekday !== filterWeekday
-      ) {
-        return false;
-      }
+  .filter(({ item }) => {
+    if (
+      filterUser &&
+      item.user !== filterUser
+    ) {
+      return false;
+    }
 
-      return true;
-    })
-    .sort((a, b) => {
-      return compareShiftItems(
-        a.item,
-        b.item,
-        sortMode
-      );
-    });
+    if (
+      filterWeekday &&
+      item.weekday !== filterWeekday
+    ) {
+      return false;
+    }
+
+    return true;
+  })
+  .sort((a, b) => {
+    return compareShiftItems(
+      a.item,
+      b.item,
+      sortMode
+    );
+  });
 
   displayItems.forEach(({ item, originalIndex }) => {
     const div = document.createElement("div");
@@ -704,6 +705,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   qs("#filterWeekday").addEventListener("change", renderList);
 	qs("#sortMode").addEventListener("change", renderList);
 
+	qs("#activeFilter").addEventListener(
+	  "change",
+	  () => {
+	    selectedIndex = -1;
+	    editMode = "new";
+	    clearForm();
+	    updateDisableButtonState();
+	    renderList();
+	  }
+	);
+
 	await loadMasterDataFromGas();
 	applyMasterOptions();
 
@@ -988,15 +1000,26 @@ function disableShiftDataToGas(item) {
 async function disableCurrent() {
   closeWeekPanel();
 
-  if (editMode !== "update" || selectedIndex < 0) {
-    alert("無効にする規定値を一覧から選択してください");
+  if (
+    editMode !== "update" ||
+    selectedIndex < 0
+  ) {
+    alert("規定値を一覧から選択してください");
     return;
   }
 
   const item = shiftData[selectedIndex];
+  const isRestore = item.status === "無効";
+
+  const actionText =
+    isRestore
+      ? "有効に戻しますか？"
+      : "無効にしますか？";
 
   const message =
-    "この規定値を無効にしますか？\n\n" +
+    "この規定値を" +
+    actionText +
+    "\n\n" +
     (item.user || "") +
     "　" +
     (item.weekday || "") +
@@ -1016,10 +1039,11 @@ async function disableCurrent() {
   button.textContent = "処理中...";
 
   try {
-    const result =
-      await disableShiftDataToGas(item);
+    const result = isRestore
+      ? await restoreShiftDataToGas(item)
+      : await disableShiftDataToGas(item);
 
-    alert(result.message || "無効にしました");
+    alert(result.message);
 
     await loadShiftDataFromGas();
 
@@ -1029,16 +1053,14 @@ async function disableCurrent() {
     selectedIndex = -1;
     editMode = "new";
 
-		clearForm();
-		updateDisableButtonState();
-		renderList();
+    clearForm();
+    renderList();
 
   } catch (error) {
     console.error(error);
     alert(error.message);
 
   } finally {
-    button.textContent = "無効にする";
     updateDisableButtonState();
   }
 }
@@ -1048,8 +1070,86 @@ function updateDisableButtonState() {
 
   if (!button) return;
 
-  button.disabled =
+  if (
     editMode !== "update" ||
-    selectedIndex < 0;
+    selectedIndex < 0
+  ) {
+    button.disabled = true;
+    button.textContent = "無効にする";
+    return;
+  }
+
+  const item = shiftData[selectedIndex];
+
+  button.disabled = false;
+
+  if (item.status === "無効") {
+    button.textContent = "有効に戻す";
+  } else {
+    button.textContent = "無効にする";
+  }
 }
+
+function restoreShiftDataToGas(item) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      "restoreShiftKCallback_" + Date.now();
+
+    const script = document.createElement("script");
+
+    window[callbackName] = function(result) {
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      if (!result.success) {
+        reject(
+          new Error(
+            result.message || "復活に失敗しました"
+          )
+        );
+        return;
+      }
+
+      resolve(result);
+    };
+
+    const requestData = {
+      sourceRow: item.sourceRow || 0,
+      id: item.id || "",
+      historyId: item.historyId || ""
+    };
+
+    script.src =
+      GAS_API_URL +
+      "?action=restore" +
+      "&payload=" +
+      encodeURIComponent(
+        JSON.stringify(requestData)
+      ) +
+      "&callback=" +
+      encodeURIComponent(callbackName) +
+      "&_=" +
+      Date.now();
+
+    script.onerror = function() {
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      reject(
+        new Error(
+          "GASへ復活処理を送信できませんでした"
+        )
+      );
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
 

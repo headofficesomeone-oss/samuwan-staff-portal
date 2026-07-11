@@ -106,34 +106,36 @@ body {
 
 .search-grid {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
   flex-wrap: nowrap;
 }
 
 .search-grid select {
   min-width: 0;
-  padding-left: 5px;
-  padding-right: 5px;
-  font-size: 14px;
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 13px;
 }
 
-/* 利用者：残り幅を使用 */
 #filterUser {
   flex: 1 1 auto;
   width: auto;
 }
 
-/* 曜日 */
 #filterWeekday {
-  flex: 0 0 65px;
-  width: 65px;
+  flex: 0 0 58px;
+  width: 58px;
 }
 
-/* 並び順 */
 #sortMode {
-  flex: 0 0 95px;
-  width: 95px;
+  flex: 0 0 88px;
+  width: 88px;
+}
+
+#activeFilter {
+  flex: 0 0 82px;
+  width: 82px;
 }
 
 .shift-list {
