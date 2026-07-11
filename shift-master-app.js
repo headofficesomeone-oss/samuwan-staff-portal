@@ -325,33 +325,23 @@ function loadToForm(item) {
   setInput("transport", item.transport);
   setInput("note", item.note);
 
-  qsa("#weekPanel input").forEach(cb => {
-    cb.checked = false;
+	const weekPattern = String(
+	  item.weekPattern ?? ""
+	);
 
-		const weekPattern = String(
-		  item.weekPattern === null ||
-		  item.weekPattern === undefined
-		    ? ""
-		    : item.weekPattern
-		);
+	setInput("weekPatternText", weekPattern);
 
-		setInput("weekPatternText", weekPattern);
+	qsa("#weekPanel input[type='checkbox']").forEach(cb => {
+	  cb.checked = false;
 
-		qsa("#weekPanel input[type='checkbox']").forEach(cb => {
-		  cb.checked = false;
+	  if (weekPattern === "") return;
 
-		  if (weekPattern === "") {
-		    return;
-		  }
-
-		  if (cb.dataset.weekGroup === "number") {
-		    cb.checked = weekPattern.includes(cb.value);
-		  } else {
-		    cb.checked = weekPattern === cb.value;
-		  }
-		});
-
-  });
+	  if (cb.dataset.weekGroup === "number") {
+	    cb.checked = weekPattern.includes(cb.value);
+	  } else {
+	    cb.checked = weekPattern === cb.value;
+	  }
+	});
 
 	document.getElementById("userSelect").disabled = editMode === "update";
 
@@ -702,6 +692,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   qs(".copy-button").addEventListener("click", copyToNew);
   qs(".save-button").addEventListener("click", saveCurrent);
   qs(".secondary-button").addEventListener("click", cancelEdit);
+
+	qs(".disable-button").addEventListener(
+	  "click",
+	  disableCurrent
+	);
 
   qs("#weekButton").addEventListener("click", toggleWeekPanel);
 
