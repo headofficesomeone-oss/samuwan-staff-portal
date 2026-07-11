@@ -148,16 +148,99 @@
             </select>
           </div>
 
-          <div id="weekPanel" class="week-panel hidden">
-            <label><input type="checkbox" value="毎" onchange="updateWeekPattern()"> 毎週</label>
-            <label><input type="checkbox" value="1" onchange="updateWeekPattern()"> 第1</label>
-            <label><input type="checkbox" value="2" onchange="updateWeekPattern()"> 第2</label>
-            <label><input type="checkbox" value="3" onchange="updateWeekPattern()"> 第3</label>
-            <label><input type="checkbox" value="4" onchange="updateWeekPattern()"> 第4</label>
-            <label><input type="checkbox" value="5" onchange="updateWeekPattern()"> 第5</label>
-            <label><input type="checkbox" value="隔A" onchange="updateWeekPattern()"> 隔A</label>
-            <label><input type="checkbox" value="隔B" onchange="updateWeekPattern()"> 隔B</label>
-          </div>
+					<div id="weekPanel" class="week-panel hidden">
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="毎週"
+					      data-week-group="every"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    毎週
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="第1"
+					      data-week-group="number"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    第1
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="第2"
+					      data-week-group="number"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    第2
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="第3"
+					      data-week-group="number"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    第3
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="第4"
+					      data-week-group="number"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    第4
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="第5"
+					      data-week-group="number"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    第5
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="隔A"
+					      data-week-group="alternate"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    隔A
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="隔B"
+					      data-week-group="alternate"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    隔B
+					  </label>
+
+					  <label>
+					    <input
+					      type="checkbox"
+					      value="停止中"
+					      data-week-group="stopped"
+					      onchange="updateWeekPattern(this)"
+					    >
+					    停止中
+					  </label>
+
+					</div>
 
 					<div class="field staff-field staff-row-start">
 					  <label>主担当</label>

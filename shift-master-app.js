@@ -182,13 +182,29 @@ function loadToForm(item) {
   qsa("#weekPanel input").forEach(cb => {
     cb.checked = false;
 
-    if ((item.weekPattern || "") === "" && cb.value === "毎") {
-      cb.checked = true;
-    }
+		const weekPattern = String(
+		  item.weekPattern === null ||
+		  item.weekPattern === undefined
+		    ? ""
+		    : item.weekPattern
+		);
 
-    if (item.weekPattern && item.weekPattern.includes(cb.value)) {
-      cb.checked = true;
-    }
+		setInput("weekPatternText", weekPattern);
+
+		qsa("#weekPanel input[type='checkbox']").forEach(cb => {
+		  cb.checked = false;
+
+		  if (weekPattern === "") {
+		    return;
+		  }
+
+		  if (cb.dataset.weekGroup === "number") {
+		    cb.checked = weekPattern.includes(cb.value);
+		  } else {
+		    cb.checked = weekPattern === cb.value;
+		  }
+		});
+
   });
 
 	document.getElementById("userSelect").disabled = editMode === "update";
@@ -370,18 +386,47 @@ function toggleWeekPanel() {
   panel.classList.toggle("hidden");
 }
 
-function updateWeekPattern() {
-  const checks = qsa("#weekPanel input:checked").map(cb => cb.value);
+function updateWeekPattern(changedCheckbox) {
+  const allChecks = qsa("#weekPanel input[type='checkbox']");
 
-  let text = "";
+  if (changedCheckbox.checked) {
+    const selectedGroup = changedCheckbox.dataset.weekGroup;
 
-  if (checks.includes("毎")) {
-    text = "";
-  } else {
-    text = checks.join("");
+    allChecks.forEach(cb => {
+      if (cb === changedCheckbox) return;
+
+      const otherGroup = cb.dataset.weekGroup;
+
+      // 第1～第5だけは同じグループ内で複数選択可能
+      if (
+        selectedGroup === "number" &&
+        otherGroup === "number"
+      ) {
+        return;
+      }
+
+      // それ以外は、選択したグループ以外を解除
+      cb.checked = false;
+    });
+
+    // 隔Aと隔Bは同時選択不可
+    if (selectedGroup === "alternate") {
+      allChecks.forEach(cb => {
+        if (
+          cb !== changedCheckbox &&
+          cb.dataset.weekGroup === "alternate"
+        ) {
+          cb.checked = false;
+        }
+      });
+    }
   }
 
-  setInput("weekPatternText", text);
+  const selected = allChecks
+    .filter(cb => cb.checked)
+    .map(cb => cb.value);
+
+  setInput("weekPatternText", selected.join(""));
 }
 
 function loadShiftDataFromGas() {
