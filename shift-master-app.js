@@ -62,6 +62,9 @@ function renderList() {
     `;
 
     div.addEventListener("click", () => {
+    
+    	closeWeekPanel();
+    
       selectedIndex = index;
       editMode = "update";
       loadToForm(item);
@@ -307,6 +310,8 @@ async function saveCurrent() {
 
     alert(result.message || "保存しました");
 
+		closeWeekPanel();
+
     /*
      * 保存後はシートから再読み込みする。
      * 画面内配列を直接更新せず、
@@ -348,6 +353,9 @@ async function saveCurrent() {
 }
 
 function cancelEdit() {
+
+	closeWeekPanel();
+
   if (editMode === "new") {
     selectedIndex = -1;
     clearForm();
@@ -361,6 +369,9 @@ function cancelEdit() {
 }
 
 function copyToNew() {
+
+	closeWeekPanel();
+
   if (selectedIndex < 0) {
     alert("コピー元を一覧から選択してください");
     return;
@@ -530,6 +541,9 @@ function formatTimeForInput(value) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   qs(".new-button").addEventListener("click", () => {
+
+		closeWeekPanel();
+
     editMode = "new";
     selectedIndex = -1;
     clearForm();
@@ -753,3 +767,10 @@ function formatTimeRange(startTime, endTime) {
   return start + " ～ " + end;
 }
 
+function closeWeekPanel() {
+  const panel = document.getElementById("weekPanel");
+
+  if (!panel.classList.contains("hidden")) {
+    panel.classList.add("hidden");
+  }
+}

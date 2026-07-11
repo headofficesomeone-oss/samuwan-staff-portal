@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>給与明細（A4縦1枚版）</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d9dee5;
+      --accent: #2457a6;
+      --accent-soft: #eaf1ff;
+      --pay: #eef7f0;
+      --deduct: #fff3f3;
+      --summary: #f7f4ff;
+      --shadow: 0 10px 30px rgba(31, 41, 55, .08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    .app {
+      max-width: 794px;
+      margin: 0 auto;
+      padding: 18px 14px 36px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .topbar h1 {
+      font-size: 1.35rem;
+      margin: 0;
+      letter-spacing: .02em;
+    }
+
+    .user {
+      font-size: .88rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: .95rem;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .month-btn.active {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+      box-shadow: 0 5px 12px rgba(36, 87, 166, .2);
+    }
+
+    .utility-btn {
+      margin-left: auto;
+      border-radius: 10px;
+      padding-inline: 12px;
+    }
+
+    .slip {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid #e6e9ee;
+    }
+
+    .slip-head {
+      padding: 24px 22px 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, #fff, #f8fbff);
+    }
+
+    .company-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .company {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .pay-date {
+      text-align: right;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .title {
+      text-align: center;
+      margin: 20px 0 6px;
+      font-size: 1.55rem;
+      letter-spacing: .08em;
+    }
+
+    .employee-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+      margin-top: 14px;
+    }
+
+    .employee {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .period {
+      text-align: right;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .content {
+      padding: 18px;
+    }
+
+    .section {
+      margin-bottom: 18px;
+    }
+
+    .section:last-child { margin-bottom: 0; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 800;
+      margin: 0 0 10px;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 5px;
+      height: 20px;
+      border-radius: 3px;
+      background: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .cell {
+      min-height: 74px;
+      padding: 11px 12px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .cell .label {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
+
+    .cell .value {
+      font-size: 1.05rem;
+      font-weight: 750;
+      text-align: right;
+      min-height: 1.3em;
+    }
+
+    .cell.empty .value { color: #b8bec7; }
+
+    .section.pay .cell { background: var(--pay); }
+    .section.deduct .cell { background: var(--deduct); }
+    .section.other .cell { background: #fafafa; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .summary-item {
+      background: var(--summary);
+      border: 1px solid #e2dcfa;
+      border-radius: 12px;
+      padding: 13px;
+      min-height: 82px;
+    }
+
+    .summary-item .label {
+      color: var(--muted);
+      font-size: .82rem;
+      margin-bottom: 8px;
+    }
+
+    .summary-item .value {
+      text-align: right;
+      font-size: 1.08rem;
+      font-weight: 800;
+    }
+
+    .summary-item.net {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .summary-item.net .label { color: #dbe8ff; }
+    .summary-item.net .value { font-size: 1.28rem; }
+
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--muted);
+    }
+
+    .hidden-amount .money {
+      filter: blur(7px);
+      user-select: none;
+    }
+
+    .note {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: 12px;
+      text-align: right;
+    }
+
+    @media (max-width: 720px) {
+      .app { padding: 12px 10px 32px; }
+      .topbar h1 { font-size: 1.18rem; }
+      .user { font-size: .78rem; }
+      .utility-btn { margin-left: 0; }
+      .slip-head { padding: 18px 16px 14px; }
+      .company-row { display: block; }
+      .pay-date { text-align: left; margin-top: 8px; font-size: .9rem; }
+      .title { font-size: 1.28rem; margin-top: 16px; }
+      .employee-row { display: block; }
+      .period { text-align: left; margin-top: 7px; line-height: 1.55; }
+      .content { padding: 14px; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary-item.net { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 430px) {
+      .grid { grid-template-columns: 1fr; }
+      .cell { min-height: 66px; }
+      button { padding: 9px 13px; font-size: .88rem; }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 7mm;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-size: 9pt;
+      }
+
+      .app {
+        width: 196mm;
+        max-width: 196mm;
+        margin: 0 auto;
+        padding: 0;
+      }
+
+      .topbar, .toolbar, .note { display: none !important; }
+
+      .slip {
+        width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+        border: 1px solid #000;
+        overflow: visible;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .slip-head {
+        padding: 5mm 5mm 3.5mm;
+        background: #fff;
+      }
+
+      .company { font-size: 10.5pt; }
+      .pay-date { font-size: 9pt; }
+      .title {
+        margin: 3.5mm 0 1.5mm;
+        font-size: 14pt;
+      }
+      .employee-row { margin-top: 2mm; }
+      .employee { font-size: 9.5pt; }
+      .period { font-size: 8.5pt; }
+
+      .content { padding: 3.5mm; }
+      .section { margin-bottom: 3mm; break-inside: avoid; page-break-inside: avoid; }
+      .section-title { margin-bottom: 1.5mm; font-size: 9.5pt; }
+      .section-title::before { width: 1.2mm; height: 4mm; }
+
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        border-radius: 0;
+      }
+
+      .cell {
+        min-height: 13mm;
+        padding: 1.7mm 2mm;
+      }
+      .cell .label {
+        font-size: 7.4pt;
+        margin-bottom: 1.2mm;
+      }
+      .cell .value { font-size: 9pt; }
+
+      .summary {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 1.5mm;
+        margin-top: 2mm;
+      }
+      .summary-item {
+        min-height: 15mm;
+        padding: 2mm;
+        border-radius: 1.5mm;
+      }
+      .summary-item .label {
+        font-size: 7.2pt;
+        margin-bottom: 1.2mm;
+      }
+      .summary-item .value { font-size: 9pt; }
+      .summary-item.net .value { font-size: 10.5pt; }
+
+      .section.pay .cell,
+      .section.deduct .cell,
+      .section.other .cell,
+      .summary-item,
+      .summary-item.net {
+        color: #000 !important;
+      }
+      .summary-item.net .label { color: #fff; }
+
+      .hidden-amount .money { filter: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <h1>給与明細</h1>
+      <div class="user">ログイン中：井滝 一江 様</div>
+    </div>
+
+    <div class="toolbar" id="monthButtons"></div>
+
+    <section class="slip" id="slip"></section>
+    <div class="note">※A4縦・1枚印刷用に調整したWeb表示イメージです。印刷時は「倍率100%」または「用紙に合わせる」を選択してください。</div>
+  </main>
+
+  <script>
+    const payslips = {
+      "2026-05": {
+        monthLabel: "2026年5月",
+        company: "合同会社 さむわん",
+        role: "役員",
+        employee: "井滝 一江",
+        payDate: "2026年5月25日",
+        from: "2026年5月1日",
+        to: "2026年5月31日",
+        days: "12日",
+        attendance: [
+          ["労働時間", "47.25"],
+          ["超過勤務時間", "0.00"],
+          ["深夜勤務時間", ""],
+          ["休日労働時間", ""],
+          ["有給休暇時間", ""],
+          ["時間給", "1,875"],
+          ["支援時間", "47.25"],
+          ["夜間待機回数", ""],
+          ["欠勤時間", "0.00"]
+        ],
+        pay: [
+          ["基本給", "300,000"],
+          ["超過勤務手当", "0"],
+          ["深夜労働手当", "0"],
+          ["休日労働手当", "0"],
+          ["資格管理等手当", "0"],
+          ["支援手当", "0"],
+          ["移動手当", ""],
+          ["食事手当", ""]
+        ],
+        deduct: [
+          ["社会保険料", "14,505"],
+          ["厚生年金", "27,450"],
+          ["子育保険", "345"],
+          ["雇用保険", "0"],
+          ["欠勤控除", "0"],
+          ["源泉所得税", "6,430"],
+          ["住民税", "11,600"]
+        ],
+        other: [
+          ["立替", ""],
+          ["貸付", ""],
+          ["扶養補助", ""]
+        ],
+        summary: [
+          ["支給額", "300,000"],
+          ["控除額", "60,330"],
+          ["その他支給", "0"],
+          ["その他控除", "0"],
+          ["口座振込額", "239,670"]
+        ]
+      },
+      "2026-04": null,
+      "2026-03": null
+    };
+
+    const monthButtons = document.getElementById("monthButtons");
+    const slip = document.getElementById("slip");
+
+    function yen(value) {
+      return value === "" ? "—" : `<span class="money">${value}円</span>`;
+    }
+
+    function plain(value) {
+      return value === "" ? "—" : value;
+    }
+
+    function cell(label, value, money = false) {
+      const empty = value === "" ? " empty" : "";
+      return `
+        <div class="cell${empty}">
+          <div class="label">${label}</div>
+          <div class="value">${money ? yen(value) : plain(value)}</div>
+        </div>`;
+    }
+
+    function section(title, className, items, money = false) {
+      return `
+        <section class="section ${className}">
+          <h2 class="section-title">${title}</h2>
+          <div class="grid">
+            ${items.map(([label, value]) => cell(label, value, money)).join("")}
+          </div>
+        </section>`;
+    }
+
+    function renderSlip(key) {
+      document.querySelectorAll(".month-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.key === key);
+      });
+
+      const d = payslips[key];
+
+      if (!d) {
+        slip.innerHTML = `
+          <div class="empty-state">
+            <strong>${key.replace("-", "年")}月分</strong><br><br>
+            この月の給与明細はまだ登録されていません。
+          </div>`;
+        return;
+      }
+
+      slip.innerHTML = `
+        <header class="slip-head">
+          <div class="company-row">
+            <div>
+              <div class="company">${d.company}</div>
+              <div style="margin-top:8px;color:var(--muted);font-size:.9rem">${d.role}</div>
+            </div>
+            <div class="pay-date">${d.payDate} 支給</div>
+          </div>
+          <div class="title">${d.monthLabel}分 給与明細</div>
+          <div class="employee-row">
+            <div class="employee">${d.employee} 様</div>
+            <div class="period">自：${d.from}　至：${d.to}　${d.days}</div>
+          </div>
+        </header>
+
+        <div class="content">
+          ${section("勤怠", "attendance", d.attendance, false)}
+          ${section("支給", "pay", d.pay, true)}
+          ${section("控除", "deduct", d.deduct, true)}
+          ${section("その他", "other", d.other, true)}
+
+          <div class="summary">
+            ${d.summary.map(([label, value], i) => `
+              <div class="summary-item ${i === d.summary.length - 1 ? "net" : ""}">
+                <div class="label">${label}</div>
+                <div class="value">${yen(value)}</div>
+              </div>`).join("")}
+          </div>
+        </div>`;
+    }
+
+    Object.keys(payslips).forEach((key, index) => {
+      const btn = document.createElement("button");
+      btn.className = "month-btn";
+      btn.dataset.key = key;
+      btn.textContent = key.replace("-", "年") + "月";
+      btn.addEventListener("click", () => renderSlip(key));
+      monthButtons.appendChild(btn);
+
+      if (index === 0) {
+        const hideBtn = document.createElement("button");
+        hideBtn.className = "utility-btn";
+        hideBtn.textContent = "金額を隠す";
+        hideBtn.addEventListener("click", () => {
+          slip.classList.toggle("hidden-amount");
+          hideBtn.textContent = slip.classList.contains("hidden-amount")
+            ? "金額を表示"
+            : "金額を隠す";
+        });
+        monthButtons.appendChild(hideBtn);
+
+        const printBtn = document.createElement("button");
+        printBtn.className = "utility-btn";
+        printBtn.textContent = "印刷";
+        printBtn.addEventListener("click", () => window.print());
+        monthButtons.appendChild(printBtn);
+      }
+    });
+
+    renderSlip("2026-05");
+  </script>
+</body>
+</html>
