@@ -406,3 +406,28 @@ textarea {
     font-size: 15px;
   }
 }
+
+.disable-button {
+  margin-right: auto;
+
+  border: 1px solid #c96b6b;
+  border-radius: 9px;
+
+  padding: 10px 18px;
+
+  background: white;
+  color: #a64040;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.disable-button:disabled {
+  border-color: #d8dddd;
+  background: #f3f5f4;
+  color: #9ca6a1;
+  cursor: not-allowed;
+}
+

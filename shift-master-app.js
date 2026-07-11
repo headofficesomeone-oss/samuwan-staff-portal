@@ -209,8 +209,9 @@ function renderList() {
       selectedIndex = originalIndex;
       editMode = "update";
 
-      loadToForm(item);
-      renderList();
+			loadToForm(item);
+			updateDisableButtonState();
+			renderList();
     });
 
     list.appendChild(div);
@@ -453,6 +454,7 @@ async function saveCurrent() {
     alert(result.message || "保存しました");
 
 		closeWeekPanel();
+		updateDisableButtonState();
 
     /*
      * 保存後はシートから再読み込みする。
@@ -508,6 +510,9 @@ function cancelEdit() {
   if (selectedIndex >= 0) {
     loadToForm(shiftData[selectedIndex]);
   }
+  
+  updateDisableButtonState();
+  
 }
 
 function copyToNew() {
@@ -530,8 +535,10 @@ function copyToNew() {
   editMode = "copy";
   selectedIndex = -1;
 
-  loadToForm(copied);
-  renderList();
+	loadToForm(copied);
+	updateDisableButtonState();
+	renderList();
+
 }
 
 function toggleWeekPanel() {
@@ -721,6 +728,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     editMode = "new";
     clearForm();
   }
+
+	updateDisableButtonState();
+
 });
 
 function setSelectOptions(id, list, firstText = "選択してください") {
@@ -917,3 +927,134 @@ function closeWeekPanel() {
     panel.classList.add("hidden");
   }
 }
+
+function disableShiftDataToGas(item) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      "disableShiftKCallback_" + Date.now();
+
+    const script = document.createElement("script");
+
+    window[callbackName] = function(result) {
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      if (!result.success) {
+        reject(
+          new Error(
+            result.message || "無効化に失敗しました"
+          )
+        );
+        return;
+      }
+
+      resolve(result);
+    };
+
+    const requestData = {
+      sourceRow: item.sourceRow || 0,
+      id: item.id || "",
+      historyId: item.historyId || ""
+    };
+
+    script.src =
+      GAS_API_URL +
+      "?action=disable" +
+      "&payload=" +
+      encodeURIComponent(
+        JSON.stringify(requestData)
+      ) +
+      "&callback=" +
+      encodeURIComponent(callbackName) +
+      "&_=" +
+      Date.now();
+
+    script.onerror = function() {
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      reject(
+        new Error(
+          "GASへ無効化処理を送信できませんでした"
+        )
+      );
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
+async function disableCurrent() {
+  closeWeekPanel();
+
+  if (editMode !== "update" || selectedIndex < 0) {
+    alert("無効にする規定値を一覧から選択してください");
+    return;
+  }
+
+  const item = shiftData[selectedIndex];
+
+  const message =
+    "この規定値を無効にしますか？\n\n" +
+    (item.user || "") +
+    "　" +
+    (item.weekday || "") +
+    "曜日　" +
+    formatTimeRange(
+      item.startTime,
+      item.endTime
+    );
+
+  if (!confirm(message)) {
+    return;
+  }
+
+  const button = qs(".disable-button");
+
+  button.disabled = true;
+  button.textContent = "処理中...";
+
+  try {
+    const result =
+      await disableShiftDataToGas(item);
+
+    alert(result.message || "無効にしました");
+
+    await loadShiftDataFromGas();
+
+    updateFilterOptions();
+    updateUserSelectOptions();
+
+    selectedIndex = -1;
+    editMode = "new";
+
+		clearForm();
+		updateDisableButtonState();
+		renderList();
+
+  } catch (error) {
+    console.error(error);
+    alert(error.message);
+
+  } finally {
+    button.textContent = "無効にする";
+    updateDisableButtonState();
+  }
+}
+
+function updateDisableButtonState() {
+  const button = qs(".disable-button");
+
+  if (!button) return;
+
+  button.disabled =
+    editMode !== "update" ||
+    selectedIndex < 0;
+}
+
