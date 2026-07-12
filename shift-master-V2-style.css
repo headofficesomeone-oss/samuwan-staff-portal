@@ -32,28 +32,12 @@ body {
   font-size: 15px;
 }
 
-.header-buttons {
-  display: flex;
-  gap: 10px;
-}
-
 .new-button {
   border: none;
   border-radius: 10px;
   padding: 12px 20px;
   background: #4f8f72;
   color: white;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.copy-button {
-  border: 1px solid #4f8f72;
-  border-radius: 10px;
-  padding: 12px 18px;
-  background: white;
-  color: #4f8f72;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -105,37 +89,9 @@ body {
 }
 
 .search-grid {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.search-grid select {
-  min-width: 0;
-  padding-left: 4px;
-  padding-right: 4px;
-  font-size: 13px;
-}
-
-#filterUser {
-  flex: 1 1 auto;
-  width: auto;
-}
-
-#filterWeekday {
-  flex: 0 0 58px;
-  width: 58px;
-}
-
-#sortMode {
-  flex: 0 0 88px;
-  width: 88px;
-}
-
-#activeFilter {
-  flex: 0 0 82px;
-  width: 82px;
+  display: grid;
+  grid-template-columns: 1fr 100px;
+  gap: 8px;
 }
 
 .shift-list {
@@ -150,10 +106,6 @@ body {
   border: 1px solid #e1e9e4;
   border-radius: 8px;
   cursor: pointer;
-}
-
-.shift-item:hover {
-  background: #f3f8f5;
 }
 
 .shift-item.selected {
@@ -240,6 +192,7 @@ textarea {
   align-items: end;
 }
 
+/* 1段目 */
 .id-field {
   grid-row: 1;
   grid-column: span 2;
@@ -255,6 +208,7 @@ textarea {
   grid-column: span 4;
 }
 
+/* 2段目 */
 .weekday-field {
   grid-row: 2;
   grid-column: span 3;
@@ -285,6 +239,7 @@ textarea {
   grid-column: span 2;
 }
 
+/* 3段目：担当1〜4 */
 .staff-row-start {
   grid-row: 3;
   grid-column: 1 / span 6;
@@ -295,6 +250,7 @@ textarea {
   grid-column: span 6;
 }
 
+/* 週パターン */
 .week-row {
   display: grid;
   grid-template-columns: 52px 1fr;
@@ -328,11 +284,6 @@ textarea {
   flex-wrap: wrap;
 }
 
-.week-panel label {
-  font-size: 14px;
-  font-weight: 700;
-}
-
 .week-panel input {
   width: auto;
 }
@@ -341,6 +292,7 @@ textarea {
   display: none;
 }
 
+/* 支援内容 */
 .support-grid {
   align-items: start;
 }
@@ -364,7 +316,6 @@ textarea {
   grid-row: 2;
   grid-column: 1 / -1;
 }
-
 .action-area {
   display: flex;
   justify-content: flex-end;
@@ -401,35 +352,123 @@ textarea {
   .page-header h1 {
     font-size: 23px;
   }
+}
 
-  .copy-button,
-  .new-button {
-    padding: 10px 14px;
-    font-size: 15px;
-  }
+/* =================================
+   V2 追加スタイル
+================================= */
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.copy-button {
+  border: 1px solid #4f8f72;
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: #ffffff;
+  color: #4f8f72;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-grid {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.search-grid select {
+  min-width: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 13px;
+}
+
+#filterUser {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+#filterWeekday {
+  flex: 0 0 58px;
+  width: 58px;
+}
+
+#sortMode {
+  flex: 0 0 88px;
+  width: 88px;
+}
+
+#activeFilter {
+  flex: 0 0 82px;
+  width: 82px;
+}
+
+.shift-item.inactive {
+  border-color: #d8b9b9;
+  background: #fff7f7;
+}
+
+.shift-list-empty {
+  padding: 20px 12px;
+  color: #718078;
+  font-size: 14px;
+  text-align: center;
 }
 
 .disable-button {
   margin-right: auto;
-
   border: 1px solid #c96b6b;
   border-radius: 9px;
-
   padding: 10px 18px;
-
-  background: white;
+  background: #ffffff;
   color: #a64040;
-
   font-size: 15px;
   font-weight: 700;
-
   cursor: pointer;
 }
 
-.disable-button:disabled {
+.disable-button:disabled,
+.save-button:disabled,
+.secondary-button:disabled {
   border-color: #d8dddd;
   background: #f3f5f4;
   color: #9ca6a1;
   cursor: not-allowed;
 }
 
+@media (max-width: 1000px) {
+  .copy-button,
+  .new-button {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .search-grid {
+    gap: 4px;
+  }
+
+  .search-grid select {
+    font-size: 12px;
+  }
+
+  #filterWeekday {
+    flex-basis: 54px;
+    width: 54px;
+  }
+
+  #sortMode {
+    flex-basis: 80px;
+    width: 80px;
+  }
+
+  #activeFilter {
+    flex-basis: 76px;
+    width: 76px;
+  }
+}
