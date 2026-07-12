@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>シフト規定値 登録・編集</title>
-  <link rel="stylesheet" href="shift-master-style.css">
+  <link rel="stylesheet" href="shift-master-style.css?v=20260712-1">
 </head>
 
 <body>
@@ -27,38 +27,36 @@
     <div class="panel-title">規定値一覧</div>
 
     <div class="search-area">
-    
-			<div class="search-grid">
+      <div class="search-grid">
 
-			  <select id="filterUser">
-			    <option value="">すべての利用者</option>
-			  </select>
+        <select id="filterUser">
+          <option value="">すべての利用者</option>
+        </select>
 
-			  <select id="filterWeekday">
-			    <option value="">全曜日</option>
-			    <option value="月">月</option>
-			    <option value="火">火</option>
-			    <option value="水">水</option>
-			    <option value="木">木</option>
-			    <option value="金">金</option>
-			    <option value="土">土</option>
-			    <option value="日">日</option>
-			  </select>
+        <select id="filterWeekday">
+          <option value="">全曜日</option>
+          <option value="月">月</option>
+          <option value="火">火</option>
+          <option value="水">水</option>
+          <option value="木">木</option>
+          <option value="金">金</option>
+          <option value="土">土</option>
+          <option value="日">日</option>
+        </select>
 
-			  <select id="sortMode">
-			    <option value="shift">シフト順</option>
-			    <option value="staff">ヘルパー順</option>
-			    <option value="user">利用者順</option>
-			  </select>
+        <select id="sortMode">
+          <option value="shift">シフト順</option>
+          <option value="staff">ヘルパー順</option>
+          <option value="user">利用者順</option>
+        </select>
 
-				<select id="activeFilter">
-				  <option value="active">有効のみ</option>
-				  <option value="inactive">無効のみ</option>
-				  <option value="all">有効・無効</option>
-				</select>
+        <select id="activeFilter">
+          <option value="active">有効のみ</option>
+          <option value="inactive">無効のみ</option>
+          <option value="all">有効・無効</option>
+        </select>
 
-			</div>
-
+      </div>
     </div>
 
     <div class="shift-list"></div>
@@ -141,17 +139,13 @@
             <label>サービス※</label>
             <select id="serviceSelect">
               <option value="">選択してください</option>
-              <option value="居宅介護">居宅介護</option>
-              <option value="重度訪問">重度訪問</option>
-              <option value="同行援護">同行援護</option>
-              <option value="訪問介護">訪問介護</option>
             </select>
           </div>
 
           <div class="field week-field">
-            <label>週P</label>
+            <label>週パターン</label>
             <div class="week-row">
-			  <button type="button" class="week-button" id="weekButton">設定</button>
+              <button type="button" class="week-button" id="weekButton">設定</button>
               <input id="weekPatternText" class="week-pattern-box" readonly>
             </div>
           </div>
@@ -164,119 +158,37 @@
             </select>
           </div>
 
-					<div id="weekPanel" class="week-panel hidden">
+          <div id="weekPanel" class="week-panel hidden">
+            <label><input type="checkbox" value="毎週" data-week-group="every"> 毎週</label>
+            <label><input type="checkbox" value="第1" data-week-group="number"> 第1</label>
+            <label><input type="checkbox" value="第2" data-week-group="number"> 第2</label>
+            <label><input type="checkbox" value="第3" data-week-group="number"> 第3</label>
+            <label><input type="checkbox" value="第4" data-week-group="number"> 第4</label>
+            <label><input type="checkbox" value="第5" data-week-group="number"> 第5</label>
+            <label><input type="checkbox" value="隔A" data-week-group="alternate"> 隔A</label>
+            <label><input type="checkbox" value="隔B" data-week-group="alternate"> 隔B</label>
+            <label><input type="checkbox" value="停止中" data-week-group="stopped"> 停止中</label>
+          </div>
 
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="毎週"
-					      data-week-group="every"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    毎週
-					  </label>
+          <div class="field staff-field staff-row-start">
+            <label>主担当</label>
+            <select id="staff1"></select>
+          </div>
 
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="第1"
-					      data-week-group="number"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    第1
-					  </label>
+          <div class="field staff-field">
+            <label>副担当</label>
+            <select id="staff2"></select>
+          </div>
 
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="第2"
-					      data-week-group="number"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    第2
-					  </label>
+          <div class="field staff-field">
+            <label>担当3</label>
+            <select id="staff3"></select>
+          </div>
 
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="第3"
-					      data-week-group="number"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    第3
-					  </label>
-
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="第4"
-					      data-week-group="number"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    第4
-					  </label>
-
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="第5"
-					      data-week-group="number"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    第5
-					  </label>
-
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="隔A"
-					      data-week-group="alternate"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    隔A
-					  </label>
-
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="隔B"
-					      data-week-group="alternate"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    隔B
-					  </label>
-
-					  <label>
-					    <input
-					      type="checkbox"
-					      value="停止中"
-					      data-week-group="stopped"
-					      onchange="updateWeekPattern(this)"
-					    >
-					    停止中
-					  </label>
-
-					</div>
-
-					<div class="field staff-field staff-row-start">
-					  <label>主担当</label>
-					  <select id="staff1"></select>
-					</div>
-
-					<div class="field staff-field">
-					  <label>副担当</label>
-					  <select id="staff2"></select>
-					</div>
-
-					<div class="field staff-field">
-					  <label>担当3</label>
-					  <select id="staff3"></select>
-					</div>
-
-					<div class="field staff-field">
-					  <label>担当4</label>
-					  <select id="staff4"></select>
-					</div>
+          <div class="field staff-field">
+            <label>担当4</label>
+            <select id="staff4"></select>
+          </div>
 
         </div>
       </div>
@@ -285,7 +197,6 @@
         <div class="section-heading">支援内容</div>
 
         <div class="form-grid support-grid">
-
           <div class="field support-main">
             <label>支援内容</label>
             <textarea id="support"></textarea>
@@ -301,42 +212,29 @@
             <input id="meeting">
           </div>
 
-					<div class="field move-field">
-					  <label>移動手段</label>
-					  <select id="transport"></select>
-					</div>
+          <div class="field move-field">
+            <label>移動手段</label>
+            <select id="transport"></select>
+          </div>
 
           <div class="field memo-field">
             <label>備考</label>
             <textarea id="note"></textarea>
           </div>
-
         </div>
       </div>
 
-			<div class="action-area">
-
-			  <button type="button" class="disable-button">
-			    無効にする
-			  </button>
-
-			  <button type="button" class="secondary-button">
-			    変更を取り消す
-			  </button>
-
-			  <button type="button" class="save-button">
-			    この内容で保存
-			  </button>
-
-			</div>
+      <div class="action-area">
+        <button type="button" class="disable-button">無効にする</button>
+        <button type="button" class="secondary-button">変更を取り消す</button>
+        <button type="button" class="save-button">この内容で保存</button>
+      </div>
 
     </div>
   </section>
 
 </main>
 
-<!-- pages redeploy -->
-<script src="shift-master-app.js"></script>
-
+<script src="shift-master-app.js?v=20260712-1"></script>
 </body>
 </html>

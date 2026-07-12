@@ -1,4 +1,6 @@
-const GAS_API_URL =
+from pathlib import Path
+
+js = r'''const GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbzXe0a2PrSplqPlgWx6BfqN3bZrNZVhVYyvjksehAsHr7glW6p93SKKv3TQKJPFBGqp/exec";
 
 let shiftData = [];
@@ -8,6 +10,16 @@ let editMode = "new";
 let masterData = {
   staff: [],
   choices: {}
+};
+
+const WEEKDAY_ORDER = {
+  "月": 1,
+  "火": 2,
+  "水": 3,
+  "木": 4,
+  "金": 5,
+  "土": 6,
+  "日": 7
 };
 
 function qs(selector) {
@@ -20,7 +32,8 @@ function qsa(selector) {
 
 function setInput(id, value) {
   const el = document.getElementById(id);
-  if (el) el.value = value || "";
+  if (!el) return;
+  el.value = value === null || value === undefined ? "" : value;
 }
 
 function getInput(id) {
@@ -28,68 +41,35 @@ function getInput(id) {
   return el ? el.value : "";
 }
 
-const WEEKDAY_ORDER = {
-  "月": 1,
-  "火": 2,
-  "水": 3,
-  "木": 4,
-  "金": 5,
-  "土": 6,
-  "日": 7
-};
+function isInactiveItem(item) {
+  return String(item.status || "").trim() === "無効";
+}
+
+function isActiveItem(item) {
+  const status = String(item.status || "").trim();
+  return status === "" || status === "有効";
+}
 
 function compareText(a, b) {
-  return String(a || "").localeCompare(
-    String(b || ""),
-    "ja",
-    {
-      numeric: true,
-      sensitivity: "base"
-    }
-  );
+  return String(a || "").localeCompare(String(b || ""), "ja", {
+    numeric: true,
+    sensitivity: "base"
+  });
 }
 
 function getTimeSortValue(value) {
-  if (
-    value === "" ||
-    value === null ||
-    value === undefined
-  ) {
-    // 空欄は時刻が入っているデータより後ろ
-    return 24 * 60 + 1;
-  }
+  const text = formatTimeForList(value);
+  if (!text) return 24 * 60 + 1;
 
-  if (typeof value === "number") {
-    const text = String(Math.trunc(value)).padStart(4, "0");
-    const hour = Number(text.slice(0, 2));
-    const minute = Number(text.slice(2, 4));
+  const match = text.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return 24 * 60 + 1;
 
-    return hour * 60 + minute;
-  }
-
-  const text = String(value).trim();
-
-  if (/^\d{1,2}:\d{2}$/.test(text)) {
-    const [hour, minute] = text.split(":").map(Number);
-    return hour * 60 + minute;
-  }
-
-  if (/^\d{1,4}$/.test(text)) {
-    const padded = text.padStart(4, "0");
-    const hour = Number(padded.slice(0, 2));
-    const minute = Number(padded.slice(2, 4));
-
-    return hour * 60 + minute;
-  }
-
-  return 24 * 60 + 1;
+  return Number(match[1]) * 60 + Number(match[2]);
 }
 
 function compareWeekday(a, b) {
-  return (
-    (WEEKDAY_ORDER[a.weekday] || 99) -
-    (WEEKDAY_ORDER[b.weekday] || 99)
-  );
+  return (WEEKDAY_ORDER[a.weekday] || 99) -
+         (WEEKDAY_ORDER[b.weekday] || 99);
 }
 
 function compareShiftItems(a, b, sortMode) {
@@ -97,122 +77,97 @@ function compareShiftItems(a, b, sortMode) {
   if (result !== 0) return result;
 
   if (sortMode === "staff") {
-    // 曜日 → 主担当 → 開始
     result = compareText(a.staff1, b.staff1);
     if (result !== 0) return result;
 
-    result =
-      getTimeSortValue(a.startTime) -
-      getTimeSortValue(b.startTime);
-
+    result = getTimeSortValue(a.startTime) - getTimeSortValue(b.startTime);
     if (result !== 0) return result;
 
   } else if (sortMode === "user") {
-    // 曜日 → 利用者 → 開始
     result = compareText(a.user, b.user);
     if (result !== 0) return result;
 
-    result =
-      getTimeSortValue(a.startTime) -
-      getTimeSortValue(b.startTime);
-
+    result = getTimeSortValue(a.startTime) - getTimeSortValue(b.startTime);
     if (result !== 0) return result;
 
   } else {
-    // シフト順：曜日 → 開始 → 主担当
-    result =
-      getTimeSortValue(a.startTime) -
-      getTimeSortValue(b.startTime);
-
+    result = getTimeSortValue(a.startTime) - getTimeSortValue(b.startTime);
     if (result !== 0) return result;
 
     result = compareText(a.staff1, b.staff1);
     if (result !== 0) return result;
   }
 
-  // 同順位の場合の安定した並び
   result = compareText(a.user, b.user);
   if (result !== 0) return result;
 
   return compareText(a.id, b.id);
 }
 
-function renderList() {
-  const list = qs(".shift-list");
+function getFilteredSortedItems() {
   const filterUser = getInput("filterUser");
   const filterWeekday = getInput("filterWeekday");
   const sortMode = getInput("sortMode") || "shift";
+  const activeFilter = getInput("activeFilter") || "active";
+
+  return shiftData
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .filter(({ item }) => {
+      if (filterUser && item.user !== filterUser) return false;
+      if (filterWeekday && item.weekday !== filterWeekday) return false;
+
+      if (activeFilter === "active" && !isActiveItem(item)) return false;
+      if (activeFilter === "inactive" && !isInactiveItem(item)) return false;
+
+      return true;
+    })
+    .sort((a, b) => compareShiftItems(a.item, b.item, sortMode));
+}
+
+function renderList() {
+  const list = qs(".shift-list");
+  if (!list) return;
 
   list.innerHTML = "";
 
-  const displayItems = shiftData
-    .map((item, originalIndex) => ({
-      item,
-      originalIndex
-    }))
+  const displayItems = getFilteredSortedItems();
 
-  .filter(({ item }) => {
-    if (
-      filterUser &&
-      item.user !== filterUser
-    ) {
-      return false;
-    }
-
-    if (
-      filterWeekday &&
-      item.weekday !== filterWeekday
-    ) {
-      return false;
-    }
-
-    return true;
-  })
-  .sort((a, b) => {
-    return compareShiftItems(
-      a.item,
-      b.item,
-      sortMode
-    );
-  });
+  if (displayItems.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "shift-list-empty";
+    empty.textContent = "該当する規定値はありません";
+    list.appendChild(empty);
+    return;
+  }
 
   displayItems.forEach(({ item, originalIndex }) => {
     const div = document.createElement("div");
-
     div.className =
       "shift-item" +
-      (
-        originalIndex === selectedIndex
-          ? " selected"
-          : ""
-      );
+      (originalIndex === selectedIndex ? " selected" : "") +
+      (isInactiveItem(item) ? " inactive" : "");
 
     div.innerHTML = `
       <div class="shift-line1">
         <span>${item.weekday || ""}曜日</span>
-        <span>${formatTimeRange(
-          item.startTime,
-          item.endTime
-        )}</span>
+        <span>${formatTimeRange(item.startTime, item.endTime)}</span>
         <span class="shift-name">${item.user || ""}</span>
       </div>
-
       <div class="shift-line2">
         <span>${item.service || ""}</span>
         <span>${item.staff1 || ""}</span>
         <span>${item.people || ""}</span>
+        ${isInactiveItem(item) ? "<span>無効</span>" : ""}
       </div>
     `;
 
     div.addEventListener("click", () => {
       closeWeekPanel();
-
       selectedIndex = originalIndex;
       editMode = "update";
-
-			loadToForm(item);
-			updateDisableButtonState();
-			renderList();
+      loadToForm(item);
+      updateDisableButtonState();
+      renderList();
     });
 
     list.appendChild(div);
@@ -220,24 +175,19 @@ function renderList() {
 }
 
 function formatTimeForList(value) {
-  if (value === "" || value === null || value === undefined) {
-    return "";
-  }
+  if (value === "" || value === null || value === undefined) return "";
 
   if (typeof value === "number") {
-    const text = String(value).padStart(4, "0");
+    const text = String(Math.trunc(value)).padStart(4, "0");
     return text.slice(0, 2) + ":" + text.slice(2, 4);
   }
 
   const text = String(value).trim();
-
-  if (text === "") {
-    return "";
-  }
+  if (!text) return "";
 
   if (/^\d{1,2}:\d{2}$/.test(text)) {
-    const parts = text.split(":");
-    return parts[0].padStart(2, "0") + ":" + parts[1].padStart(2, "0");
+    const [hour, minute] = text.split(":");
+    return hour.padStart(2, "0") + ":" + minute.padStart(2, "0");
   }
 
   if (/^\d{1,4}$/.test(text)) {
@@ -252,22 +202,18 @@ function formatTimeRange(startTime, endTime) {
   const start = formatTimeForList(startTime);
   const end = formatTimeForList(endTime);
 
-  if (start === "" && end === "") {
-    return "";
-  }
-
-  return start + " ～ " + end;
+  if (!start && !end) return "";
+  return `${start} ～ ${end}`;
 }
 
 function updateFilterOptions() {
   const filterUser = qs("#filterUser");
-  const currentValue = filterUser.value;
+  if (!filterUser) return;
 
+  const currentValue = filterUser.value;
   const users = [...new Set(
-    shiftData
-      .map(item => item.user)
-      .filter(name => name)
-  )].sort();
+    shiftData.map(item => item.user).filter(Boolean)
+  )].sort((a, b) => compareText(a, b));
 
   filterUser.innerHTML = `<option value="">すべての利用者</option>`;
 
@@ -278,18 +224,19 @@ function updateFilterOptions() {
     filterUser.appendChild(option);
   });
 
-  filterUser.value = currentValue;
+  if (users.includes(currentValue)) {
+    filterUser.value = currentValue;
+  }
 }
 
 function updateUserSelectOptions() {
   const userSelect = qs("#userSelect");
-  const currentValue = userSelect.value;
+  if (!userSelect) return;
 
+  const currentValue = userSelect.value;
   const users = [...new Set(
-    shiftData
-      .map(item => item.user)
-      .filter(name => name)
-  )].sort();
+    shiftData.map(item => item.user).filter(Boolean)
+  )].sort((a, b) => compareText(a, b));
 
   userSelect.innerHTML = `<option value="">選択してください</option>`;
 
@@ -300,7 +247,9 @@ function updateUserSelectOptions() {
     userSelect.appendChild(option);
   });
 
-  userSelect.value = currentValue;
+  if (users.includes(currentValue)) {
+    userSelect.value = currentValue;
+  }
 }
 
 function loadToForm(item) {
@@ -314,7 +263,6 @@ function loadToForm(item) {
   setInput("endTime", formatTimeForInput(item.endTime));
   setInput("peopleSelect", item.people || "1人");
   setInput("serviceSelect", item.service);
-  setInput("weekPatternText", item.weekPattern || "");
   setInput("changeType", item.changeType || "通常");
   setInput("staff1", item.staff1);
   setInput("staff2", item.staff2);
@@ -326,32 +274,32 @@ function loadToForm(item) {
   setInput("transport", item.transport);
   setInput("note", item.note);
 
-	const weekPattern = String(
-	  item.weekPattern ?? ""
-	);
+  const weekPattern = String(
+    item.weekPattern === null || item.weekPattern === undefined
+      ? ""
+      : item.weekPattern
+  );
 
-	setInput("weekPatternText", weekPattern);
+  setInput("weekPatternText", weekPattern);
 
-	qsa("#weekPanel input[type='checkbox']").forEach(cb => {
-	  cb.checked = false;
+  qsa("#weekPanel input[type='checkbox']").forEach(cb => {
+    if (cb.dataset.weekGroup === "number") {
+      cb.checked = weekPattern.includes(cb.value);
+    } else {
+      cb.checked = weekPattern === cb.value;
+    }
+  });
 
-	  if (weekPattern === "") return;
-
-	  if (cb.dataset.weekGroup === "number") {
-	    cb.checked = weekPattern.includes(cb.value);
-	  } else {
-	    cb.checked = weekPattern === cb.value;
-	  }
-	});
-
-	document.getElementById("userSelect").disabled = editMode === "update";
-
+  const userSelect = qs("#userSelect");
+  if (userSelect) {
+    userSelect.disabled = editMode === "update";
+  }
 }
 
 function formToData() {
   return {
-    id: getInput("masterId") || createNewId(),
-    historyId: getInput("historyId") || createNewHistoryId(),
+    id: getInput("masterId"),
+    historyId: getInput("historyId"),
     startDate: getInput("startDate"),
     endDate: getInput("endDate"),
     weekPattern: getInput("weekPatternText"),
@@ -379,8 +327,8 @@ function formToData() {
 }
 
 function clearForm() {
-  setInput("masterId", createNewId());
-  setInput("historyId", createNewHistoryId());
+  setInput("masterId", "");
+  setInput("historyId", "");
   setInput("userSelect", "");
   setInput("startDate", "");
   setInput("endDate", "");
@@ -389,7 +337,7 @@ function clearForm() {
   setInput("endTime", "");
   setInput("peopleSelect", "1人");
   setInput("serviceSelect", "");
-  setInput("weekPatternText", "");
+  setInput("weekPatternText", "毎週");
   setInput("changeType", "通常");
   setInput("staff1", "");
   setInput("staff2", "");
@@ -401,9 +349,14 @@ function clearForm() {
   setInput("transport", "");
   setInput("note", "");
 
-  qsa("#weekPanel input").forEach(cb => cb.checked = false);
+  qsa("#weekPanel input[type='checkbox']").forEach(cb => {
+    cb.checked = cb.value === "毎週";
+  });
 
-	document.getElementById("userSelect").disabled = false;
+  const userSelect = qs("#userSelect");
+  if (userSelect) {
+    userSelect.disabled = false;
+  }
 }
 
 function validateData(data) {
@@ -415,17 +368,10 @@ function validateData(data) {
   return "";
 }
 
-function createNewId() {
-  return "SK" + String(shiftData.length + 1).padStart(6, "0");
-}
-
-function createNewHistoryId() {
-  return "SKH" + String(Date.now()).slice(-10);
-}
-
 async function saveCurrent() {
-  const data = formToData();
+  closeWeekPanel();
 
+  const data = formToData();
   const errorMessage = validateData(data);
 
   if (errorMessage) {
@@ -434,36 +380,19 @@ async function saveCurrent() {
   }
 
   const saveButton = qs(".save-button");
-
   saveButton.disabled = true;
   saveButton.textContent = "保存中...";
 
   try {
-    const result =
-      await saveShiftDataToGas(data);
-
+    const result = await saveShiftDataToGas(data);
     alert(result.message || "保存しました");
 
-		closeWeekPanel();
-		updateDisableButtonState();
+    await reloadAllData();
 
-    /*
-     * 保存後はシートから再読み込みする。
-     * 画面内配列を直接更新せず、
-     * スプレッドシートを正として扱う。
-     */
-    await loadShiftDataFromGas();
-
-    updateFilterOptions();
-    updateUserSelectOptions();
-
-    const savedIndex =
-      shiftData.findIndex(item => {
-        return (
-          item.id === result.id &&
-          item.historyId === result.historyId
-        );
-      });
+    const savedIndex = shiftData.findIndex(item =>
+      item.id === result.id &&
+      item.historyId === result.historyId
+    );
 
     if (savedIndex >= 0) {
       selectedIndex = savedIndex;
@@ -476,6 +405,7 @@ async function saveCurrent() {
     }
 
     renderList();
+    updateDisableButtonState();
 
   } catch (error) {
     console.error(error);
@@ -488,53 +418,56 @@ async function saveCurrent() {
 }
 
 function cancelEdit() {
+  closeWeekPanel();
 
-	closeWeekPanel();
-
-  if (editMode === "new") {
+  if (editMode === "new" || editMode === "copy") {
     selectedIndex = -1;
+    editMode = "new";
     clearForm();
-    renderList();
-    return;
-  }
-
-  if (selectedIndex >= 0) {
+  } else if (selectedIndex >= 0) {
     loadToForm(shiftData[selectedIndex]);
   }
-  
+
   updateDisableButtonState();
-  
+  renderList();
 }
 
 function copyToNew() {
-
-	closeWeekPanel();
+  closeWeekPanel();
 
   if (selectedIndex < 0) {
     alert("コピー元を一覧から選択してください");
     return;
   }
 
-  const source = shiftData[selectedIndex];
-
   const copied = {
-    ...source,
-    id: createNewId(),
-    historyId: createNewHistoryId()
+    ...shiftData[selectedIndex],
+    id: "",
+    historyId: "",
+    sourceRow: 0,
+    status: "有効"
   };
 
   editMode = "copy";
   selectedIndex = -1;
 
-	loadToForm(copied);
-	updateDisableButtonState();
-	renderList();
+  loadToForm(copied);
 
+  const userSelect = qs("#userSelect");
+  if (userSelect) userSelect.disabled = false;
+
+  updateDisableButtonState();
+  renderList();
 }
 
 function toggleWeekPanel() {
-  const panel = document.getElementById("weekPanel");
-  panel.classList.toggle("hidden");
+  const panel = qs("#weekPanel");
+  if (panel) panel.classList.toggle("hidden");
+}
+
+function closeWeekPanel() {
+  const panel = qs("#weekPanel");
+  if (panel) panel.classList.add("hidden");
 }
 
 function updateWeekPattern(changedCheckbox) {
@@ -546,21 +479,16 @@ function updateWeekPattern(changedCheckbox) {
     allChecks.forEach(cb => {
       if (cb === changedCheckbox) return;
 
-      const otherGroup = cb.dataset.weekGroup;
-
-      // 第1～第5だけは同じグループ内で複数選択可能
       if (
         selectedGroup === "number" &&
-        otherGroup === "number"
+        cb.dataset.weekGroup === "number"
       ) {
         return;
       }
 
-      // それ以外は、選択したグループ以外を解除
       cb.checked = false;
     });
 
-    // 隔Aと隔Bは同時選択不可
     if (selectedGroup === "alternate") {
       allChecks.forEach(cb => {
         if (
@@ -580,47 +508,216 @@ function updateWeekPattern(changedCheckbox) {
   setInput("weekPatternText", selected.join(""));
 }
 
-function loadShiftDataFromGas() {
-  return new Promise((resolve) => {
-    const callbackName = "shiftKCallback_" + Date.now();
+function setSelectOptions(id, list, firstText = "選択してください") {
+  const select = document.getElementById(id);
+  if (!select) return;
+
+  const currentValue = select.value;
+  select.innerHTML = "";
+
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = firstText;
+  select.appendChild(empty);
+
+  (list || []).forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+
+  if ((list || []).includes(currentValue)) {
+    select.value = currentValue;
+  }
+}
+
+function applyMasterOptions() {
+  setSelectOptions("staff1", masterData.staff);
+  setSelectOptions("staff2", masterData.staff);
+  setSelectOptions("staff3", masterData.staff);
+  setSelectOptions("staff4", masterData.staff);
+  setSelectOptions("serviceSelect", masterData.choices["サービス"] || []);
+  setSelectOptions("transport", masterData.choices["移動手段"] || [], "選択");
+}
+
+function jsonpRequest(action, payload = null, callbackPrefix = "callback") {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      callbackPrefix + "_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+
     const script = document.createElement("script");
+    let finished = false;
 
-    window[callbackName] = function(result) {
-      if (!result.success) {
-        alert(result.message || "データの読み込みに失敗しました");
-        shiftData = [];
-      } else {
-        shiftData = result.data || [];
-      }
-
+    const cleanup = () => {
       delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      resolve();
+      if (script.parentNode) script.parentNode.removeChild(script);
     };
 
-    script.src =
-      GAS_API_URL +
-      "?action=list&callback=" +
-      encodeURIComponent(callbackName);
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error("GASの応答がタイムアウトしました"));
+    }, 30000);
 
-    script.onerror = function() {
-      alert("GASからデータを読み込めませんでした。空の一覧で開始します。");
-      shiftData = [];
-      delete window[callbackName];
+    window[callbackName] = result => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      cleanup();
 
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      if (!result || result.success !== true) {
+        reject(new Error(
+          result && result.message
+            ? result.message
+            : "処理に失敗しました"
+        ));
+        return;
       }
 
-      resolve();
+      resolve(result);
+    };
+
+    const params = new URLSearchParams();
+    params.set("action", action);
+    params.set("callback", callbackName);
+    params.set("_", Date.now());
+
+    if (payload !== null) {
+      params.set("payload", JSON.stringify(payload));
+    }
+
+    script.src = `${GAS_API_URL}?${params.toString()}`;
+    script.onerror = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      cleanup();
+      reject(new Error("GASへ接続できませんでした"));
     };
 
     document.body.appendChild(script);
   });
+}
+
+async function loadMasterDataFromGas() {
+  const result = await jsonpRequest("masters", null, "masterCallback");
+  masterData.staff = result.staff || [];
+  masterData.choices = result.choices || {};
+}
+
+async function loadShiftDataFromGas() {
+  const result = await jsonpRequest("list", null, "shiftKCallback");
+  shiftData = result.data || [];
+}
+
+async function reloadAllData() {
+  await loadShiftDataFromGas();
+  updateFilterOptions();
+  updateUserSelectOptions();
+}
+
+async function saveShiftDataToGas(data) {
+  const sourceItem =
+    selectedIndex >= 0 ? shiftData[selectedIndex] : null;
+
+  return jsonpRequest(
+    "save",
+    {
+      mode: editMode,
+      sourceRow: sourceItem && sourceItem.sourceRow
+        ? sourceItem.sourceRow
+        : 0,
+      data
+    },
+    "saveShiftKCallback"
+  );
+}
+
+async function disableShiftDataToGas(item) {
+  return jsonpRequest(
+    "disable",
+    {
+      sourceRow: item.sourceRow || 0,
+      id: item.id || "",
+      historyId: item.historyId || ""
+    },
+    "disableShiftKCallback"
+  );
+}
+
+async function restoreShiftDataToGas(item) {
+  return jsonpRequest(
+    "restore",
+    {
+      sourceRow: item.sourceRow || 0,
+      id: item.id || "",
+      historyId: item.historyId || ""
+    },
+    "restoreShiftKCallback"
+  );
+}
+
+async function disableCurrent() {
+  closeWeekPanel();
+
+  if (editMode !== "update" || selectedIndex < 0) {
+    alert("規定値を一覧から選択してください");
+    return;
+  }
+
+  const item = shiftData[selectedIndex];
+  const isRestore = isInactiveItem(item);
+
+  const message =
+    `この規定値を${isRestore ? "有効に戻しますか？" : "無効にしますか？"}\n\n` +
+    `${item.user || ""}　${item.weekday || ""}曜日　` +
+    formatTimeRange(item.startTime, item.endTime);
+
+  if (!confirm(message)) return;
+
+  const button = qs(".disable-button");
+  button.disabled = true;
+  button.textContent = "処理中...";
+
+  try {
+    const result = isRestore
+      ? await restoreShiftDataToGas(item)
+      : await disableShiftDataToGas(item);
+
+    alert(result.message || (isRestore ? "有効に戻しました" : "無効にしました"));
+
+    await reloadAllData();
+
+    selectedIndex = -1;
+    editMode = "new";
+    clearForm();
+    renderList();
+
+  } catch (error) {
+    console.error(error);
+    alert(error.message);
+
+  } finally {
+    updateDisableButtonState();
+  }
+}
+
+function updateDisableButtonState() {
+  const button = qs(".disable-button");
+  if (!button) return;
+
+  if (editMode !== "update" || selectedIndex < 0) {
+    button.disabled = true;
+    button.textContent = "無効にする";
+    return;
+  }
+
+  button.disabled = false;
+  button.textContent = isInactiveItem(shiftData[selectedIndex])
+    ? "有効に戻す"
+    : "無効にする";
 }
 
 function formatDateForInput(value) {
@@ -640,7 +737,7 @@ function formatDateForInput(value) {
   }
 
   const date = new Date(value);
-  if (isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) return "";
 
   return [
     date.getFullYear(),
@@ -650,506 +747,85 @@ function formatDateForInput(value) {
 }
 
 function formatTimeForInput(value) {
-  if (value === "" || value === null || value === undefined) return "";
+  const formatted = formatTimeForList(value);
+  return /^\d{2}:\d{2}$/.test(formatted) ? formatted : "";
+}
 
-  if (typeof value === "number") {
-    const text = String(value).padStart(4, "0");
-    return text.slice(0, 2) + ":" + text.slice(2, 4);
-  }
-
-  if (typeof value === "string") {
-    if (/^\d{1,2}:\d{2}$/.test(value)) {
-      const parts = value.split(":");
-      return parts[0].padStart(2, "0") + ":" + parts[1];
-    }
-
-    if (/^\d{1,4}$/.test(value)) {
-      const text = value.padStart(4, "0");
-      return text.slice(0, 2) + ":" + text.slice(2, 4);
-    }
-  }
-
-  const date = new Date(value);
-  if (isNaN(date.getTime())) return "";
-
-  return (
-    String(date.getHours()).padStart(2, "0") +
-    ":" +
-    String(date.getMinutes()).padStart(2, "0")
-  );
+function resetSelectionForFilter() {
+  closeWeekPanel();
+  selectedIndex = -1;
+  editMode = "new";
+  clearForm();
+  updateDisableButtonState();
+  renderList();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  qs(".new-button").addEventListener("click", () => {
-
-		closeWeekPanel();
-
-    editMode = "new";
-    selectedIndex = -1;
-    clearForm();
-    renderList();
-  });
-
-  qs(".copy-button").addEventListener("click", copyToNew);
-  qs(".save-button").addEventListener("click", saveCurrent);
-  qs(".secondary-button").addEventListener("click", cancelEdit);
-
-	qs(".disable-button").addEventListener(
-	  "click",
-	  disableCurrent
-	);
-
-  qs("#weekButton").addEventListener("click", toggleWeekPanel);
-
-  qs("#filterUser").addEventListener("change", renderList);
-  qs("#filterWeekday").addEventListener("change", renderList);
-	qs("#sortMode").addEventListener("change", renderList);
-
-	qs("#activeFilter").addEventListener(
-	  "change",
-	  () => {
-	    selectedIndex = -1;
-	    editMode = "new";
-	    clearForm();
-	    updateDisableButtonState();
-	    renderList();
-	  }
-	);
-
-	await loadMasterDataFromGas();
-	applyMasterOptions();
-
-  await loadShiftDataFromGas();
-
-  updateFilterOptions();
-  updateUserSelectOptions();
-  renderList();
-
-  if (shiftData.length > 0) {
-    selectedIndex = 0;
-    editMode = "update";
-    loadToForm(shiftData[0]);
-    renderList();
-  } else {
-    selectedIndex = -1;
-    editMode = "new";
-    clearForm();
-  }
-
-	updateDisableButtonState();
-
-});
-
-function setSelectOptions(id, list, firstText = "選択してください") {
-  const select = document.getElementById(id);
-  if (!select) return;
-
-  const currentValue = select.value;
-  select.innerHTML = "";
-
-  const empty = document.createElement("option");
-  empty.value = "";
-  empty.textContent = firstText;
-  select.appendChild(empty);
-
-  list.forEach(value => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = value;
-    select.appendChild(option);
-  });
-
-  select.value = currentValue;
-}
-
-function applyMasterOptions() {
-  setSelectOptions("staff1", masterData.staff);
-  setSelectOptions("staff2", masterData.staff);
-  setSelectOptions("staff3", masterData.staff);
-  setSelectOptions("staff4", masterData.staff);
-
-  setSelectOptions("serviceSelect", masterData.choices["サービス"] || []);
-  setSelectOptions("transport", masterData.choices["移動手段"] || [], "選択");
-}
-
-function loadMasterDataFromGas() {
-  return new Promise((resolve) => {
-    const callbackName = "masterCallback_" + Date.now();
-    const script = document.createElement("script");
-
-    window[callbackName] = function(result) {
-      if (result.success) {
-        masterData.staff = result.staff || [];
-        masterData.choices = result.choices || {};
-      } else {
-        alert(result.message || "マスタ情報の読み込みに失敗しました");
-      }
-
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      resolve();
-    };
-
-    script.src =
-      GAS_API_URL +
-      "?action=masters&callback=" +
-      encodeURIComponent(callbackName);
-
-    script.onerror = function() {
-      alert("マスタ情報を読み込めませんでした");
-      delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      resolve();
-    };
-
-    document.body.appendChild(script);
-  });
-}
-
-function saveShiftDataToGas(data) {
-  return new Promise((resolve, reject) => {
-    const callbackName =
-      "saveShiftKCallback_" + Date.now();
-
-    const script =
-      document.createElement("script");
-
-    window[callbackName] = function(result) {
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      if (!result.success) {
-        reject(
-          new Error(
-            result.message || "保存に失敗しました"
-          )
-        );
-        return;
-      }
-
-      resolve(result);
-    };
-
-    const sourceItem =
-      selectedIndex >= 0
-        ? shiftData[selectedIndex]
-        : null;
-
-    const requestData = {
-      mode: editMode,
-      sourceRow:
-        sourceItem && sourceItem.sourceRow
-          ? sourceItem.sourceRow
-          : 0,
-      data: data
-    };
-
-    script.src =
-      GAS_API_URL +
-      "?action=save" +
-      "&payload=" +
-      encodeURIComponent(
-        JSON.stringify(requestData)
-      ) +
-      "&callback=" +
-      encodeURIComponent(callbackName) +
-      "&_=" +
-      Date.now();
-
-    script.onerror = function() {
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      reject(
-        new Error(
-          "GASへ保存データを送信できませんでした"
-        )
-      );
-    };
-
-    document.body.appendChild(script);
-  });
-}
-
-function formatTimeForList(value) {
-  if (value === "" || value === null || value === undefined) {
-    return "";
-  }
-
-  if (typeof value === "number") {
-    const text = String(value).padStart(4, "0");
-    return text.slice(0, 2) + ":" + text.slice(2, 4);
-  }
-
-  const text = String(value).trim();
-
-  if (text === "") {
-    return "";
-  }
-
-  if (/^\d{1,2}:\d{2}$/.test(text)) {
-    const parts = text.split(":");
-
-    return (
-      parts[0].padStart(2, "0") +
-      ":" +
-      parts[1].padStart(2, "0")
-    );
-  }
-
-  if (/^\d{1,4}$/.test(text)) {
-    const padded = text.padStart(4, "0");
-
-    return (
-      padded.slice(0, 2) +
-      ":" +
-      padded.slice(2, 4)
-    );
-  }
-
-  return text;
-}
-
-function formatTimeRange(startTime, endTime) {
-  const start = formatTimeForList(startTime);
-  const end = formatTimeForList(endTime);
-
-  if (start === "" && end === "") {
-    return "";
-  }
-
-  return start + " ～ " + end;
-}
-
-function closeWeekPanel() {
-  const panel = document.getElementById("weekPanel");
-
-  if (!panel.classList.contains("hidden")) {
-    panel.classList.add("hidden");
-  }
-}
-
-function disableShiftDataToGas(item) {
-  return new Promise((resolve, reject) => {
-    const callbackName =
-      "disableShiftKCallback_" + Date.now();
-
-    const script = document.createElement("script");
-
-    window[callbackName] = function(result) {
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      if (!result.success) {
-        reject(
-          new Error(
-            result.message || "無効化に失敗しました"
-          )
-        );
-        return;
-      }
-
-      resolve(result);
-    };
-
-    const requestData = {
-      sourceRow: item.sourceRow || 0,
-      id: item.id || "",
-      historyId: item.historyId || ""
-    };
-
-    script.src =
-      GAS_API_URL +
-      "?action=disable" +
-      "&payload=" +
-      encodeURIComponent(
-        JSON.stringify(requestData)
-      ) +
-      "&callback=" +
-      encodeURIComponent(callbackName) +
-      "&_=" +
-      Date.now();
-
-    script.onerror = function() {
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      reject(
-        new Error(
-          "GASへ無効化処理を送信できませんでした"
-        )
-      );
-    };
-
-    document.body.appendChild(script);
-  });
-}
-
-async function disableCurrent() {
-  closeWeekPanel();
-
-  if (
-    editMode !== "update" ||
-    selectedIndex < 0
-  ) {
-    alert("規定値を一覧から選択してください");
-    return;
-  }
-
-  const item = shiftData[selectedIndex];
-  const isRestore = item.status === "無効";
-
-  const actionText =
-    isRestore
-      ? "有効に戻しますか？"
-      : "無効にしますか？";
-
-  const message =
-    "この規定値を" +
-    actionText +
-    "\n\n" +
-    (item.user || "") +
-    "　" +
-    (item.weekday || "") +
-    "曜日　" +
-    formatTimeRange(
-      item.startTime,
-      item.endTime
-    );
-
-  if (!confirm(message)) {
-    return;
-  }
-
-  const button = qs(".disable-button");
-
-  button.disabled = true;
-  button.textContent = "処理中...";
-
   try {
-    const result = isRestore
-      ? await restoreShiftDataToGas(item)
-      : await disableShiftDataToGas(item);
+    qs(".new-button").addEventListener("click", () => {
+      closeWeekPanel();
+      selectedIndex = -1;
+      editMode = "new";
+      clearForm();
+      updateDisableButtonState();
+      renderList();
+    });
 
-    alert(result.message);
+    qs(".copy-button").addEventListener("click", copyToNew);
+    qs(".save-button").addEventListener("click", saveCurrent);
+    qs(".secondary-button").addEventListener("click", cancelEdit);
+    qs(".disable-button").addEventListener("click", disableCurrent);
+    qs("#weekButton").addEventListener("click", toggleWeekPanel);
+
+    qsa("#weekPanel input[type='checkbox']").forEach(cb => {
+      cb.addEventListener("change", () => updateWeekPattern(cb));
+    });
+
+    qs("#filterUser").addEventListener("change", renderList);
+    qs("#filterWeekday").addEventListener("change", renderList);
+    qs("#sortMode").addEventListener("change", renderList);
+    qs("#activeFilter").addEventListener("change", resetSelectionForFilter);
+
+    await loadMasterDataFromGas();
+    applyMasterOptions();
 
     await loadShiftDataFromGas();
 
     updateFilterOptions();
     updateUserSelectOptions();
 
-    selectedIndex = -1;
-    editMode = "new";
+    const firstActiveIndex = shiftData.findIndex(isActiveItem);
 
-    clearForm();
+    if (firstActiveIndex >= 0) {
+      selectedIndex = firstActiveIndex;
+      editMode = "update";
+      loadToForm(shiftData[firstActiveIndex]);
+    } else {
+      selectedIndex = -1;
+      editMode = "new";
+      clearForm();
+    }
+
     renderList();
+    updateDisableButtonState();
 
   } catch (error) {
     console.error(error);
-    alert(error.message);
+    alert(
+      "初期データを読み込めませんでした。\n" +
+      error.message
+    );
 
-  } finally {
+    shiftData = [];
+    selectedIndex = -1;
+    editMode = "new";
+    clearForm();
+    renderList();
     updateDisableButtonState();
   }
-}
+});
+'''
 
-function updateDisableButtonState() {
-  const button = qs(".disable-button");
-
-  if (!button) return;
-
-  if (
-    editMode !== "update" ||
-    selectedIndex < 0
-  ) {
-    button.disabled = true;
-    button.textContent = "無効にする";
-    return;
-  }
-
-  const item = shiftData[selectedIndex];
-
-  button.disabled = false;
-
-  if (item.status === "無効") {
-    button.textContent = "有効に戻す";
-  } else {
-    button.textContent = "無効にする";
-  }
-}
-
-function restoreShiftDataToGas(item) {
-  return new Promise((resolve, reject) => {
-    const callbackName =
-      "restoreShiftKCallback_" + Date.now();
-
-    const script = document.createElement("script");
-
-    window[callbackName] = function(result) {
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      if (!result.success) {
-        reject(
-          new Error(
-            result.message || "復活に失敗しました"
-          )
-        );
-        return;
-      }
-
-      resolve(result);
-    };
-
-    const requestData = {
-      sourceRow: item.sourceRow || 0,
-      id: item.id || "",
-      historyId: item.historyId || ""
-    };
-
-    script.src =
-      GAS_API_URL +
-      "?action=restore" +
-      "&payload=" +
-      encodeURIComponent(
-        JSON.stringify(requestData)
-      ) +
-      "&callback=" +
-      encodeURIComponent(callbackName) +
-      "&_=" +
-      Date.now();
-
-    script.onerror = function() {
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-      reject(
-        new Error(
-          "GASへ復活処理を送信できませんでした"
-        )
-      );
-    };
-
-    document.body.appendChild(script);
-  });
-}
-
-
+path = Path("/mnt/data/shift-master-app-complete.txt")
+path.write_text(js, encoding="utf-8")
+print(path)
