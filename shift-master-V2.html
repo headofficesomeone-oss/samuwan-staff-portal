@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト規定値 登録・編集 V2</title>
+  <link rel="stylesheet" href="shift-master-v2-style.css?v=2.0.0">
+</head>
+
+<body>
+
+<header class="page-header">
+  <div>
+    <h1>シフト規定値 登録・編集</h1>
+    <p>毎週の基本となる支援予定を管理します</p>
+  </div>
+
+  <div class="header-buttons">
+    <button type="button" class="copy-button">コピーして新規作成</button>
+    <button type="button" class="new-button">＋ 新しい規定値</button>
+  </div>
+</header>
+
+<main class="main-layout">
+
+  <section class="panel list-panel">
+    <div class="panel-title">規定値一覧</div>
+
+    <div class="search-area">
+      <div class="search-grid">
+
+        <select id="filterUser">
+          <option value="">すべての利用者</option>
+        </select>
+
+        <select id="filterWeekday">
+          <option value="">全曜日</option>
+          <option value="月">月</option>
+          <option value="火">火</option>
+          <option value="水">水</option>
+          <option value="木">木</option>
+          <option value="金">金</option>
+          <option value="土">土</option>
+          <option value="日">日</option>
+        </select>
+
+        <select id="sortMode">
+          <option value="shift">シフト順</option>
+          <option value="staff">ヘルパー順</option>
+          <option value="user">利用者順</option>
+        </select>
+
+        <select id="activeFilter">
+          <option value="active">有効のみ</option>
+          <option value="inactive">無効のみ</option>
+          <option value="all">有効・無効</option>
+        </select>
+
+      </div>
+    </div>
+
+    <div class="shift-list"></div>
+  </section>
+
+  <section class="panel edit-panel">
+
+    <div class="panel-title title-row">
+      <span>規定値の内容</span>
+      <span class="sub-title">基本情報</span>
+    </div>
+
+    <div class="edit-area">
+
+      <div class="section">
+        <div class="form-grid basic-grid">
+
+          <div class="field id-field">
+            <label>規定値ID</label>
+            <input id="masterId" class="id-box" readonly>
+          </div>
+
+          <div class="field id-field">
+            <label>履歴ID</label>
+            <input id="historyId" class="id-box" readonly>
+          </div>
+
+          <div class="field user-field">
+            <label>利用者※</label>
+            <select id="userSelect">
+              <option value="">選択してください</option>
+            </select>
+          </div>
+
+          <div class="field date-field">
+            <label>適用開始日</label>
+            <input id="startDate" type="date">
+          </div>
+
+          <div class="field date-field">
+            <label>適用終了日</label>
+            <input id="endDate" type="date">
+          </div>
+
+          <div class="field weekday-field">
+            <label>曜日※</label>
+            <select id="weekdaySelect">
+              <option value="">選択</option>
+              <option value="月">月</option>
+              <option value="火">火</option>
+              <option value="水">水</option>
+              <option value="木">木</option>
+              <option value="金">金</option>
+              <option value="土">土</option>
+              <option value="日">日</option>
+            </select>
+          </div>
+
+          <div class="field time-field">
+            <label>開始※</label>
+            <input id="startTime" type="time">
+          </div>
+
+          <div class="field time-field">
+            <label>終了※</label>
+            <input id="endTime" type="time">
+          </div>
+
+          <div class="field people-field">
+            <label>人数</label>
+            <select id="peopleSelect">
+              <option value="1人">1人</option>
+              <option value="2人">2人</option>
+              <option value="3人">3人</option>
+              <option value="4人">4人</option>
+            </select>
+          </div>
+
+          <div class="field service-field">
+            <label>サービス※</label>
+            <select id="serviceSelect">
+              <option value="">選択してください</option>
+            </select>
+          </div>
+
+          <div class="field week-field">
+            <label>週パターン</label>
+            <div class="week-row">
+              <button type="button" class="week-button" id="weekButton">設定</button>
+              <input id="weekPatternText" class="week-pattern-box" readonly>
+            </div>
+          </div>
+
+          <div class="field change-field">
+            <label>交代</label>
+            <select id="changeType">
+              <option value="通常">通常</option>
+              <option value="交代">交代</option>
+            </select>
+          </div>
+
+          <div id="weekPanel" class="week-panel hidden">
+            <label><input type="checkbox" value="毎週" data-week-group="every"> 毎週</label>
+            <label><input type="checkbox" value="第1" data-week-group="number"> 第1</label>
+            <label><input type="checkbox" value="第2" data-week-group="number"> 第2</label>
+            <label><input type="checkbox" value="第3" data-week-group="number"> 第3</label>
+            <label><input type="checkbox" value="第4" data-week-group="number"> 第4</label>
+            <label><input type="checkbox" value="第5" data-week-group="number"> 第5</label>
+            <label><input type="checkbox" value="隔A" data-week-group="alternate"> 隔A</label>
+            <label><input type="checkbox" value="隔B" data-week-group="alternate"> 隔B</label>
+            <label><input type="checkbox" value="停止中" data-week-group="stopped"> 停止中</label>
+          </div>
+
+          <div class="field staff-field staff-row-start">
+            <label>主担当</label>
+            <select id="staff1"></select>
+          </div>
+
+          <div class="field staff-field">
+            <label>副担当</label>
+            <select id="staff2"></select>
+          </div>
+
+          <div class="field staff-field">
+            <label>担当3</label>
+            <select id="staff3"></select>
+          </div>
+
+          <div class="field staff-field">
+            <label>担当4</label>
+            <select id="staff4"></select>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-heading">支援内容</div>
+
+        <div class="form-grid support-grid">
+          <div class="field support-main">
+            <label>支援内容</label>
+            <textarea id="support"></textarea>
+          </div>
+
+          <div class="field place-field">
+            <label>行き先</label>
+            <input id="destination">
+          </div>
+
+          <div class="field place-field">
+            <label>待合せ</label>
+            <input id="meeting">
+          </div>
+
+          <div class="field move-field">
+            <label>移動手段</label>
+            <select id="transport"></select>
+          </div>
+
+          <div class="field memo-field">
+            <label>備考</label>
+            <textarea id="note"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-area">
+        <button type="button" class="disable-button">無効にする</button>
+        <button type="button" class="secondary-button">変更を取り消す</button>
+        <button type="button" class="save-button">この内容で保存</button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script src="shift-master-v2-app.js?v=2.0.0"></script>
+</body>
+</html>
