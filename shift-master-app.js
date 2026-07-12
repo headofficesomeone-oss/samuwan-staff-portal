@@ -1,6 +1,4 @@
-from pathlib import Path
-
-js = r'''const GAS_API_URL =
+const GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbzXe0a2PrSplqPlgWx6BfqN3bZrNZVhVYyvjksehAsHr7glW6p93SKKv3TQKJPFBGqp/exec";
 
 let shiftData = [];
@@ -824,8 +822,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateDisableButtonState();
   }
 });
-'''
-
-path = Path("/mnt/data/shift-master-app-complete.txt")
-path.write_text(js, encoding="utf-8")
-print(path)
