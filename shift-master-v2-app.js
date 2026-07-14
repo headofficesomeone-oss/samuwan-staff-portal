@@ -407,7 +407,7 @@ async function saveCurrent() {
 
   } catch (error) {
     console.error(error);
-    alert(error.message);
+    showApiError(error, "保存に失敗しました");
 
   } finally {
     saveButton.disabled = false;
@@ -539,38 +539,83 @@ function applyMasterOptions() {
   setSelectOptions("transport", masterData.choices["移動手段"] || [], "選択");
 }
 
+class ApiError extends Error {
+  constructor(message, errorId = "") {
+    super(message || "処理に失敗しました");
+    this.name = "ApiError";
+    this.errorId = errorId || "";
+  }
+}
+
+function showApiError(error, heading = "処理に失敗しました") {
+  console.error(error);
+
+  const message =
+    error && error.message
+      ? error.message
+      : "不明なエラーが発生しました";
+
+  const errorId =
+    error && error.errorId
+      ? String(error.errorId)
+      : "";
+
+  alert(
+    heading + "\n\n" +
+    message +
+    (errorId ? "\n\nエラー番号：" + errorId : "")
+  );
+}
+
 function jsonpRequest(action, payload = null, callbackPrefix = "callback") {
   return new Promise((resolve, reject) => {
     const callbackName =
-      callbackPrefix + "_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+      callbackPrefix + "_" +
+      Date.now() + "_" +
+      Math.floor(Math.random() * 100000);
 
     const script = document.createElement("script");
     let finished = false;
 
     const cleanup = () => {
       delete window[callbackName];
-      if (script.parentNode) script.parentNode.removeChild(script);
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
     };
 
     const timer = setTimeout(() => {
       if (finished) return;
+
       finished = true;
       cleanup();
-      reject(new Error("GASの応答がタイムアウトしました"));
+
+      reject(
+        new ApiError(
+          "GASの応答がタイムアウトしました"
+        )
+      );
     }, 30000);
 
     window[callbackName] = result => {
       if (finished) return;
+
       finished = true;
       clearTimeout(timer);
       cleanup();
 
       if (!result || result.success !== true) {
-        reject(new Error(
-          result && result.message
-            ? result.message
-            : "処理に失敗しました"
-        ));
+        reject(
+          new ApiError(
+            result && result.message
+              ? result.message
+              : "処理に失敗しました",
+            result && result.errorId
+              ? result.errorId
+              : ""
+          )
+        );
         return;
       }
 
@@ -587,17 +632,25 @@ function jsonpRequest(action, payload = null, callbackPrefix = "callback") {
     }
 
     script.src = `${GAS_API_URL}?${params.toString()}`;
+
     script.onerror = () => {
       if (finished) return;
+
       finished = true;
       clearTimeout(timer);
       cleanup();
-      reject(new Error("GASへ接続できませんでした"));
+
+      reject(
+        new ApiError(
+          "GASへ接続できませんでした"
+        )
+      );
     };
 
     document.body.appendChild(script);
   });
 }
+
 
 async function loadMasterDataFromGas() {
   const result = await jsonpRequest("masters", null, "masterCallback");
@@ -694,9 +747,12 @@ async function disableCurrent() {
     renderList();
 
   } catch (error) {
-    console.error(error);
-    alert(error.message);
-
+	showApiError(
+	    error,
+	    isRestore
+	      ? "有効への復活に失敗しました"
+	      : "無効化に失敗しました"
+	  );
   } finally {
     updateDisableButtonState();
   }
@@ -808,11 +864,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateDisableButtonState();
 
   } catch (error) {
-    console.error(error);
-    alert(
-      "初期データを読み込めませんでした。\n" +
-      error.message
-    );
+	
+	showApiError(error, "初期データを読み込めませんでした");
 
     shiftData = [];
     selectedIndex = -1;
