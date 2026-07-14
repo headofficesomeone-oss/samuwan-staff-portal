@@ -1,10 +1,31 @@
+/**
+ * シフト規定値マスタ V2 フロント処理
+ *
+ * 主な役割
+ * ・GAS APIから規定値・従業員・選択肢マスタを取得する
+ * ・一覧の検索、並び替え、選択状態を管理する
+ * ・新規登録、コピー新規、修正保存を行う
+ * ・規定値の無効化と、有効への復活を行う
+ *
+ * 注意
+ * ・規定値ID（id）は同じ規定値を識別するためのID
+ * ・履歴ID（historyId）は変更履歴を識別するためのID
+ * ・sourceRowはGAS側で元データ行を安全に確認するために使用する
+ * ・通信方式はJSONP。GAS_API_URLは再デプロイ時に変更されていないか確認する
+ */
+
+// GAS Webアプリの実行URL。APIの再デプロイ後も同じURLか確認する。
 const GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbyr8KW-_XZsWDpQ_BnjdLQpiawjvOAAz4jWI8HVYVbCd-iiFjd6cau84tegSkbF203g/exec";
 
+// GASから取得した規定値一覧。画面表示・選択・保存後の再読込に使用する。
 let shiftData = [];
+// shiftData上で現在選択している位置。未選択は-1。
 let selectedIndex = -1;
+// new:新規、copy:コピー新規、update:既存データ修正。
 let editMode = "new";
 
+// 従業員一覧と、サービス・移動手段などの選択肢マスタ。
 let masterData = {
   staff: [],
   choices: {}
@@ -39,10 +60,12 @@ function getInput(id) {
   return el ? el.value : "";
 }
 
+/** 規定値が無効状態かを判定する。 */
 function isInactiveItem(item) {
   return String(item.status || "").trim() === "無効";
 }
 
+/** 空欄または「有効」を有効データとして扱う。 */
 function isActiveItem(item) {
   const status = String(item.status || "").trim();
   return status === "" || status === "有効";
@@ -70,6 +93,10 @@ function compareWeekday(a, b) {
          (WEEKDAY_ORDER[b.weekday] || 99);
 }
 
+/**
+ * 一覧表示用の並び順を決める。
+ * 曜日を最優先し、画面で選択された並び替え方法に従う。
+ */
 function compareShiftItems(a, b, sortMode) {
   let result = compareWeekday(a, b);
   if (result !== 0) return result;
@@ -102,6 +129,10 @@ function compareShiftItems(a, b, sortMode) {
   return compareText(a.id, b.id);
 }
 
+/**
+ * 利用者・曜日・有効状態で絞り込み、指定順に並べた一覧を返す。
+ * originalIndexは、並び替え後も元のshiftDataを正しく選択するために保持する。
+ */
 function getFilteredSortedItems() {
   const filterUser = getInput("filterUser");
   const filterWeekday = getInput("filterWeekday");
@@ -122,6 +153,7 @@ function getFilteredSortedItems() {
     .sort((a, b) => compareShiftItems(a.item, b.item, sortMode));
 }
 
+/** 左側の規定値一覧を再描画する。 */
 function renderList() {
   const list = qs(".shift-list");
   if (!list) return;
@@ -204,6 +236,7 @@ function formatTimeRange(startTime, endTime) {
   return `${start} ～ ${end}`;
 }
 
+/** 規定値データから利用者検索用プルダウンを作り直す。 */
 function updateFilterOptions() {
   const filterUser = qs("#filterUser");
   if (!filterUser) return;
@@ -227,6 +260,7 @@ function updateFilterOptions() {
   }
 }
 
+/** 規定値データから登録フォームの利用者プルダウンを作り直す。 */
 function updateUserSelectOptions() {
   const userSelect = qs("#userSelect");
   if (!userSelect) return;
@@ -250,6 +284,10 @@ function updateUserSelectOptions() {
   }
 }
 
+/**
+ * 選択した規定値を入力フォームへ展開する。
+ * 修正時は利用者の変更を禁止し、別利用者へ登録したい場合はコピー新規を使う。
+ */
 function loadToForm(item) {
   setInput("masterId", item.id);
   setInput("historyId", item.historyId);
@@ -294,6 +332,7 @@ function loadToForm(item) {
   }
 }
 
+/** 入力フォームの内容をGASへ送るデータ形式にまとめる。 */
 function formToData() {
   return {
     id: getInput("masterId"),
@@ -324,6 +363,7 @@ function formToData() {
   };
 }
 
+/** 新規入力用にフォームと週パターン選択を初期化する。 */
 function clearForm() {
   setInput("masterId", "");
   setInput("historyId", "");
@@ -357,6 +397,7 @@ function clearForm() {
   }
 }
 
+/** 保存前の必須項目チェック。最初に見つかった不足内容を返す。 */
 function validateData(data) {
   if (!data.user) return "利用者を選択してください";
   if (!data.weekday) return "曜日を選択してください";
@@ -366,6 +407,11 @@ function validateData(data) {
   return "";
 }
 
+/**
+ * 現在のフォーム内容を保存する。
+ * editModeとsourceRowをGASへ渡し、新規・コピー新規・修正をGAS側で判定する。
+ * 保存後は全件を再取得し、保存された規定値を再選択する。
+ */
 async function saveCurrent() {
   closeWeekPanel();
 
@@ -407,7 +453,7 @@ async function saveCurrent() {
 
   } catch (error) {
     console.error(error);
-    showApiError(error, "保存に失敗しました");
+    alert(error.message);
 
   } finally {
     saveButton.disabled = false;
@@ -415,6 +461,7 @@ async function saveCurrent() {
   }
 }
 
+/** 入力内容を破棄し、新規時は空欄、修正時は選択中データへ戻す。 */
 function cancelEdit() {
   closeWeekPanel();
 
@@ -430,6 +477,10 @@ function cancelEdit() {
   renderList();
 }
 
+/**
+ * 選択中の規定値を元にコピー新規を開始する。
+ * ID・履歴ID・sourceRowをクリアし、既存行の上書きを防ぐ。
+ */
 function copyToNew() {
   closeWeekPanel();
 
@@ -468,6 +519,7 @@ function closeWeekPanel() {
   if (panel) panel.classList.add("hidden");
 }
 
+/** 週パターンの排他選択と、第1～第5週の複数選択を制御する。 */
 function updateWeekPattern(changedCheckbox) {
   const allChecks = qsa("#weekPanel input[type='checkbox']");
 
@@ -530,6 +582,7 @@ function setSelectOptions(id, list, firstText = "選択してください") {
   }
 }
 
+/** GASから取得した従業員・サービス・移動手段を各プルダウンへ反映する。 */
 function applyMasterOptions() {
   setSelectOptions("staff1", masterData.staff);
   setSelectOptions("staff2", masterData.staff);
@@ -539,6 +592,7 @@ function applyMasterOptions() {
   setSelectOptions("transport", masterData.choices["移動手段"] || [], "選択");
 }
 
+/** GASから返された画面表示用メッセージとエラー番号を保持する。 */
 class ApiError extends Error {
   constructor(message, errorId = "") {
     super(message || "処理に失敗しました");
@@ -547,6 +601,10 @@ class ApiError extends Error {
   }
 }
 
+/**
+ * 利用者には簡潔なメッセージとエラー番号を表示する。
+ * 詳細原因はGAS側のERROR_LOGで同じエラー番号を検索して確認する。
+ */
 function showApiError(error, heading = "処理に失敗しました") {
   console.error(error);
 
@@ -567,6 +625,10 @@ function showApiError(error, heading = "処理に失敗しました") {
   );
 }
 
+/**
+ * GAS WebアプリへJSONPでアクセスする共通通信処理。
+ * タイムアウト、接続失敗、GAS側エラーをApiErrorへ統一する。
+ */
 function jsonpRequest(action, payload = null, callbackPrefix = "callback") {
   return new Promise((resolve, reject) => {
     const callbackName =
@@ -652,23 +714,30 @@ function jsonpRequest(action, payload = null, callbackPrefix = "callback") {
 }
 
 
+/** 従業員・選択肢マスタをGASから取得する。 */
 async function loadMasterDataFromGas() {
   const result = await jsonpRequest("masters", null, "masterCallback");
   masterData.staff = result.staff || [];
   masterData.choices = result.choices || {};
 }
 
+/** 規定値一覧をGASから取得する。 */
 async function loadShiftDataFromGas() {
   const result = await jsonpRequest("list", null, "shiftKCallback");
   shiftData = result.data || [];
 }
 
+/** 保存・無効化・復活後に規定値一覧とプルダウンを最新化する。 */
 async function reloadAllData() {
   await loadShiftDataFromGas();
   updateFilterOptions();
   updateUserSelectOptions();
 }
 
+/**
+ * 保存APIを呼び出す。
+ * sourceRowは修正対象行の照合に使用し、新規時は0を渡す。
+ */
 async function saveShiftDataToGas(data) {
   const sourceItem =
     selectedIndex >= 0 ? shiftData[selectedIndex] : null;
@@ -686,6 +755,7 @@ async function saveShiftDataToGas(data) {
   );
 }
 
+/** 選択中の規定値を無効化するAPIを呼び出す。 */
 async function disableShiftDataToGas(item) {
   return jsonpRequest(
     "disable",
@@ -698,6 +768,7 @@ async function disableShiftDataToGas(item) {
   );
 }
 
+/** 無効になっている規定値を有効へ戻すAPIを呼び出す。 */
 async function restoreShiftDataToGas(item) {
   return jsonpRequest(
     "restore",
@@ -710,6 +781,10 @@ async function restoreShiftDataToGas(item) {
   );
 }
 
+/**
+ * 選択中データの状態に応じて、無効化または有効への復活を実行する。
+ * 画面上は同じボタンを使い、isRestoreで処理を切り替える。
+ */
 async function disableCurrent() {
   closeWeekPanel();
 
@@ -747,17 +822,15 @@ async function disableCurrent() {
     renderList();
 
   } catch (error) {
-	showApiError(
-	    error,
-	    isRestore
-	      ? "有効への復活に失敗しました"
-	      : "無効化に失敗しました"
-	  );
+    console.error(error);
+    alert(error.message);
+
   } finally {
     updateDisableButtonState();
   }
 }
 
+/** 選択状態と有効状態に合わせて無効化／有効に戻すボタンを更新する。 */
 function updateDisableButtonState() {
   const button = qs(".disable-button");
   if (!button) return;
@@ -805,6 +878,7 @@ function formatTimeForInput(value) {
   return /^\d{2}:\d{2}$/.test(formatted) ? formatted : "";
 }
 
+/** 有効状態フィルター変更時に選択とフォームを安全にリセットする。 */
 function resetSelectionForFilter() {
   closeWeekPanel();
   selectedIndex = -1;
@@ -814,6 +888,10 @@ function resetSelectionForFilter() {
   renderList();
 }
 
+/**
+ * 画面初期化。イベント登録後にマスタと規定値を取得し、最初の有効データを表示する。
+ * 初期読込に失敗した場合でも、空の画面として操作可能な状態へ戻す。
+ */
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     qs(".new-button").addEventListener("click", () => {
@@ -864,8 +942,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateDisableButtonState();
 
   } catch (error) {
-	
-	showApiError(error, "初期データを読み込めませんでした");
+    console.error(error);
+    alert(
+      "初期データを読み込めませんでした。\n" +
+      error.message
+    );
 
     shiftData = [];
     selectedIndex = -1;
