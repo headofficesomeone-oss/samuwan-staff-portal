@@ -1,1 +1,365 @@
-*{box-sizing:border-box}body{margin:0;min-width:1040px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#22303c;background:#f4f8f5}button,input{font:inherit}.app-header{min-height:76px;padding:12px 24px;background:#fff;border-bottom:1px solid #e6ece8;display:flex;align-items:center;justify-content:space-between}.app-name{color:#2fa85a;font-size:13px;font-weight:800}.app-header h1{margin:3px 0 0}.nav-link{border:1px solid #2fa85a;border-radius:10px;padding:10px 16px;color:#238747;text-decoration:none;font-weight:800}.page{padding:20px 24px 40px}.control-card,.table-card{background:#fff;border:1px solid #e2e9e4;border-radius:16px;box-shadow:0 8px 24px rgba(34,48,60,.06)}.control-card{padding:18px}.week-navigation{display:grid;grid-template-columns:110px 1fr 110px;gap:14px;align-items:end}.week-navigation button,.secondary-button,.primary-button{height:46px;border-radius:10px;font-weight:800;cursor:pointer}.week-navigation button,.secondary-button{border:1px solid #dbe4de;background:#fff}.primary-button{border:0;background:#2fa85a;color:#fff;padding:0 24px}.week-display{text-align:center}.week-display label{display:block;margin-bottom:6px;color:#71808a;font-size:13px;font-weight:700}.week-display input{height:46px;min-width:210px;border:1px solid #dbe4de;border-radius:10px;padding:0 12px;text-align:center}.week-display strong{display:block;margin-top:8px;color:#238747}.action-row{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.secondary-button{padding:0 18px}.message-area{margin-top:14px;padding:12px 14px;border-radius:10px;background:#eaf7ef;color:#238747;font-weight:700}.message-area.error{background:#fff1f0;color:#d9534f}.hidden{display:none!important}.summary-row{margin:18px 2px 10px}.summary-row strong{font-size:21px}.table-card{overflow:hidden}.table-scroll{overflow:auto;max-height:calc(100vh - 300px)}table{width:100%;min-width:1500px;border-collapse:collapse}thead{position:sticky;top:0;z-index:2}th{padding:11px 10px;background:#edf7f0;border-right:1px solid #dce7df;border-bottom:1px solid #cfdcd3;white-space:nowrap;font-size:13px;text-align:left}td{padding:10px;border-right:1px solid #ebefec;border-bottom:1px solid #e4e9e6;white-space:nowrap;font-size:13px}.content-cell,.note-cell{min-width:210px;max-width:320px;white-space:normal}.empty-area{padding:50px 20px;color:#71808a;text-align:center;font-weight:700}
+/* =============================================================
+   基本設定
+============================================================= */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --green: #2fa85a;
+  --green-dark: #238747;
+  --green-light: #eaf7ef;
+  --background: #f4f8f5;
+  --border: #dbe4de;
+  --text: #22303c;
+  --muted: #71808a;
+  --danger: #d9534f;
+  --warning: #c88212;
+}
+
+body {
+  margin: 0;
+  min-width: 1040px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--background);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+/* =============================================================
+   画面上部
+============================================================= */
+.app-header {
+  min-height: 88px;
+  padding: 14px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e6ece8;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.app-name {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app-header h1 {
+  margin: 4px 0 0;
+  font-size: 30px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+}
+
+/* =============================================================
+   共通ボタン
+============================================================= */
+.secondary-button,
+.primary-button,
+.nav-link {
+  height: 42px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.secondary-button {
+  color: var(--text);
+  background: #ffffff;
+  border: 1px solid var(--border);
+}
+
+.secondary-button:hover {
+  background: #f6faf7;
+}
+
+.primary-button {
+  color: #ffffff;
+  background: var(--green);
+  border: none;
+}
+
+.primary-button:hover {
+  background: var(--green-dark);
+}
+
+.nav-link {
+  color: var(--green-dark);
+  background: #ffffff;
+  border: 1px solid var(--green);
+}
+
+/* =============================================================
+   ページ全体
+============================================================= */
+.page {
+  padding: 20px 24px 40px;
+}
+
+.control-card,
+.table-card {
+  background: #ffffff;
+  border: 1px solid #e2e9e4;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(34, 48, 60, 0.06);
+}
+
+/* =============================================================
+   対象週の選択エリア
+============================================================= */
+.control-card {
+  padding: 18px 24px 22px;
+}
+
+.week-navigation {
+  min-height: 150px;
+  display: grid;
+  grid-template-columns: 160px 1fr 160px;
+  align-items: center;
+  gap: 24px;
+}
+
+.week-side {
+  display: flex;
+  align-items: center;
+
+  /*
+    中央の日付より、左右のボタンを少し上へ配置します。
+    手書きイメージに合わせた位置調整です。
+  */
+  transform: translateY(-10px);
+}
+
+.week-side-left {
+  justify-content: flex-start;
+}
+
+.week-side-right {
+  justify-content: flex-end;
+}
+
+.large-week-button {
+  min-width: 110px;
+  height: 52px;
+  font-size: 17px;
+}
+
+.week-center {
+  text-align: center;
+}
+
+.week-center label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.week-input-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.week-input-row input {
+  height: 48px;
+  min-width: 240px;
+  padding: 0 12px;
+  text-align: center;
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.current-week-button {
+  height: 48px;
+  min-width: 80px;
+}
+
+.week-center strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 500;
+}
+
+/* =============================================================
+   件数・メッセージ・保存状況
+============================================================= */
+.summary-row {
+  margin: 18px 2px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.record-summary strong {
+  font-size: 21px;
+}
+
+.message-area {
+  padding: 8px 13px;
+  color: var(--green-dark);
+  background: var(--green-light);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.message-area.error {
+  color: var(--danger);
+  background: #fff1f0;
+}
+
+.cache-status {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =============================================================
+   一覧表
+============================================================= */
+.table-card {
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow: auto;
+  max-height: calc(100vh - 320px);
+}
+
+table {
+  width: 100%;
+  min-width: 1500px;
+  border-collapse: collapse;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+th {
+  padding: 11px 10px;
+  color: #31533e;
+  background: #edf7f0;
+  border-right: 1px solid #dce7df;
+  border-bottom: 1px solid #cfdcd3;
+  white-space: nowrap;
+  font-size: 13px;
+  text-align: left;
+}
+
+td {
+  padding: 10px;
+  border-right: 1px solid #ebefec;
+  border-bottom: 1px solid #e4e9e6;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+tbody tr:hover {
+  background: #f8fcf9;
+}
+
+.content-cell,
+.note-cell {
+  min-width: 210px;
+  max-width: 320px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.status-label {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.status-label.planned {
+  color: var(--green-dark);
+  background: var(--green-light);
+}
+
+.status-label.changed {
+  color: var(--warning);
+  background: #fff3d9;
+}
+
+.status-label.cancelled {
+  color: var(--danger);
+  background: #fff0ef;
+}
+
+.empty-area {
+  padding: 50px 20px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 700;
+}
+
+/* =============================================================
+   画面幅が少し狭い場合の調整
+============================================================= */
+@media (max-width: 1200px) {
+  body {
+    min-width: 900px;
+  }
+
+  .week-navigation {
+    grid-template-columns: 130px 1fr 130px;
+    gap: 16px;
+  }
+
+  .week-center strong {
+    font-size: 24px;
+  }
+}
