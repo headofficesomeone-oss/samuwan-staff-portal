@@ -452,13 +452,12 @@ async function saveCurrent() {
     updateDisableButtonState();
 
   } catch (error) {
-    console.error(error);
-    alert(error.message);
-
-  } finally {
+  	showApiError(error, "保存に失敗しました");
+	}	finally {
     saveButton.disabled = false;
     saveButton.textContent = "この内容で保存";
   }
+  
 }
 
 /** 入力内容を破棄し、新規時は空欄、修正時は選択中データへ戻す。 */
@@ -821,10 +820,13 @@ async function disableCurrent() {
     clearForm();
     renderList();
 
-  } catch (error) {
-    console.error(error);
-    alert(error.message);
-
+	} catch (error) {
+	  showApiError(
+	    error,
+	    isRestore
+	      ? "有効への復活に失敗しました"
+	      : "無効化に失敗しました"
+	  );
   } finally {
     updateDisableButtonState();
   }
