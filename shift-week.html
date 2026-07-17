@@ -4,22 +4,20 @@
   <meta charset="UTF-8">
 
   <!--
-    スマートフォンやタブレットでも、画面幅に合わせて表示するための設定です。
-    基本シフト表はPCでの編集を中心にしていますが、縮小表示にも対応します。
+    PCでのシフト編集を中心とした画面ですが、
+    タブレットやスマートフォンでも横幅に合わせて表示します。
   -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>基本シフト表</title>
 
-  <!-- 基本シフト表専用のデザインを読み込みます。 -->
+  <!-- 基本シフト表専用のデザイン -->
   <link rel="stylesheet" href="shift-week.css">
 </head>
 
 <body>
   <!-- =========================================================
        画面上部
-       左側：事業所名と画面名
-       右側：再読み込み、初回作成、規定値画面への移動
   ========================================================== -->
   <header class="app-header">
     <div class="header-title">
@@ -28,10 +26,7 @@
     </div>
 
     <div class="header-actions">
-      <!--
-        ブラウザに保存済みのデータを使わず、
-        GASから対象週の最新データを取得します。
-      -->
+      <!-- GASから対象週の最新データを再取得します。 -->
       <button
         id="reloadButton"
         class="secondary-button"
@@ -40,19 +35,16 @@
         再読み込み
       </button>
 
-      <!--
-        現在選択している対象週について、
-        シフト規定値から基本シフトを初回作成します。
-      -->
+      <!-- 規定値から対象週の基本シフトを初回作成します。 -->
       <button
         id="createButton"
         class="primary-button"
         type="button"
       >
-        規定値から初回作成
+        初回作成
       </button>
 
-      <!-- シフト規定値の登録・修正画面へ移動します。 -->
+      <!-- シフト規定値画面へ移動します。 -->
       <a
         class="nav-link"
         href="./shift-master-v2.html"
@@ -64,11 +56,7 @@
 
   <main class="page">
     <!-- =======================================================
-         対象週の選択エリア
-
-         左側：前の週
-         中央：対象週の日付、今週ボタン、期間表示
-         右側：次の週
+         対象週の選択
     ======================================================== -->
     <section class="control-card">
       <div class="week-navigation">
@@ -88,16 +76,11 @@
           </label>
 
           <div class="week-input-row">
-            <!--
-              日付を直接変更した場合も、選択日の属する週の
-              月曜日へ自動的にそろえます。
-            -->
             <input
               type="date"
               id="weekMonday"
             >
 
-            <!-- 現在の日付を含む週へ移動します。 -->
             <button
               id="currentWeekButton"
               class="secondary-button current-week-button"
@@ -107,7 +90,6 @@
             </button>
           </div>
 
-          <!-- 例：2026年7月20日 ～ 2026年7月26日 -->
           <strong id="weekRange"></strong>
         </div>
 
@@ -124,10 +106,7 @@
     </section>
 
     <!-- =======================================================
-         件数・処理メッセージ・ブラウザ保存状況
-
-         メッセージは件数の右側へ表示し、
-         メッセージ専用で1行を使わない構成にしています。
+         件数・メッセージ・ブラウザ保存状況
     ======================================================== -->
     <section class="summary-row">
       <div class="summary-left">
@@ -144,16 +123,40 @@
         ></div>
       </div>
 
-      <!-- ブラウザ保存した日時などを表示します。 -->
       <div id="cacheStatus" class="cache-status"></div>
     </section>
 
     <!-- =======================================================
          基本シフト一覧
+
+         利用者名をクリックすると、その行の直下に
+         スマホ表示用の詳細入力欄を開きます。
     ======================================================== -->
     <section class="table-card">
       <div class="table-scroll">
-        <table>
+        <table class="shift-table">
+          <!--
+            列ごとの幅を明確にするためcolgroupを使用します。
+            担当者4列は、すべて同じ幅です。
+          -->
+          <colgroup>
+            <col class="col-user">
+            <col class="col-date">
+            <col class="col-weekday">
+            <col class="col-time">
+            <col class="col-time">
+            <col class="col-service">
+            <col class="col-vehicle">
+            <col class="col-content">
+            <col class="col-note">
+            <col class="col-staff">
+            <col class="col-staff">
+            <col class="col-staff">
+            <col class="col-staff">
+            <col class="col-status">
+            <col class="col-publish">
+          </colgroup>
+
           <thead>
             <tr>
               <th>利用者</th>
@@ -162,7 +165,7 @@
               <th>開始</th>
               <th>終了</th>
               <th>サービス</th>
-              <th>有償運送車両</th>
+              <th>運送車両</th>
               <th>内容</th>
               <th>備考</th>
               <th>主担当</th>
@@ -178,14 +181,13 @@
         </table>
       </div>
 
-      <!-- 対象週にシフトが1件もない場合に表示します。 -->
       <div id="emptyArea" class="empty-area hidden">
         この週の基本シフトはまだありません。
       </div>
     </section>
   </main>
 
-  <!-- 基本シフト表専用の処理を読み込みます。 -->
+  <!-- 基本シフト表専用の処理 -->
   <script src="shift-week.js"></script>
 </body>
 </html>

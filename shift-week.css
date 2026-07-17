@@ -26,11 +26,16 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
-button:disabled {
+button:disabled,
+select:disabled,
+textarea:disabled,
+input:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -150,11 +155,6 @@ button:disabled {
 .week-side {
   display: flex;
   align-items: center;
-
-  /*
-    中央の日付より、左右のボタンを少し上へ配置します。
-    手書きイメージに合わせた位置調整です。
-  */
   transform: translateY(-10px);
 }
 
@@ -273,10 +273,59 @@ button:disabled {
   max-height: calc(100vh - 320px);
 }
 
-table {
+.shift-table {
   width: 100%;
-  min-width: 1500px;
+  min-width: 1480px;
+  table-layout: fixed;
   border-collapse: collapse;
+}
+
+/* 列幅 */
+.col-user {
+  width: 120px;
+}
+
+.col-date {
+  width: 75px;
+}
+
+.col-weekday {
+  width: 48px;
+}
+
+.col-time {
+  width: 62px;
+}
+
+.col-service {
+  width: 110px;
+}
+
+/* 「有償運送車両」から「運送車両」へ変更し、幅を狭くしています。 */
+.col-vehicle {
+  width: 82px;
+}
+
+/* 担当者列を広げるため、内容列を以前より少し狭くしています。 */
+.col-content {
+  width: 155px;
+}
+
+.col-note {
+  width: 150px;
+}
+
+/* 担当者4人分は、すべて同じ幅です。 */
+.col-staff {
+  width: 140px;
+}
+
+.col-status {
+  width: 82px;
+}
+
+.col-publish {
+  width: 90px;
 }
 
 thead {
@@ -286,7 +335,7 @@ thead {
 }
 
 th {
-  padding: 11px 10px;
+  padding: 11px 8px;
   color: #31533e;
   background: #edf7f0;
   border-right: 1px solid #dce7df;
@@ -297,23 +346,82 @@ th {
 }
 
 td {
-  padding: 10px;
+  padding: 8px;
   border-right: 1px solid #ebefec;
   border-bottom: 1px solid #e4e9e6;
   white-space: nowrap;
   font-size: 13px;
+  vertical-align: middle;
 }
 
-tbody tr:hover {
+.shift-data-row:hover {
   background: #f8fcf9;
 }
 
 .content-cell,
 .note-cell {
-  min-width: 210px;
-  max-width: 320px;
-  white-space: normal;
-  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vehicle-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* 利用者名は詳細欄を開閉するボタンとして表示します。 */
+.user-detail-button {
+  width: 100%;
+  padding: 7px 8px;
+  color: var(--green-dark);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.user-detail-button:hover,
+.user-detail-button[aria-expanded="true"] {
+  background: var(--green-light);
+}
+
+.user-detail-button::after {
+  content: "▼";
+  float: right;
+  margin-left: 6px;
+  font-size: 10px;
+}
+
+.user-detail-button[aria-expanded="true"]::after {
+  content: "▲";
+}
+
+/* 担当者プルダウン */
+.staff-select {
+  width: 100%;
+  height: 34px;
+  padding: 0 25px 0 7px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.staff-select.is-saving {
+  background: #fff8e9;
+}
+
+.staff-select.is-saved {
+  background: var(--green-light);
+}
+
+.staff-select.is-error {
+  background: #fff1f0;
+  border-color: var(--danger);
 }
 
 .status-label {
@@ -339,6 +447,99 @@ tbody tr:hover {
   background: #fff0ef;
 }
 
+/* =============================================================
+   利用者クリックで開くスマホ表示用の詳細入力欄
+============================================================= */
+.detail-row td {
+  padding: 0;
+  background: #f8fcf9;
+  border-bottom: 2px solid #cfe3d5;
+}
+
+.detail-panel {
+  padding: 18px 20px 20px;
+}
+
+.detail-panel-header {
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-panel-title {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: 17px;
+}
+
+.detail-close-button {
+  height: 34px;
+  padding: 0 12px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-field.span-2 {
+  grid-column: span 2;
+}
+
+.detail-field.span-4 {
+  grid-column: span 4;
+}
+
+.detail-field label {
+  color: #52625a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.detail-field input,
+.detail-field textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.detail-field input {
+  height: 39px;
+  padding: 0 10px;
+}
+
+.detail-field textarea {
+  min-height: 76px;
+  padding: 9px 10px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.detail-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.detail-save-status {
+  margin-right: auto;
+  align-self: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .empty-area {
   padding: 50px 20px;
   color: var(--muted);
@@ -346,20 +547,12 @@ tbody tr:hover {
   font-weight: 700;
 }
 
-/* =============================================================
-   画面幅が少し狭い場合の調整
-============================================================= */
-@media (max-width: 1200px) {
-  body {
-    min-width: 900px;
+@media (max-width: 1250px) {
+  .detail-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 
-  .week-navigation {
-    grid-template-columns: 130px 1fr 130px;
-    gap: 16px;
-  }
-
-  .week-center strong {
-    font-size: 24px;
+  .detail-field.span-4 {
+    grid-column: span 2;
   }
 }

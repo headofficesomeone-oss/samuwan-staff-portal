@@ -3,18 +3,14 @@
  * 基本シフト表 画面処理
  * =============================================================
  *
- * このファイルでは、主に次の処理を行います。
- *
- * 1. 起動時に翌週を初期表示する
- * 2. 前の週・次の週・今週へ移動する
+ * 主な処理
+ * 1. 起動時に翌週を表示する
+ * 2. 対象週を移動する
  * 3. 基本シフトをGASから取得する
- * 4. 取得した基本シフトを表に表示する
- * 5. 規定値から基本シフトを初回作成する
- * 6. 最大3週分をブラウザへ保存する
- * 7. 保存済みの週は、原則として通信せずに表示する
- *
- * ブラウザ保存には localStorage を使用します。
- * 同じ端末・同じブラウザであれば、画面を閉じても保持されます。
+ * 4. 最大3週分をブラウザへ保存する
+ * 5. 担当者4人分をプルダウンで変更する
+ * 6. 利用者名をクリックして詳細入力欄を開閉する
+ * 7. 担当変更・スマホ表示用詳細をSHIFT_WEEKへ保存する
  */
 
 /* =============================================================
@@ -26,20 +22,18 @@ const SHIFT_WEEK_API_URL =
 /* =============================================================
    ブラウザ保存の設定
 ============================================================= */
-
-/** localStorageで使用する保存キー */
-const SHIFT_WEEK_CACHE_KEY = "shiftWeekCacheV1";
-
-/** ブラウザに保持する週数 */
+const SHIFT_WEEK_CACHE_KEY = "shiftWeekCacheV2";
 const SHIFT_WEEK_CACHE_LIMIT = 3;
 
 /** 現在画面に表示している基本シフト */
 let currentWeekItems = [];
 
-/**
- * API通信でエラーが起きた場合に使用する専用エラーです。
- * GAS側で発行したエラー番号も保持できます。
- */
+/** 職員プルダウンへ表示する職員名 */
+let staffOptions = [];
+
+/** 現在詳細欄を開いているシフトID */
+let expandedShiftId = "";
+
 class ApiError extends Error {
   constructor(message, errorId = "") {
     super(message || "処理に失敗しました");
@@ -49,20 +43,17 @@ class ApiError extends Error {
 }
 
 /* =============================================================
-   画面起動時の処理
+   画面起動時
 ============================================================= */
 document.addEventListener("DOMContentLoaded", async () => {
-  /* 前の週へ移動 */
   document
     .getElementById("previousWeekButton")
     .addEventListener("click", () => moveWeek(-7));
 
-  /* 次の週へ移動 */
   document
     .getElementById("nextWeekButton")
     .addEventListener("click", () => moveWeek(7));
 
-  /* 現在の日付を含む週へ移動 */
   document
     .getElementById("currentWeekButton")
     .addEventListener("click", async () => {
@@ -70,22 +61,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       await loadCurrentWeek({ forceReload: false });
     });
 
-  /*
-    再読み込みボタンでは、ブラウザ保存を使わず、
-    GASから最新データを取り直します。
-  */
   document
     .getElementById("reloadButton")
     .addEventListener("click", async () => {
       await loadCurrentWeek({ forceReload: true });
     });
 
-  /* 規定値から初回作成 */
   document
     .getElementById("createButton")
     .addEventListener("click", createInitialWeek);
 
-  /* 日付入力を変更した場合 */
   document
     .getElementById("weekMonday")
     .addEventListener("change", async event => {
@@ -95,15 +80,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      /* 選択した日付が何曜日でも、その週の月曜日へそろえます。 */
       setWeekMonday(getMonday(selectedDate));
       await loadCurrentWeek({ forceReload: false });
     });
 
-  /*
-    基本シフトを作る段階では翌週を扱うことが多いため、
-    画面起動時の初期表示は「翌週の月曜日」にします。
-  */
+  /* 起動時は翌週を初期表示します。 */
   const nextWeekMonday = addDays(
     getMonday(new Date()),
     7
@@ -111,22 +92,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setWeekMonday(nextWeekMonday);
 
-  /*
-    起動時は最新情報を確認するため、GASから取得します。
-    通信に失敗した場合は、保存済みデータへ切り替えます。
-  */
-  await loadCurrentWeek({ forceReload: true });
+  /* 職員マスタと対象週を並行して読み込みます。 */
+  await Promise.all([
+    loadStaffOptions(),
+    loadCurrentWeek({ forceReload: true })
+  ]);
 });
 
 /* =============================================================
-   日付関連の共通処理
+   日付関連
 ============================================================= */
-
-/**
- * yyyy-MM-dd形式の文字列をローカル日付へ変換します。
- * new Date("yyyy-MM-dd") を直接使うと時差の影響を受けるため、
- * 年・月・日を分けてDateを作成します。
- */
 function parseLocalDate(text) {
   const match = String(text || "").match(
     /^(\d{4})-(\d{2})-(\d{2})$/
@@ -143,7 +118,6 @@ function parseLocalDate(text) {
   );
 }
 
-/** Dateをyyyy-MM-dd形式へ変換します。 */
 function formatLocalDate(date) {
   return [
     date.getFullYear(),
@@ -152,7 +126,6 @@ function formatLocalDate(date) {
   ].join("-");
 }
 
-/** Dateを「2026年7月20日」の形式へ変換します。 */
 function formatJapaneseDate(date) {
   return (
     date.getFullYear() +
@@ -164,7 +137,6 @@ function formatJapaneseDate(date) {
   );
 }
 
-/** 指定した日付を含む週の月曜日を返します。 */
 function getMonday(date) {
   const result = new Date(
     date.getFullYear(),
@@ -179,7 +151,6 @@ function getMonday(date) {
   return result;
 }
 
-/** 指定した日付に日数を加えます。 */
 function addDays(date, days) {
   const result = new Date(
     date.getFullYear(),
@@ -191,28 +162,22 @@ function addDays(date, days) {
   return result;
 }
 
-/**
- * 対象週の月曜日を画面へ設定し、
- * 月曜日から日曜日までの期間も表示します。
- */
 function setWeekMonday(monday) {
-  const weekMondayInput = document.getElementById("weekMonday");
-  const weekRange = document.getElementById("weekRange");
   const sunday = addDays(monday, 6);
 
-  weekMondayInput.value = formatLocalDate(monday);
-  weekRange.textContent =
+  document.getElementById("weekMonday").value =
+    formatLocalDate(monday);
+
+  document.getElementById("weekRange").textContent =
     formatJapaneseDate(monday) +
     " ～ " +
     formatJapaneseDate(sunday);
 }
 
-/** 現在画面で選択している月曜日を取得します。 */
 function getSelectedWeekMonday() {
   return document.getElementById("weekMonday").value;
 }
 
-/** 前後の週へ移動します。 */
 async function moveWeek(days) {
   const currentMonday = parseLocalDate(
     getSelectedWeekMonday()
@@ -222,28 +187,94 @@ async function moveWeek(days) {
     return;
   }
 
+  expandedShiftId = "";
   setWeekMonday(addDays(currentMonday, days));
-
-  /*
-    前後の週へ移動した場合は、保存済みデータを優先します。
-    保存がない週だけGASから取得します。
-  */
   await loadCurrentWeek({ forceReload: false });
 }
 
 /* =============================================================
-   基本シフトの読み込み
+   職員マスタ
 ============================================================= */
-
 /**
- * 対象週の基本シフトを読み込みます。
- *
- * forceReload = false
- *   保存済みの週があれば、通信せずに表示します。
- *
- * forceReload = true
- *   保存済みデータがあっても、GASから最新情報を取得します。
+ * 担当者プルダウン用の職員一覧を取得します。
+ * GAS側のgetStaffList()をweek-masters経由で使用します。
  */
+async function loadStaffOptions() {
+  try {
+    const result = await jsonpRequest(
+      "week-masters",
+      null,
+      "shiftWeekMastersCallback"
+    );
+
+    staffOptions = normalizeStaffOptions(result.data);
+
+    /* 一覧が先に描画済みの場合は、プルダウンを描画し直します。 */
+    if (currentWeekItems.length > 0) {
+      renderTable();
+    }
+  } catch (error) {
+    console.error("職員マスタを取得できませんでした", error);
+
+    /*
+      職員マスタが取得できなくても、現在登録されている担当者を
+      選択肢に含めて最低限の編集を可能にします。
+    */
+    staffOptions = collectCurrentStaffNames();
+  }
+}
+
+/** GASの返却形式の違いを吸収して職員名配列へ変換します。 */
+function normalizeStaffOptions(data) {
+  const source = Array.isArray(data)
+    ? data
+    : Array.isArray(data && data.staff)
+      ? data.staff
+      : Array.isArray(data && data.staffList)
+        ? data.staffList
+        : [];
+
+  const names = source
+    .map(item => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      return String(
+        item.name ||
+        item.staffName ||
+        item.employeeName ||
+        item.label ||
+        item.value ||
+        ""
+      ).trim();
+    })
+    .filter(Boolean);
+
+  return [...new Set(names)].sort((a, b) =>
+    a.localeCompare(b, "ja")
+  );
+}
+
+/** 現在のシフトに登録されている担当者名を集めます。 */
+function collectCurrentStaffNames() {
+  const names = [];
+
+  currentWeekItems.forEach(item => {
+    [item.staff1, item.staff2, item.staff3, item.staff4]
+      .map(value => String(value || "").trim())
+      .filter(Boolean)
+      .forEach(name => names.push(name));
+  });
+
+  return [...new Set(names)].sort((a, b) =>
+    a.localeCompare(b, "ja")
+  );
+}
+
+/* =============================================================
+   基本シフト読み込み
+============================================================= */
 async function loadCurrentWeek({ forceReload = false } = {}) {
   const weekMonday = getSelectedWeekMonday();
 
@@ -251,11 +282,11 @@ async function loadCurrentWeek({ forceReload = false } = {}) {
     return;
   }
 
-  /* 保存済みデータを確認します。 */
   const cachedWeek = getCachedWeek(weekMonday);
 
   if (!forceReload && cachedWeek) {
     currentWeekItems = cachedWeek.items || [];
+    expandedShiftId = "";
     renderTable();
 
     setMessage("保存済みの基本シフトを表示しています。");
@@ -275,9 +306,8 @@ async function loadCurrentWeek({ forceReload = false } = {}) {
     );
 
     currentWeekItems = result.data || [];
+    expandedShiftId = "";
     renderTable();
-
-    /* 最新データをブラウザへ保存します。 */
     saveWeekToCache(weekMonday, currentWeekItems);
 
     setMessage(
@@ -288,18 +318,16 @@ async function loadCurrentWeek({ forceReload = false } = {}) {
 
     showCacheStatus(new Date().toISOString());
   } catch (error) {
-    /*
-      通信に失敗しても保存データがあれば、
-      閲覧を続けられるようにします。
-    */
     if (cachedWeek) {
       currentWeekItems = cachedWeek.items || [];
+      expandedShiftId = "";
       renderTable();
 
       setMessage(
         "通信できないため、保存済みデータを表示しています。",
         true
       );
+
       showCacheStatus(cachedWeek.savedAt);
       return;
     }
@@ -314,13 +342,8 @@ async function loadCurrentWeek({ forceReload = false } = {}) {
 }
 
 /* =============================================================
-   規定値からの初回作成
+   規定値から初回作成
 ============================================================= */
-
-/**
- * 現在選択している対象週について、
- * シフト規定値から基本シフトを作成します。
- */
 async function createInitialWeek() {
   const weekMonday = getSelectedWeekMonday();
 
@@ -355,10 +378,6 @@ async function createInitialWeek() {
       result.message || "初回作成が完了しました。"
     );
 
-    /*
-      初回作成後は保存済みデータを使わず、
-      GASから作成後のデータを必ず取り直します。
-    */
     removeWeekFromCache(weekMonday);
     await loadCurrentWeek({ forceReload: true });
   } catch (error) {
@@ -375,16 +394,15 @@ async function createInitialWeek() {
 /* =============================================================
    一覧表の描画
 ============================================================= */
-
-/** 取得した基本シフトを一覧表へ表示します。 */
 function renderTable() {
   const tbody = document.getElementById("shiftWeekBody");
   const emptyArea = document.getElementById("emptyArea");
   const tableScroll = document.querySelector(".table-scroll");
-  const recordCount = document.getElementById("recordCount");
 
   tbody.innerHTML = "";
-  recordCount.textContent = currentWeekItems.length + "件";
+
+  document.getElementById("recordCount").textContent =
+    currentWeekItems.length + "件";
 
   if (currentWeekItems.length === 0) {
     tableScroll.classList.add("hidden");
@@ -396,31 +414,384 @@ function renderTable() {
   emptyArea.classList.add("hidden");
 
   currentWeekItems.forEach(item => {
-    const row = document.createElement("tr");
+    tbody.appendChild(createShiftDataRow(item));
 
-    row.innerHTML = `
-      <td>${escapeHtml(item.user)}</td>
-      <td>${escapeHtml(formatDateForTable(item.date))}</td>
-      <td>${escapeHtml(item.weekday)}</td>
-      <td>${escapeHtml(item.startTime)}</td>
-      <td>${escapeHtml(item.endTime)}</td>
-      <td>${escapeHtml(item.service)}</td>
-      <td>${escapeHtml(item.vehicle)}</td>
-      <td class="content-cell">${escapeHtml(item.content)}</td>
-      <td class="note-cell">${escapeHtml(item.note)}</td>
-      <td>${escapeHtml(item.staff1)}</td>
-      <td>${escapeHtml(item.staff2)}</td>
-      <td>${escapeHtml(item.staff3)}</td>
-      <td>${escapeHtml(item.staff4)}</td>
-      <td>${createStatusLabel(item.status)}</td>
-      <td>${escapeHtml(item.publishStatus)}</td>
-    `;
-
-    tbody.appendChild(row);
+    if (expandedShiftId === item.shiftId) {
+      tbody.appendChild(createDetailRow(item));
+    }
   });
 }
 
-/** 一覧の日付を「7/20」の形へ変換します。 */
+/** 基本シフトの通常行を作成します。 */
+function createShiftDataRow(item) {
+  const row = document.createElement("tr");
+  row.className = "shift-data-row";
+  row.dataset.shiftId = item.shiftId;
+
+  row.innerHTML = `
+    <td>
+      <button
+        type="button"
+        class="user-detail-button"
+        aria-expanded="${expandedShiftId === item.shiftId}"
+        data-shift-id="${escapeHtml(item.shiftId)}"
+      >
+        ${escapeHtml(item.user)}
+      </button>
+    </td>
+    <td>${escapeHtml(formatDateForTable(item.date))}</td>
+    <td>${escapeHtml(item.weekday)}</td>
+    <td>${escapeHtml(item.startTime)}</td>
+    <td>${escapeHtml(item.endTime)}</td>
+    <td>${escapeHtml(item.service)}</td>
+    <td class="vehicle-cell" title="${escapeHtml(item.vehicle)}">
+      ${escapeHtml(item.vehicle)}
+    </td>
+    <td class="content-cell" title="${escapeHtml(item.content)}">
+      ${escapeHtml(item.content)}
+    </td>
+    <td class="note-cell" title="${escapeHtml(item.note)}">
+      ${escapeHtml(item.note)}
+    </td>
+    <td>${createStaffSelect(item, "staff1")}</td>
+    <td>${createStaffSelect(item, "staff2")}</td>
+    <td>${createStaffSelect(item, "staff3")}</td>
+    <td>${createStaffSelect(item, "staff4")}</td>
+    <td>${createStatusLabel(item.status)}</td>
+    <td>${escapeHtml(item.publishStatus)}</td>
+  `;
+
+  row
+    .querySelector(".user-detail-button")
+    .addEventListener("click", () => {
+      toggleDetailRow(item.shiftId);
+    });
+
+  row
+    .querySelectorAll(".staff-select")
+    .forEach(select => {
+      select.addEventListener("change", () => {
+        saveStaffChange(select);
+      });
+    });
+
+  return row;
+}
+
+/** 担当者プルダウンHTMLを作成します。 */
+function createStaffSelect(item, fieldName) {
+  const currentValue = String(item[fieldName] || "").trim();
+
+  const availableNames = [
+    ...staffOptions,
+    currentValue
+  ].filter(Boolean);
+
+  const uniqueNames = [...new Set(availableNames)].sort(
+    (a, b) => a.localeCompare(b, "ja")
+  );
+
+  const options = [
+    `<option value="">未設定</option>`,
+    ...uniqueNames.map(name => {
+      const selected = name === currentValue
+        ? " selected"
+        : "";
+
+      return (
+        `<option value="${escapeHtml(name)}"${selected}>` +
+        `${escapeHtml(name)}</option>`
+      );
+    })
+  ].join("");
+
+  return `
+    <select
+      class="staff-select"
+      data-shift-id="${escapeHtml(item.shiftId)}"
+      data-field="${escapeHtml(fieldName)}"
+      aria-label="${escapeHtml(item.user)}の${getStaffFieldLabel(fieldName)}"
+    >
+      ${options}
+    </select>
+  `;
+}
+
+function getStaffFieldLabel(fieldName) {
+  const labels = {
+    staff1: "主担当",
+    staff2: "副担当",
+    staff3: "担当3",
+    staff4: "担当4"
+  };
+
+  return labels[fieldName] || fieldName;
+}
+
+/* =============================================================
+   担当者プルダウンの保存
+============================================================= */
+async function saveStaffChange(select) {
+  const shiftId = select.dataset.shiftId;
+  const fieldName = select.dataset.field;
+  const newValue = select.value;
+  const item = findShiftItem(shiftId);
+
+  if (!item || !fieldName) {
+    return;
+  }
+
+  const previousValue = item[fieldName] || "";
+
+  select.disabled = true;
+  select.classList.add("is-saving");
+
+  try {
+    await updateShiftWeek({
+      shiftId,
+      changes: {
+        [fieldName]: newValue
+      }
+    });
+
+    item[fieldName] = newValue;
+    updateCurrentWeekCache();
+
+    select.classList.remove("is-saving");
+    select.classList.add("is-saved");
+
+    setMessage(
+      item.user + "の" +
+      getStaffFieldLabel(fieldName) +
+      "を保存しました。"
+    );
+
+    setTimeout(() => {
+      select.classList.remove("is-saved");
+    }, 1200);
+  } catch (error) {
+    select.value = previousValue;
+    select.classList.remove("is-saving");
+    select.classList.add("is-error");
+
+    showApiError(error, "担当者の保存に失敗しました");
+
+    setTimeout(() => {
+      select.classList.remove("is-error");
+    }, 1800);
+  } finally {
+    select.disabled = false;
+  }
+}
+
+/* =============================================================
+   詳細欄の開閉
+============================================================= */
+function toggleDetailRow(shiftId) {
+  expandedShiftId =
+    expandedShiftId === shiftId
+      ? ""
+      : shiftId;
+
+  renderTable();
+
+  if (expandedShiftId) {
+    const detailRow = document.querySelector(
+      `.detail-row[data-shift-id="${cssEscape(expandedShiftId)}"]`
+    );
+
+    if (detailRow) {
+      detailRow.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
+  }
+}
+
+/** スマホ表示用の詳細入力欄を作成します。 */
+function createDetailRow(item) {
+  const row = document.createElement("tr");
+  row.className = "detail-row";
+  row.dataset.shiftId = item.shiftId;
+
+  const cell = document.createElement("td");
+  cell.colSpan = 15;
+
+  cell.innerHTML = `
+    <div class="detail-panel">
+      <div class="detail-panel-header">
+        <h2 class="detail-panel-title">
+          ${escapeHtml(item.user)}　スマホ表示用の詳細
+        </h2>
+
+        <button
+          type="button"
+          class="secondary-button detail-close-button"
+        >
+          閉じる
+        </button>
+      </div>
+
+      <div class="detail-grid">
+        ${createDetailInput("支援開始場所", "startPlace", item.startPlace)}
+        ${createDetailInput("開始場所補足", "startPlaceNote", item.startPlaceNote)}
+        ${createDetailInput("支援終了場所", "endPlace", item.endPlace)}
+        ${createDetailInput("終了場所補足", "endPlaceNote", item.endPlaceNote)}
+
+        ${createDetailInput("行き先", "destination", item.destination)}
+        ${createDetailInput("待合せ", "meeting", item.meeting)}
+        ${createDetailInput("合流場所", "meetingPoint", item.meetingPoint)}
+        ${createDetailInput("移動手段", "transport", item.transport)}
+
+        ${createDetailTextarea("支援内容", "support", item.support, "span-2")}
+        ${createDetailTextarea("当日の指示", "instruction", item.instruction, "span-2")}
+        ${createDetailTextarea("詳細注意", "detailNote", item.detailNote, "span-2")}
+        ${createDetailTextarea("簡易表示メモ", "simpleMemo", item.simpleMemo, "span-2")}
+      </div>
+
+      <div class="detail-actions">
+        <span class="detail-save-status"></span>
+
+        <button
+          type="button"
+          class="secondary-button detail-cancel-button"
+        >
+          入力を戻す
+        </button>
+
+        <button
+          type="button"
+          class="primary-button detail-save-button"
+        >
+          詳細を保存
+        </button>
+      </div>
+    </div>
+  `;
+
+  row.appendChild(cell);
+
+  cell
+    .querySelector(".detail-close-button")
+    .addEventListener("click", () => {
+      expandedShiftId = "";
+      renderTable();
+    });
+
+  cell
+    .querySelector(".detail-cancel-button")
+    .addEventListener("click", () => {
+      renderTable();
+    });
+
+  cell
+    .querySelector(".detail-save-button")
+    .addEventListener("click", () => {
+      saveDetailChanges(row, item);
+    });
+
+  return row;
+}
+
+function createDetailInput(label, fieldName, value) {
+  return `
+    <div class="detail-field">
+      <label>${escapeHtml(label)}</label>
+      <input
+        type="text"
+        data-detail-field="${escapeHtml(fieldName)}"
+        value="${escapeHtml(value)}"
+      >
+    </div>
+  `;
+}
+
+function createDetailTextarea(label, fieldName, value, extraClass = "") {
+  return `
+    <div class="detail-field ${escapeHtml(extraClass)}">
+      <label>${escapeHtml(label)}</label>
+      <textarea
+        data-detail-field="${escapeHtml(fieldName)}"
+      >${escapeHtml(value)}</textarea>
+    </div>
+  `;
+}
+
+/* =============================================================
+   詳細欄の保存
+============================================================= */
+async function saveDetailChanges(detailRow, item) {
+  const saveButton = detailRow.querySelector(
+    ".detail-save-button"
+  );
+  const statusArea = detailRow.querySelector(
+    ".detail-save-status"
+  );
+  const originalText = saveButton.textContent;
+  const changes = {};
+
+  detailRow
+    .querySelectorAll("[data-detail-field]")
+    .forEach(input => {
+      changes[input.dataset.detailField] = input.value.trim();
+    });
+
+  saveButton.disabled = true;
+  saveButton.textContent = "保存中...";
+  statusArea.textContent = "詳細を保存しています。";
+
+  try {
+    await updateShiftWeek({
+      shiftId: item.shiftId,
+      changes
+    });
+
+    Object.assign(item, changes);
+    updateCurrentWeekCache();
+
+    statusArea.textContent = "保存しました。";
+    setMessage(item.user + "の詳細を保存しました。");
+  } catch (error) {
+    statusArea.textContent = "保存できませんでした。";
+    showApiError(error, "詳細の保存に失敗しました");
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = originalText;
+  }
+}
+
+/** 基本シフト1件の変更をGASへ送信します。 */
+async function updateShiftWeek(payload) {
+  const result = await jsonpRequest(
+    "week-update",
+    payload,
+    "shiftWeekUpdateCallback"
+  );
+
+  if (!result || result.success !== true) {
+    throw new ApiError(
+      result && result.message
+        ? result.message
+        : "保存に失敗しました",
+      result && result.errorId
+        ? result.errorId
+        : ""
+    );
+  }
+
+  return result;
+}
+
+function findShiftItem(shiftId) {
+  return currentWeekItems.find(
+    item => item.shiftId === shiftId
+  );
+}
+
+/* =============================================================
+   表示補助
+============================================================= */
 function formatDateForTable(value) {
   const date = parseLocalDate(value);
 
@@ -429,169 +800,55 @@ function formatDateForTable(value) {
   }
 
   return (
-    (date.getMonth() + 1) +
+    date.getMonth() + 1 +
     "/" +
     date.getDate()
   );
 }
 
-/** 状態を見やすいラベルとして表示します。 */
 function createStatusLabel(statusValue) {
   const status = String(statusValue || "予定");
-  let cssClass = "planned";
+  let className = "planned";
 
   if (status === "変更") {
-    cssClass = "changed";
-  }
-
-  if (
-    status === "キャンセル" ||
-    status === "取消"
-  ) {
-    cssClass = "cancelled";
+    className = "changed";
+  } else if (status === "キャンセル") {
+    className = "cancelled";
   }
 
   return `
-    <span class="status-label ${cssClass}">
+    <span class="status-label ${className}">
       ${escapeHtml(status)}
     </span>
   `;
 }
 
-/* =============================================================
-   ブラウザ保存
-============================================================= */
+function setMessage(message, isError = false) {
+  const area = document.getElementById("messageArea");
 
-/** localStorageから全キャッシュを読み込みます。 */
-function readShiftWeekCache() {
-  try {
-    const text = localStorage.getItem(
-      SHIFT_WEEK_CACHE_KEY
-    );
-
-    if (!text) {
-      return { weeks: {} };
-    }
-
-    const parsed = JSON.parse(text);
-
-    if (!parsed || typeof parsed !== "object") {
-      return { weeks: {} };
-    }
-
-    if (!parsed.weeks || typeof parsed.weeks !== "object") {
-      parsed.weeks = {};
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn("基本シフトの保存データを読めませんでした。", error);
-    return { weeks: {} };
-  }
+  area.textContent = message;
+  area.className =
+    "message-area" +
+    (isError ? " error" : "");
 }
 
-/** 全キャッシュをlocalStorageへ保存します。 */
-function writeShiftWeekCache(cache) {
-  try {
-    localStorage.setItem(
-      SHIFT_WEEK_CACHE_KEY,
-      JSON.stringify(cache)
-    );
-  } catch (error) {
-    console.warn("基本シフトをブラウザへ保存できませんでした。", error);
-  }
-}
-
-/** 指定週の保存済みデータを取得します。 */
-function getCachedWeek(weekMonday) {
-  const cache = readShiftWeekCache();
-  const cachedWeek = cache.weeks[weekMonday];
-
-  if (!cachedWeek) {
-    return null;
-  }
-
-  /*
-    使用した週は古い週として削除されにくいよう、
-    最終使用日時を更新します。
-  */
-  cachedWeek.lastUsedAt = new Date().toISOString();
-  writeShiftWeekCache(cache);
-
-  return cachedWeek;
-}
-
-/** 指定週のデータを保存します。 */
-function saveWeekToCache(weekMonday, items) {
-  const cache = readShiftWeekCache();
-  const now = new Date().toISOString();
-
-  cache.weeks[weekMonday] = {
-    weekMonday,
-    items: Array.isArray(items) ? items : [],
-    savedAt: now,
-    lastUsedAt: now
-  };
-
-  /* 最大3週になるよう、古く使われた週から削除します。 */
-  trimShiftWeekCache(cache);
-  writeShiftWeekCache(cache);
-}
-
-/** 指定週だけ保存データから削除します。 */
-function removeWeekFromCache(weekMonday) {
-  const cache = readShiftWeekCache();
-
-  delete cache.weeks[weekMonday];
-  writeShiftWeekCache(cache);
-}
-
-/** 保存週数が上限を超えた場合、古い週から削除します。 */
-function trimShiftWeekCache(cache) {
-  const entries = Object.entries(cache.weeks);
-
-  if (entries.length <= SHIFT_WEEK_CACHE_LIMIT) {
-    return;
-  }
-
-  entries.sort((a, b) => {
-    const aTime = new Date(
-      a[1].lastUsedAt || a[1].savedAt || 0
-    ).getTime();
-
-    const bTime = new Date(
-      b[1].lastUsedAt || b[1].savedAt || 0
-    ).getTime();
-
-    return aTime - bTime;
-  });
-
-  while (entries.length > SHIFT_WEEK_CACHE_LIMIT) {
-    const oldestEntry = entries.shift();
-
-    if (oldestEntry) {
-      delete cache.weeks[oldestEntry[0]];
-    }
-  }
-}
-
-/** 保存日時を画面右側へ表示します。 */
 function showCacheStatus(savedAt) {
-  const cacheStatus = document.getElementById("cacheStatus");
+  const area = document.getElementById("cacheStatus");
 
   if (!savedAt) {
-    cacheStatus.textContent = "";
+    area.textContent = "";
     return;
   }
 
   const date = new Date(savedAt);
 
   if (Number.isNaN(date.getTime())) {
-    cacheStatus.textContent = "";
+    area.textContent = "";
     return;
   }
 
-  const formatted =
+  area.textContent =
+    "端末保存：" +
     String(date.getMonth() + 1).padStart(2, "0") +
     "/" +
     String(date.getDate()).padStart(2, "0") +
@@ -599,50 +856,8 @@ function showCacheStatus(savedAt) {
     String(date.getHours()).padStart(2, "0") +
     ":" +
     String(date.getMinutes()).padStart(2, "0");
-
-  cacheStatus.textContent =
-    "端末保存：" + formatted +
-    "　最大" + SHIFT_WEEK_CACHE_LIMIT + "週";
 }
 
-/* =============================================================
-   画面メッセージ・ボタン制御
-============================================================= */
-
-/** 件数の右側へ処理メッセージを表示します。 */
-function setMessage(message, isError = false) {
-  const messageArea = document.getElementById("messageArea");
-
-  if (!message) {
-    messageArea.textContent = "";
-    messageArea.className = "message-area hidden";
-    return;
-  }
-
-  messageArea.textContent = message;
-  messageArea.className =
-    "message-area" +
-    (isError ? " error" : "");
-}
-
-/** 通信中に連続操作されないよう、主なボタンを無効にします。 */
-function setButtonsDisabled(disabled) {
-  [
-    "previousWeekButton",
-    "nextWeekButton",
-    "currentWeekButton",
-    "reloadButton",
-    "createButton"
-  ].forEach(id => {
-    const button = document.getElementById(id);
-
-    if (button) {
-      button.disabled = disabled;
-    }
-  });
-}
-
-/** APIエラーを画面とダイアログへ表示します。 */
 function showApiError(error, heading) {
   console.error(error);
 
@@ -656,13 +871,13 @@ function showApiError(error, heading) {
       ? String(error.errorId)
       : "";
 
-  const displayMessage =
+  setMessage(
     heading +
     "：" +
     message +
-    (errorId ? "　エラー番号：" + errorId : "");
-
-  setMessage(displayMessage, true);
+    (errorId ? "　エラー番号：" + errorId : ""),
+    true
+  );
 
   alert(
     heading +
@@ -672,25 +887,138 @@ function showApiError(error, heading) {
   );
 }
 
-/* =============================================================
-   GASとのJSONP通信
-============================================================= */
+function setButtonsDisabled(disabled) {
+  [
+    "previousWeekButton",
+    "nextWeekButton",
+    "currentWeekButton",
+    "reloadButton",
+    "createButton",
+    "weekMonday"
+  ].forEach(id => {
+    const element = document.getElementById(id);
 
-/**
- * GitHub PagesからGASへ通信するため、JSONPを使用します。
- *
- * action
- *   GAS側で実行する処理名
- *
- * payload
- *   GASへ渡す登録・作成用データ
- *
- * callbackPrefix
- *   コールバック関数名の先頭部分
- *
- * extraParameters
- *   weekMondayなどの追加GETパラメータ
- */
+    if (element) {
+      element.disabled = disabled;
+    }
+  });
+}
+
+/* =============================================================
+   ブラウザ保存
+============================================================= */
+function readCache() {
+  try {
+    const text = localStorage.getItem(
+      SHIFT_WEEK_CACHE_KEY
+    );
+
+    if (!text) {
+      return { weeks: {} };
+    }
+
+    const cache = JSON.parse(text);
+
+    if (!cache || typeof cache !== "object") {
+      return { weeks: {} };
+    }
+
+    if (!cache.weeks || typeof cache.weeks !== "object") {
+      cache.weeks = {};
+    }
+
+    return cache;
+  } catch (error) {
+    console.warn("基本シフトの保存データを読めませんでした", error);
+    return { weeks: {} };
+  }
+}
+
+function writeCache(cache) {
+  try {
+    localStorage.setItem(
+      SHIFT_WEEK_CACHE_KEY,
+      JSON.stringify(cache)
+    );
+  } catch (error) {
+    console.warn("基本シフトをブラウザへ保存できませんでした", error);
+  }
+}
+
+function getCachedWeek(weekMonday) {
+  const cache = readCache();
+  const entry = cache.weeks[weekMonday];
+
+  if (!entry) {
+    return null;
+  }
+
+  entry.lastAccessedAt = new Date().toISOString();
+  writeCache(cache);
+
+  return entry;
+}
+
+function saveWeekToCache(weekMonday, items) {
+  const cache = readCache();
+  const now = new Date().toISOString();
+
+  cache.weeks[weekMonday] = {
+    items,
+    savedAt: now,
+    lastAccessedAt: now
+  };
+
+  const entries = Object.entries(cache.weeks);
+
+  if (entries.length > SHIFT_WEEK_CACHE_LIMIT) {
+    entries
+      .sort((a, b) => {
+        const aTime = new Date(
+          a[1].lastAccessedAt || a[1].savedAt || 0
+        ).getTime();
+
+        const bTime = new Date(
+          b[1].lastAccessedAt || b[1].savedAt || 0
+        ).getTime();
+
+        return aTime - bTime;
+      })
+      .slice(
+        0,
+        entries.length - SHIFT_WEEK_CACHE_LIMIT
+      )
+      .forEach(([key]) => {
+        delete cache.weeks[key];
+      });
+  }
+
+  writeCache(cache);
+}
+
+function updateCurrentWeekCache() {
+  const weekMonday = getSelectedWeekMonday();
+
+  if (!weekMonday) {
+    return;
+  }
+
+  saveWeekToCache(weekMonday, currentWeekItems);
+  showCacheStatus(new Date().toISOString());
+}
+
+function removeWeekFromCache(weekMonday) {
+  const cache = readCache();
+
+  if (cache.weeks[weekMonday]) {
+    delete cache.weeks[weekMonday];
+    writeCache(cache);
+  }
+}
+
+/* =============================================================
+   JSONP通信
+============================================================= */
 function jsonpRequest(
   action,
   payload = null,
@@ -708,7 +1036,6 @@ function jsonpRequest(
     const script = document.createElement("script");
     let finished = false;
 
-    /** 通信後にscript要素と一時関数を削除します。 */
     const cleanup = () => {
       delete window[callbackName];
 
@@ -717,7 +1044,6 @@ function jsonpRequest(
       }
     };
 
-    /** 30秒以内に応答がない場合はタイムアウトにします。 */
     const timer = setTimeout(() => {
       if (finished) {
         return;
@@ -731,7 +1057,6 @@ function jsonpRequest(
       );
     }, 30000);
 
-    /** GASから呼び出される一時的なコールバック関数です。 */
     window[callbackName] = result => {
       if (finished) {
         return;
@@ -764,17 +1089,12 @@ function jsonpRequest(
     parameters.set("callback", callbackName);
     parameters.set("_", Date.now());
 
-    Object.entries(extraParameters).forEach(
-      ([key, value]) => {
-        parameters.set(key, value);
-      }
-    );
+    Object.entries(extraParameters).forEach(([key, value]) => {
+      parameters.set(key, value);
+    });
 
     if (payload !== null) {
-      parameters.set(
-        "payload",
-        JSON.stringify(payload)
-      );
+      parameters.set("payload", JSON.stringify(payload));
     }
 
     script.src =
@@ -801,13 +1121,8 @@ function jsonpRequest(
 }
 
 /* =============================================================
-   HTML安全化
+   文字列の安全な表示
 ============================================================= */
-
-/**
- * シートから取得した文字列をHTMLへ表示する前に、
- * 特殊文字を置き換えて意図しないHTML実行を防止します。
- */
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -815,4 +1130,13 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/** querySelectorでシフトIDを安全に使用します。 */
+function cssEscape(value) {
+  if (window.CSS && typeof window.CSS.escape === "function") {
+    return window.CSS.escape(String(value));
+  }
+
+  return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
