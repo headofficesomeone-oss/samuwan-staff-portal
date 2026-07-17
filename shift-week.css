@@ -1,6 +1,6 @@
-/* =============================================================
+/* =========================================================
    基本設定
-============================================================= */
+========================================================= */
 * {
   box-sizing: border-box;
 }
@@ -9,12 +9,10 @@
   --green: #2fa85a;
   --green-dark: #238747;
   --green-light: #eaf7ef;
-  --background: #f4f8f5;
   --border: #dbe4de;
   --text: #22303c;
   --muted: #71808a;
   --danger: #d9534f;
-  --warning: #c88212;
 }
 
 body {
@@ -22,7 +20,7 @@ body {
   min-width: 1040px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
-  background: var(--background);
+  background: #f4f8f5;
 }
 
 button,
@@ -32,17 +30,13 @@ textarea {
   font: inherit;
 }
 
-button:disabled,
-select:disabled,
-textarea:disabled,
-input:disabled {
-  cursor: wait;
-  opacity: 0.65;
+.hidden {
+  display: none !important;
 }
 
-/* =============================================================
-   画面上部
-============================================================= */
+/* =========================================================
+   ヘッダー
+========================================================= */
 .app-header {
   min-height: 88px;
   padding: 14px 24px;
@@ -52,12 +46,6 @@ input:disabled {
   gap: 20px;
   background: #ffffff;
   border-bottom: 1px solid #e6ece8;
-}
-
-.header-title {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .app-name {
@@ -73,58 +61,45 @@ input:disabled {
 
 .header-actions {
   display: flex;
-  align-items: flex-start;
   gap: 10px;
-  flex-wrap: wrap;
   padding-top: 10px;
 }
 
-/* =============================================================
-   共通ボタン
-============================================================= */
 .secondary-button,
 .primary-button,
 .nav-link {
-  height: 42px;
+  min-height: 42px;
   padding: 0 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
   font-weight: 800;
-  cursor: pointer;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .secondary-button {
+  border: 1px solid var(--border);
   color: var(--text);
   background: #ffffff;
-  border: 1px solid var(--border);
-}
-
-.secondary-button:hover {
-  background: #f6faf7;
 }
 
 .primary-button {
+  border: 0;
   color: #ffffff;
   background: var(--green);
-  border: none;
-}
-
-.primary-button:hover {
-  background: var(--green-dark);
 }
 
 .nav-link {
+  border: 1px solid var(--green);
   color: var(--green-dark);
   background: #ffffff;
-  border: 1px solid var(--green);
 }
 
-/* =============================================================
-   ページ全体
-============================================================= */
+/* =========================================================
+   週選択
+========================================================= */
 .page {
   padding: 20px 24px 40px;
 }
@@ -137,38 +112,25 @@ input:disabled {
   box-shadow: 0 8px 24px rgba(34, 48, 60, 0.06);
 }
 
-/* =============================================================
-   対象週の選択エリア
-============================================================= */
 .control-card {
   padding: 18px 24px 22px;
 }
 
 .week-navigation {
-  min-height: 150px;
+  min-height: 145px;
   display: grid;
   grid-template-columns: 160px 1fr 160px;
   align-items: center;
   gap: 24px;
 }
 
-.week-side {
-  display: flex;
-  align-items: center;
-  transform: translateY(-10px);
-}
-
-.week-side-left {
-  justify-content: flex-start;
-}
-
 .week-side-right {
-  justify-content: flex-end;
+  text-align: right;
 }
 
 .large-week-button {
   min-width: 110px;
-  height: 52px;
+  min-height: 52px;
   font-size: 17px;
 }
 
@@ -186,38 +148,31 @@ input:disabled {
 
 .week-input-row {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   gap: 12px;
 }
 
 .week-input-row input {
+  width: 240px;
   height: 48px;
-  min-width: 240px;
   padding: 0 12px;
-  text-align: center;
-  font-weight: 700;
-  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 10px;
-}
-
-.current-week-button {
-  height: 48px;
-  min-width: 80px;
+  text-align: center;
+  font-weight: 700;
 }
 
 .week-center strong {
   display: block;
   margin-top: 10px;
-  color: var(--text);
   font-size: 28px;
   font-weight: 500;
 }
 
-/* =============================================================
-   件数・メッセージ・保存状況
-============================================================= */
+/* =========================================================
+   件数・メッセージ
+========================================================= */
 .summary-row {
   margin: 18px 2px 10px;
   display: flex;
@@ -230,7 +185,6 @@ input:disabled {
   display: flex;
   align-items: center;
   gap: 18px;
-  flex-wrap: wrap;
 }
 
 .record-summary strong {
@@ -238,11 +192,11 @@ input:disabled {
 }
 
 .message-area {
-  padding: 8px 13px;
+  padding: 9px 13px;
+  border-radius: 9px;
   color: var(--green-dark);
   background: var(--green-light);
-  border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -253,17 +207,12 @@ input:disabled {
 
 .cache-status {
   color: var(--muted);
-  font-size: 13px;
-  text-align: right;
+  font-size: 12px;
 }
 
-.hidden {
-  display: none !important;
-}
-
-/* =============================================================
+/* =========================================================
    一覧表
-============================================================= */
+========================================================= */
 .table-card {
   overflow: hidden;
 }
@@ -275,270 +224,210 @@ input:disabled {
 
 .shift-table {
   width: 100%;
-  min-width: 1480px;
-  table-layout: fixed;
+  min-width: 1440px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
-/* 列幅 */
-.col-user {
-  width: 120px;
-}
-
-.col-date {
-  width: 75px;
-}
-
-.col-weekday {
-  width: 48px;
-}
-
-.col-time {
-  width: 62px;
-}
-
-.col-service {
-  width: 110px;
-}
-
-/* 「有償運送車両」から「運送車両」へ変更し、幅を狭くしています。 */
-.col-vehicle {
-  width: 82px;
-}
-
-/* 担当者列を広げるため、内容列を以前より少し狭くしています。 */
-.col-content {
-  width: 155px;
-}
-
-.col-note {
-  width: 150px;
-}
-
-/* 担当者4人分は、すべて同じ幅です。 */
-.col-staff {
-  width: 140px;
-}
-
-.col-status {
-  width: 82px;
-}
-
-.col-publish {
-  width: 90px;
-}
-
-thead {
+.shift-table thead {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
 }
 
-th {
-  padding: 11px 8px;
+.shift-table th {
+  padding: 9px 7px;
   color: #31533e;
   background: #edf7f0;
   border-right: 1px solid #dce7df;
   border-bottom: 1px solid #cfdcd3;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 12px;
   text-align: left;
 }
 
-td {
-  padding: 8px;
+.shift-table td {
+  padding: 7px;
   border-right: 1px solid #ebefec;
   border-bottom: 1px solid #e4e9e6;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 12px;
   vertical-align: middle;
 }
 
-.shift-data-row:hover {
-  background: #f8fcf9;
-}
+.col-user { width: 120px; }
+.col-date { width: 78px; }
+.col-weekday { width: 48px; }
+.col-time { width: 62px; }
+.col-service { width: 105px; }
+.col-vehicle { width: 76px; }
+.col-content { width: 155px; }
+.col-note { width: 120px; }
+.col-staff { width: 116px; }
+.col-status { width: 75px; }
+.col-publish { width: 85px; }
 
 .content-cell,
 .note-cell {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.vehicle-cell {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
-
-/* 利用者名は詳細欄を開閉するボタンとして表示します。 */
 .user-detail-button {
   width: 100%;
-  padding: 7px 8px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 7px;
   color: var(--green-dark);
   background: transparent;
-  border: none;
-  border-radius: 7px;
   font-weight: 800;
   text-align: left;
   cursor: pointer;
 }
 
 .user-detail-button:hover,
-.user-detail-button[aria-expanded="true"] {
+.user-detail-button.is-open {
   background: var(--green-light);
 }
 
-.user-detail-button::after {
-  content: "▼";
-  float: right;
-  margin-left: 6px;
-  font-size: 10px;
-}
-
-.user-detail-button[aria-expanded="true"]::after {
-  content: "▲";
-}
-
-/* 担当者プルダウン */
 .staff-select {
   width: 100%;
-  height: 34px;
-  padding: 0 25px 0 7px;
-  background: #ffffff;
+  height: 30px;
+  padding: 0 5px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 6px;
+  background: #ffffff;
   font-size: 12px;
 }
 
-.staff-select.is-saving {
-  background: #fff8e9;
-}
+/* =========================================================
+   利用者クリック時の詳細入力欄
 
-.staff-select.is-saved {
-  background: var(--green-light);
-}
-
-.staff-select.is-error {
-  background: #fff1f0;
-  border-color: var(--danger);
-}
-
-.status-label {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.status-label.planned {
-  color: var(--green-dark);
-  background: var(--green-light);
-}
-
-.status-label.changed {
-  color: var(--warning);
-  background: #fff3d9;
-}
-
-.status-label.cancelled {
-  color: var(--danger);
-  background: #fff0ef;
-}
-
-/* =============================================================
-   利用者クリックで開くスマホ表示用の詳細入力欄
-============================================================= */
+   3行程度で収まるように、入力項目を横並びに配置します。
+========================================================= */
 .detail-row td {
   padding: 0;
-  background: #f8fcf9;
-  border-bottom: 2px solid #cfe3d5;
+  white-space: normal;
+  background: #f7fbf8;
 }
 
 .detail-panel {
-  padding: 18px 20px 20px;
+  padding: 10px 12px 12px;
+  border-top: 2px solid #bfe4ca;
+  border-bottom: 2px solid #bfe4ca;
 }
 
-.detail-panel-header {
-  margin-bottom: 14px;
+.detail-header {
+  min-height: 34px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.detail-panel-title {
-  margin: 0;
+.detail-user-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.detail-user-heading strong {
   color: var(--green-dark);
   font-size: 17px;
 }
 
+.detail-user-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-save-button,
 .detail-close-button {
-  height: 34px;
-  padding: 0 12px;
+  min-height: 32px;
+  padding: 0 13px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.detail-save-button {
+  border: 0;
+  color: #ffffff;
+  background: var(--green);
+}
+
+.detail-close-button {
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: #ffffff;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 7px 9px;
 }
 
 .detail-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.detail-field.span-2 {
-  grid-column: span 2;
-}
-
-.detail-field.span-4 {
-  grid-column: span 4;
+  min-width: 0;
 }
 
 .detail-field label {
-  color: #52625a;
-  font-size: 12px;
+  display: block;
+  margin-bottom: 3px;
+  color: #52616b;
+  font-size: 10px;
   font-weight: 800;
 }
 
 .detail-field input,
+.detail-field select,
 .detail-field textarea {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: #ffffff;
+  font-size: 12px;
 }
 
-.detail-field input {
-  height: 39px;
-  padding: 0 10px;
+.detail-field input,
+.detail-field select {
+  height: 31px;
+  padding: 0 7px;
 }
 
 .detail-field textarea {
-  min-height: 76px;
-  padding: 9px 10px;
+  height: 48px;
+  padding: 6px 7px;
   resize: vertical;
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
-.detail-actions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
+/* 1段目 */
+.field-start-place { grid-column: span 2; }
+.field-start-note { grid-column: span 2; }
+.field-end-place { grid-column: span 2; }
+.field-end-note { grid-column: span 2; }
+.field-destination { grid-column: span 2; }
+.field-transport { grid-column: span 2; }
 
-.detail-save-status {
-  margin-right: auto;
-  align-self: center;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-}
+/* 2段目 */
+.field-meeting { grid-column: span 2; }
+.field-meeting-point { grid-column: span 2; }
+.field-simple-memo { grid-column: span 3; }
+.field-detail-note { grid-column: span 5; }
+
+/* 3段目 */
+.field-support { grid-column: span 6; }
+.field-instruction { grid-column: span 6; }
 
 .empty-area {
   padding: 50px 20px;
@@ -547,12 +436,30 @@ td {
   font-weight: 700;
 }
 
-@media (max-width: 1250px) {
-  .detail-grid {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
+@media (max-width: 1200px) {
+  body {
+    min-width: 900px;
   }
 
-  .detail-field.span-4 {
+  .detail-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .field-start-place,
+  .field-start-note,
+  .field-end-place,
+  .field-end-note,
+  .field-destination,
+  .field-transport,
+  .field-meeting,
+  .field-meeting-point {
     grid-column: span 2;
+  }
+
+  .field-simple-memo,
+  .field-detail-note,
+  .field-support,
+  .field-instruction {
+    grid-column: span 3;
   }
 }

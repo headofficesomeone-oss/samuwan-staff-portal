@@ -2,23 +2,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-
-  <!--
-    PCでのシフト編集を中心とした画面ですが、
-    タブレットやスマートフォンでも横幅に合わせて表示します。
-  -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>基本シフト表</title>
-
-  <!-- 基本シフト表専用のデザイン -->
   <link rel="stylesheet" href="shift-week.css">
 </head>
-
 <body>
-  <!-- =========================================================
-       画面上部
-  ========================================================== -->
   <header class="app-header">
     <div class="header-title">
       <div class="app-name">訪問ケアぷーどる</div>
@@ -26,88 +14,36 @@
     </div>
 
     <div class="header-actions">
-      <!-- GASから対象週の最新データを再取得します。 -->
-      <button
-        id="reloadButton"
-        class="secondary-button"
-        type="button"
-      >
-        再読み込み
-      </button>
-
-      <!-- 規定値から対象週の基本シフトを初回作成します。 -->
-      <button
-        id="createButton"
-        class="primary-button"
-        type="button"
-      >
-        初回作成
-      </button>
-
-      <!-- シフト規定値画面へ移動します。 -->
-      <a
-        class="nav-link"
-        href="./shift-master-v2.html"
-      >
-        シフト規定値
-      </a>
+      <button id="reloadButton" class="secondary-button" type="button">再読み込み</button>
+      <button id="createButton" class="primary-button" type="button">初回作成</button>
+      <a class="nav-link" href="./shift-master-v2.html">シフト規定値</a>
     </div>
   </header>
 
   <main class="page">
-    <!-- =======================================================
-         対象週の選択
-    ======================================================== -->
     <section class="control-card">
       <div class="week-navigation">
         <div class="week-side week-side-left">
-          <button
-            id="previousWeekButton"
-            class="secondary-button large-week-button"
-            type="button"
-          >
-            前の週
-          </button>
+          <button id="previousWeekButton" class="secondary-button large-week-button" type="button">前の週</button>
         </div>
 
         <div class="week-center">
-          <label for="weekMonday">
-            対象週の月曜日
-          </label>
+          <label for="weekMonday">対象週の月曜日</label>
 
           <div class="week-input-row">
-            <input
-              type="date"
-              id="weekMonday"
-            >
-
-            <button
-              id="currentWeekButton"
-              class="secondary-button current-week-button"
-              type="button"
-            >
-              今週
-            </button>
+            <input id="weekMonday" type="date">
+            <button id="currentWeekButton" class="secondary-button current-week-button" type="button">今週</button>
           </div>
 
           <strong id="weekRange"></strong>
         </div>
 
         <div class="week-side week-side-right">
-          <button
-            id="nextWeekButton"
-            class="secondary-button large-week-button"
-            type="button"
-          >
-            次の週
-          </button>
+          <button id="nextWeekButton" class="secondary-button large-week-button" type="button">次の週</button>
         </div>
       </div>
     </section>
 
-    <!-- =======================================================
-         件数・メッセージ・ブラウザ保存状況
-    ======================================================== -->
     <section class="summary-row">
       <div class="summary-left">
         <div class="record-summary">
@@ -115,30 +51,15 @@
           <span>の基本シフト</span>
         </div>
 
-        <div
-          id="messageArea"
-          class="message-area hidden"
-          role="status"
-          aria-live="polite"
-        ></div>
+        <div id="messageArea" class="message-area hidden" role="status"></div>
       </div>
 
       <div id="cacheStatus" class="cache-status"></div>
     </section>
 
-    <!-- =======================================================
-         基本シフト一覧
-
-         利用者名をクリックすると、その行の直下に
-         スマホ表示用の詳細入力欄を開きます。
-    ======================================================== -->
     <section class="table-card">
       <div class="table-scroll">
         <table class="shift-table">
-          <!--
-            列ごとの幅を明確にするためcolgroupを使用します。
-            担当者4列は、すべて同じ幅です。
-          -->
           <colgroup>
             <col class="col-user">
             <col class="col-date">
@@ -181,13 +102,10 @@
         </table>
       </div>
 
-      <div id="emptyArea" class="empty-area hidden">
-        この週の基本シフトはまだありません。
-      </div>
+      <div id="emptyArea" class="empty-area hidden">この週の基本シフトはまだありません。</div>
     </section>
   </main>
 
-  <!-- 基本シフト表専用の処理 -->
   <script src="shift-week.js"></script>
 </body>
 </html>
