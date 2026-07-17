@@ -340,7 +340,10 @@ function createDetailTextarea(label, field, value, className) {
   return `
     <div class="detail-field ${className}">
       <label>${escapeHtml(label)}</label>
-      <textarea data-field="${escapeHtml(field)}">${escapeHtml(value)}</textarea>
+      <textarea
+        rows="1"
+        data-field="${escapeHtml(field)}"
+      >${escapeHtml(value)}</textarea>
     </div>
   `;
 }
