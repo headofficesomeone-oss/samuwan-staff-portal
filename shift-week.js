@@ -27,6 +27,12 @@ let currentWeekItems = [];
 let staffChoices = [];
 let openDetailShiftId = "";
 
+/*
+  true のとき、各一覧行の下へ
+  「支援内容・当日の指示・詳細注意・簡易メモ」を表示します。
+*/
+let instructionRowsVisible = false;
+
 class ApiError extends Error {
   constructor(message, errorId = "") {
     super(message || "処理に失敗しました");
@@ -63,6 +69,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function bindScreenEvents() {
+  document
+    .getElementById("instructionToggleButton")
+    .addEventListener("click", toggleInstructionRows);
+
   document
     .getElementById("previousWeekButton")
     .addEventListener("click", () => moveWeek(-7));
@@ -502,10 +512,18 @@ function renderTable() {
   currentWeekItems.forEach(item => {
     tbody.appendChild(createMainRow(item));
 
+    /*
+      利用者名から詳細を開いている行は、詳細欄を表示します。
+      詳細を開いていない行は、「指示」表示中だけ2段目を表示します。
+    */
     if (openDetailShiftId === item.shiftId) {
       tbody.appendChild(createDetailRow(item));
+    } else if (instructionRowsVisible) {
+      tbody.appendChild(createInstructionRow(item));
     }
   });
+
+  updateInstructionToggleButton();
 
   /*
     行や詳細欄の描画が終わった後に、
@@ -600,6 +618,35 @@ function createStaffSelect(item, fieldName) {
   `;
 }
 
+/**
+ * 見出しの「指示」ボタンで、
+ * 各利用者の2段目を一斉に表示・非表示にします。
+ */
+function toggleInstructionRows() {
+  instructionRowsVisible = !instructionRowsVisible;
+  renderTable();
+}
+
+
+/**
+ * 「指示」ボタンの表示状態を更新します。
+ */
+function updateInstructionToggleButton() {
+  const button = document.getElementById("instructionToggleButton");
+
+  if (!button) return;
+
+  button.classList.toggle("active", instructionRowsVisible);
+  button.setAttribute(
+    "aria-pressed",
+    instructionRowsVisible ? "true" : "false"
+  );
+  button.textContent = instructionRowsVisible
+    ? "指示を閉じる"
+    : "指示";
+}
+
+
 function toggleDetail(shiftId) {
   openDetailShiftId =
     openDetailShiftId === shiftId ? "" : shiftId;
@@ -665,9 +712,9 @@ function createDetailRow(item) {
 
       <div class="detail-row-two">
         ${createTextareaField("支援内容", "support", item.support)}
-        ${createTextareaField("簡易メモ", "simpleMemo", item.simpleMemo)}
-        ${createTextareaField("詳細注意", "detailNote", item.detailNote)}
         ${createTextareaField("当日の指示", "instruction", item.instruction)}
+        ${createTextareaField("詳細注意", "detailNote", item.detailNote)}
+        ${createTextareaField("簡易メモ", "simpleMemo", item.simpleMemo)}
       </div>
     </div>
   `;
@@ -689,6 +736,90 @@ function createDetailRow(item) {
 
   return row;
 }
+
+/**
+ * 見出しの「指示」ボタンを押したときに、
+ * 各利用者の一覧行の直下へ表示する入力欄を作ります。
+ */
+function createInstructionRow(item) {
+  const row = document.createElement("tr");
+  row.className = "instruction-row";
+
+  const cell = document.createElement("td");
+  cell.colSpan = 16;
+
+  cell.innerHTML = `
+    <div class="instruction-panel">
+      <div class="instruction-panel-header">
+        <span class="instruction-panel-user">
+          ${escapeHtml(item.user)}
+          ${escapeHtml(formatShortDate(item.date))}
+          ${escapeHtml(item.startTime)}～${escapeHtml(item.endTime)}
+        </span>
+
+        <button
+          type="button"
+          class="instruction-save-button"
+        >
+          保存
+        </button>
+      </div>
+
+      <div class="instruction-row-fields">
+        ${createTextareaField("支援内容", "support", item.support)}
+        ${createTextareaField("当日の指示", "instruction", item.instruction)}
+        ${createTextareaField("詳細注意", "detailNote", item.detailNote)}
+        ${createTextareaField("簡易メモ", "simpleMemo", item.simpleMemo)}
+      </div>
+    </div>
+  `;
+
+  row.appendChild(cell);
+
+  cell
+    .querySelector(".instruction-save-button")
+    .addEventListener("click", async event => {
+      await saveInstructionRow(
+        item.shiftId,
+        cell,
+        event.currentTarget
+      );
+    });
+
+  return row;
+}
+
+
+/**
+ * 指示表示で編集した4項目を保存します。
+ */
+async function saveInstructionRow(shiftId, instructionCell, saveButton) {
+  const changes = {};
+
+  instructionCell
+    .querySelectorAll("[data-detail-field]")
+    .forEach(input => {
+      changes[input.dataset.detailField] = input.value;
+    });
+
+  const originalText = saveButton.textContent;
+
+  saveButton.disabled = true;
+  saveButton.textContent = "保存中...";
+
+  try {
+    await updateShiftWeek(shiftId, changes);
+    updateLocalItem(shiftId, changes);
+    setMessage("指示内容を保存しました。");
+    renderTable();
+  } catch (error) {
+    showApiError(error, "指示内容の保存に失敗しました");
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = originalText;
+  }
+}
+
 
 function createInputField(label, fieldName, value) {
   return `

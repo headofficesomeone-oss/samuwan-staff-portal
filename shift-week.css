@@ -313,6 +313,76 @@ select {
   text-align: center !important;
 }
 
+
+/* 利用者見出しの文字と「指示」ボタンを左右へ配置します。 */
+.user-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* 各利用者の指示欄を一斉表示するボタンです。 */
+.instruction-toggle-button {
+  height: 25px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  padding: 0 8px;
+  color: var(--green-dark);
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.instruction-toggle-button:hover {
+  background: var(--green-light);
+}
+
+/* 指示欄が一斉表示されているときのボタン表示です。 */
+.instruction-toggle-button.active {
+  color: #ffffff;
+  background: var(--green);
+}
+
+/* 指示ボタンから表示する、各一覧行の下の入力行です。 */
+.instruction-row td {
+  height: auto;
+  padding: 0;
+  border-bottom: 2px solid #d8e8dd;
+  background: #fbfdfb;
+}
+
+.instruction-panel {
+  padding: 9px 12px 11px;
+}
+
+.instruction-panel-header {
+  margin-bottom: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.instruction-panel-user {
+  color: #187b3d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.instruction-save-button {
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  padding: 0 12px;
+  color: #ffffff;
+  background: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 /* 各列の幅 */
 .col-user { width: 145px; }
 .col-date { width: 74px; }
@@ -437,10 +507,22 @@ select {
   align-items: end;
 }
 
-/* 2行目：支援内容をやや狭く、残り3項目を均等 */
-.detail-row-two {
+/*
+  2行目は次の順序と幅に統一します。
+
+  支援内容（小）
+  当日の指示（中）
+  詳細注意（中）
+  簡易メモ（小）
+*/
+.detail-row-two,
+.instruction-row-fields {
   display: grid;
-  grid-template-columns: minmax(175px, 0.72fr) repeat(3, minmax(230px, 1fr));
+  grid-template-columns:
+    minmax(165px, 0.75fr)
+    minmax(250px, 1.25fr)
+    minmax(250px, 1.25fr)
+    minmax(165px, 0.75fr);
   gap: 8px;
   align-items: end;
 }
