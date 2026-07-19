@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>基本シフト表</title>
+
   <link rel="stylesheet" href="shift-week.css">
 </head>
+
 <body>
+  <!-- =========================================================
+       画面上部
+       ========================================================= -->
   <header class="app-header">
     <div class="header-title">
       <div class="app-name">訪問ケアぷーどる</div>
@@ -14,17 +20,45 @@
     </div>
 
     <div class="header-actions">
-      <button id="reloadButton" class="secondary-button" type="button">再読み込み</button>
-      <button id="createButton" class="primary-button" type="button">初回作成</button>
-      <a class="nav-link" href="./shift-master-v2.html">シフト規定値</a>
+      <button
+        id="reloadButton"
+        class="secondary-button"
+        type="button"
+      >
+        再読み込み
+      </button>
+
+      <button
+        id="createButton"
+        class="primary-button"
+        type="button"
+      >
+        初回作成
+      </button>
+
+      <a
+        class="nav-link"
+        href="./shift-master-v2.html"
+      >
+        シフト規定値
+      </a>
     </div>
   </header>
 
   <main class="page">
+    <!-- =======================================================
+         対象週の選択
+         ======================================================= -->
     <section class="control-card">
       <div class="week-navigation">
         <div class="week-side week-side-left">
-          <button id="previousWeekButton" class="secondary-button large-week-button" type="button">前の週</button>
+          <button
+            id="previousWeekButton"
+            class="secondary-button large-week-button"
+            type="button"
+          >
+            前の週
+          </button>
         </div>
 
         <div class="week-center">
@@ -32,18 +66,34 @@
 
           <div class="week-input-row">
             <input id="weekMonday" type="date">
-            <button id="currentWeekButton" class="secondary-button current-week-button" type="button">今週</button>
+
+            <button
+              id="currentWeekButton"
+              class="secondary-button current-week-button"
+              type="button"
+            >
+              今週
+            </button>
           </div>
 
           <strong id="weekRange"></strong>
         </div>
 
         <div class="week-side week-side-right">
-          <button id="nextWeekButton" class="secondary-button large-week-button" type="button">次の週</button>
+          <button
+            id="nextWeekButton"
+            class="secondary-button large-week-button"
+            type="button"
+          >
+            次の週
+          </button>
         </div>
       </div>
     </section>
 
+    <!-- =======================================================
+         件数・処理メッセージ・端末保存状況
+         ======================================================= -->
     <section class="summary-row">
       <div class="summary-left">
         <div class="record-summary">
@@ -51,12 +101,19 @@
           <span>の基本シフト</span>
         </div>
 
-        <div id="messageArea" class="message-area hidden" role="status"></div>
+        <div
+          id="messageArea"
+          class="message-area hidden"
+          role="status"
+        ></div>
       </div>
 
       <div id="cacheStatus" class="cache-status"></div>
     </section>
 
+    <!-- =======================================================
+         基本シフト一覧
+         ======================================================= -->
     <section class="table-card">
       <div class="table-scroll">
         <table class="shift-table">
@@ -69,6 +126,7 @@
             <col class="col-service">
             <col class="col-vehicle">
             <col class="col-content">
+            <col class="col-destination">
             <col class="col-note">
             <col class="col-staff">
             <col class="col-staff">
@@ -81,20 +139,21 @@
           <thead>
             <tr>
               <th>利用者</th>
-              <th>日付</th>
-              <th>曜日</th>
-              <th>開始</th>
-              <th>終了</th>
-              <th>サービス</th>
-              <th>運送車両</th>
-              <th>内容</th>
+              <th class="center-heading">日付</th>
+              <th class="center-heading">曜日</th>
+              <th class="center-heading">開始</th>
+              <th class="center-heading">終了</th>
+              <th class="center-heading">サービス</th>
+              <th class="center-heading">運送車両</th>
+              <th>支援内容</th>
+              <th>行き先</th>
               <th>備考</th>
               <th>主担当</th>
               <th>副担当</th>
               <th>担当3</th>
               <th>担当4</th>
-              <th>状態</th>
-              <th>公開状態</th>
+              <th class="center-heading">状態</th>
+              <th class="center-heading">公開状態</th>
             </tr>
           </thead>
 
@@ -102,7 +161,9 @@
         </table>
       </div>
 
-      <div id="emptyArea" class="empty-area hidden">この週の基本シフトはまだありません。</div>
+      <div id="emptyArea" class="empty-area hidden">
+        この週の基本シフトはまだありません。
+      </div>
     </section>
   </main>
 

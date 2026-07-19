@@ -1,6 +1,7 @@
-/* =========================================================
+/* =============================================================
    基本設定
-========================================================= */
+   ============================================================= */
+
 * {
   box-sizing: border-box;
 }
@@ -13,14 +14,15 @@
   --text: #22303c;
   --muted: #71808a;
   --danger: #d9534f;
+  --background: #f4f8f5;
 }
 
 body {
   margin: 0;
-  min-width: 1040px;
+  min-width: 1180px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
-  background: #f4f8f5;
+  background: var(--background);
 }
 
 button,
@@ -30,22 +32,29 @@ textarea {
   font: inherit;
 }
 
+button,
+select {
+  cursor: pointer;
+}
+
 .hidden {
   display: none !important;
 }
 
-/* =========================================================
+/* =============================================================
    ヘッダー
-========================================================= */
+   ============================================================= */
+
 .app-header {
   min-height: 88px;
   padding: 14px 24px;
+  border-bottom: 1px solid #e6ece8;
+  background: #ffffff;
+
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #e6ece8;
 }
 
 .app-name {
@@ -61,22 +70,23 @@ textarea {
 
 .header-actions {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
   padding-top: 10px;
 }
 
+.nav-link,
 .secondary-button,
-.primary-button,
-.nav-link {
-  min-height: 42px;
+.primary-button {
+  height: 42px;
+  border-radius: 10px;
   padding: 0 16px;
+  font-weight: 800;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  font-weight: 800;
   text-decoration: none;
-  cursor: pointer;
 }
 
 .secondary-button {
@@ -86,7 +96,7 @@ textarea {
 }
 
 .primary-button {
-  border: 0;
+  border: none;
   color: #ffffff;
   background: var(--green);
 }
@@ -97,18 +107,19 @@ textarea {
   background: #ffffff;
 }
 
-/* =========================================================
-   週選択
-========================================================= */
+/* =============================================================
+   対象週選択
+   ============================================================= */
+
 .page {
   padding: 20px 24px 40px;
 }
 
 .control-card,
 .table-card {
-  background: #ffffff;
   border: 1px solid #e2e9e4;
   border-radius: 16px;
+  background: #ffffff;
   box-shadow: 0 8px 24px rgba(34, 48, 60, 0.06);
 }
 
@@ -118,19 +129,25 @@ textarea {
 
 .week-navigation {
   min-height: 145px;
+
   display: grid;
   grid-template-columns: 160px 1fr 160px;
   align-items: center;
   gap: 24px;
 }
 
+.week-side {
+  display: flex;
+  align-items: center;
+}
+
 .week-side-right {
-  text-align: right;
+  justify-content: flex-end;
 }
 
 .large-week-button {
   min-width: 110px;
-  min-height: 52px;
+  height: 52px;
   font-size: 17px;
 }
 
@@ -154,13 +171,18 @@ textarea {
 }
 
 .week-input-row input {
-  width: 240px;
+  min-width: 240px;
   height: 48px;
-  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
+  padding: 0 12px;
   text-align: center;
   font-weight: 700;
+}
+
+.current-week-button {
+  min-width: 80px;
+  height: 48px;
 }
 
 .week-center strong {
@@ -170,11 +192,13 @@ textarea {
   font-weight: 500;
 }
 
-/* =========================================================
+/* =============================================================
    件数・メッセージ
-========================================================= */
+   ============================================================= */
+
 .summary-row {
   margin: 18px 2px 10px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -185,6 +209,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 18px;
+  flex-wrap: wrap;
 }
 
 .record-summary strong {
@@ -192,8 +217,8 @@ textarea {
 }
 
 .message-area {
-  padding: 9px 13px;
   border-radius: 9px;
+  padding: 8px 12px;
   color: var(--green-dark);
   background: var(--green-light);
   font-size: 13px;
@@ -207,24 +232,25 @@ textarea {
 
 .cache-status {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
-/* =========================================================
+/* =============================================================
    一覧表
-========================================================= */
+   ============================================================= */
+
 .table-card {
   overflow: hidden;
 }
 
 .table-scroll {
+  max-height: calc(100vh - 315px);
   overflow: auto;
-  max-height: calc(100vh - 320px);
 }
 
 .shift-table {
   width: 100%;
-  min-width: 1440px;
+  min-width: 1840px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -236,38 +262,52 @@ textarea {
 }
 
 .shift-table th {
-  padding: 9px 7px;
-  color: #31533e;
-  background: #edf7f0;
+  padding: 10px 8px;
   border-right: 1px solid #dce7df;
   border-bottom: 1px solid #cfdcd3;
+  color: #31533e;
+  background: #edf7f0;
   white-space: nowrap;
   font-size: 12px;
   text-align: left;
 }
 
 .shift-table td {
-  padding: 7px;
+  height: 47px;
+  padding: 6px 7px;
   border-right: 1px solid #ebefec;
   border-bottom: 1px solid #e4e9e6;
+  background: #ffffff;
   white-space: nowrap;
   font-size: 12px;
   vertical-align: middle;
 }
 
-.col-user { width: 120px; }
-.col-date { width: 78px; }
+.shift-table tbody tr.main-row:hover td {
+  background: #f8fcf9;
+}
+
+.center-heading,
+.center-cell {
+  text-align: center !important;
+}
+
+/* 各列の幅 */
+.col-user { width: 145px; }
+.col-date { width: 74px; }
 .col-weekday { width: 48px; }
-.col-time { width: 62px; }
-.col-service { width: 105px; }
-.col-vehicle { width: 76px; }
-.col-content { width: 155px; }
-.col-note { width: 120px; }
-.col-staff { width: 116px; }
-.col-status { width: 75px; }
-.col-publish { width: 85px; }
+.col-time { width: 64px; }
+.col-service { width: 110px; }
+.col-vehicle { width: 82px; }
+.col-content { width: 175px; }
+.col-destination { width: 150px; }
+.col-note { width: 145px; }
+.col-staff { width: 132px; }
+.col-status { width: 78px; }
+.col-publish { width: 88px; }
 
 .content-cell,
+.destination-cell,
 .note-cell {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -275,71 +315,70 @@ textarea {
 
 .user-detail-button {
   width: 100%;
-  padding: 5px 7px;
-  border: 0;
-  border-radius: 7px;
-  color: var(--green-dark);
+  border: none;
+  padding: 0;
+  color: #187b3d;
   background: transparent;
-  font-weight: 800;
   text-align: left;
-  cursor: pointer;
+  font-weight: 800;
 }
 
-.user-detail-button:hover,
-.user-detail-button.is-open {
-  background: var(--green-light);
+.user-detail-button:hover {
+  text-decoration: underline;
 }
 
 .staff-select {
   width: 100%;
-  height: 30px;
+  height: 32px;
+  border: 1px solid #d5dfd8;
+  border-radius: 7px;
   padding: 0 5px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  color: var(--text);
   background: #ffffff;
   font-size: 12px;
 }
 
-/* =========================================================
-   利用者クリック時の詳細入力欄
+/* =============================================================
+   利用者クリックで開く詳細入力欄
+   ============================================================= */
 
-   3行程度で収まるように、入力項目を横並びに配置します。
-========================================================= */
 .detail-row td {
+  height: auto;
   padding: 0;
-  white-space: normal;
-  background: #f7fbf8;
+  border-bottom: 2px solid #cfe2d5;
+  background: #f8fcf9;
 }
 
 .detail-panel {
-  padding: 10px 12px 12px;
-  border-top: 2px solid #bfe4ca;
-  border-bottom: 2px solid #bfe4ca;
+  padding: 13px 14px 15px;
 }
 
 .detail-header {
-  min-height: 34px;
-  margin-bottom: 8px;
+  margin-bottom: 11px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
-.detail-user-heading {
+.detail-person {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.detail-user-heading strong {
-  color: var(--green-dark);
-  font-size: 17px;
+.detail-user-name {
+  color: #187b3d;
+  font-size: 19px;
+  font-weight: 900;
 }
 
-.detail-user-heading span {
-  color: var(--muted);
+.detail-summary {
+  color: #56636c;
   font-size: 12px;
+  font-weight: 700;
 }
 
 .detail-actions {
@@ -347,32 +386,42 @@ textarea {
   gap: 8px;
 }
 
-.detail-save-button,
-.detail-close-button {
-  min-height: 32px;
+.detail-actions button {
+  height: 34px;
+  border-radius: 8px;
   padding: 0 13px;
-  border-radius: 7px;
   font-size: 12px;
   font-weight: 800;
-  cursor: pointer;
 }
 
 .detail-save-button {
-  border: 0;
+  border: none;
   color: #ffffff;
   background: var(--green);
 }
 
 .detail-close-button {
-  border: 1px solid var(--border);
-  color: var(--text);
+  border: 1px solid #d6dfd9;
+  color: #33413a;
   background: #ffffff;
 }
 
-.detail-grid {
+/* 1行目：移動手段を狭く、残り6項目を均等 */
+.detail-row-one {
+  margin-bottom: 9px;
+
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 7px 9px;
+  grid-template-columns: 100px repeat(6, minmax(145px, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+/* 2行目：支援内容をやや狭く、残り3項目を均等 */
+.detail-row-two {
+  display: grid;
+  grid-template-columns: minmax(175px, 0.72fr) repeat(3, minmax(230px, 1fr));
+  gap: 8px;
+  align-items: end;
 }
 
 .detail-field {
@@ -382,91 +431,43 @@ textarea {
 .detail-field label {
   display: block;
   margin-bottom: 3px;
-  color: #52616b;
-  font-size: 10px;
+  color: #65727b;
+  font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .detail-field input,
 .detail-field select,
 .detail-field textarea {
   width: 100%;
-  min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  height: 34px;
+  border: 1px solid #d5dfd8;
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: var(--text);
   background: #ffffff;
   font-size: 12px;
 }
 
-.detail-field input,
-.detail-field select {
-  height: 31px;
-  padding: 0 7px;
-}
-
-/*
- * 詳細注意・支援内容・当日の指示も、
- * 通常の入力欄とほぼ同じ1行分の高さで表示します。
- * 必要に応じて右下をドラッグすれば縦方向へ広げられます。
- */
 .detail-field textarea {
-  height: 31px;
-  min-height: 31px;
-  padding: 5px 7px;
+  min-height: 34px;
+  max-height: 100px;
   resize: vertical;
-  line-height: 1.35;
-  overflow-y: auto;
+  line-height: 1.3;
 }
 
-/* 1段目 */
-.field-start-place { grid-column: span 2; }
-.field-start-note { grid-column: span 2; }
-.field-end-place { grid-column: span 2; }
-.field-end-note { grid-column: span 2; }
-.field-destination { grid-column: span 2; }
-.field-transport { grid-column: span 2; }
-
-/* 2段目 */
-.field-meeting { grid-column: span 2; }
-.field-meeting-point { grid-column: span 2; }
-.field-simple-memo { grid-column: span 3; }
-.field-detail-note { grid-column: span 5; }
-
-/* 3段目 */
-.field-support { grid-column: span 6; }
-.field-instruction { grid-column: span 6; }
+.detail-field input:focus,
+.detail-field select:focus,
+.detail-field textarea:focus,
+.staff-select:focus {
+  outline: 2px solid rgba(47, 168, 90, 0.20);
+  border-color: var(--green);
+}
 
 .empty-area {
   padding: 50px 20px;
   color: var(--muted);
   text-align: center;
   font-weight: 700;
-}
-
-@media (max-width: 1200px) {
-  body {
-    min-width: 900px;
-  }
-
-  .detail-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .field-start-place,
-  .field-start-note,
-  .field-end-place,
-  .field-end-note,
-  .field-destination,
-  .field-transport,
-  .field-meeting,
-  .field-meeting-point {
-    grid-column: span 2;
-  }
-
-  .field-simple-memo,
-  .field-detail-note,
-  .field-support,
-  .field-instruction {
-    grid-column: span 3;
-  }
 }
