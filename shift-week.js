@@ -27,6 +27,12 @@ let currentWeekItems = [];
 let staffChoices = [];
 let openDetailShiftId = "";
 
+/* 現在選択している担当者フィルターです。空欄は全員です。 */
+let selectedStaffFilter = "";
+
+/* 現在選択している曜日フィルターです。空欄は全曜日です。 */
+let selectedWeekdayFilter = "";
+
 /*
   true のとき、各一覧行の下へ
   「支援内容・当日の指示・詳細注意・簡易メモ」を表示します。
@@ -69,6 +75,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function bindScreenEvents() {
+  document
+    .getElementById("staffFilter")
+    .addEventListener("change", event => {
+      selectedStaffFilter = event.target.value;
+      openDetailShiftId = "";
+      renderTable();
+    });
+
+  document
+    .getElementById("weekdayFilter")
+    .addEventListener("change", event => {
+      selectedWeekdayFilter = event.target.value;
+      openDetailShiftId = "";
+      renderTable();
+    });
+
   document
     .getElementById("instructionToggleButton")
     .addEventListener("click", async () => {
@@ -354,6 +376,7 @@ async function loadMasters() {
       : [];
 
     staffChoices = normalizeStaffChoices(rawStaff);
+    updateStaffFilterOptions();
   } catch (error) {
     /*
       職員一覧を取得できない場合も一覧表示自体は続けます。
@@ -361,6 +384,7 @@ async function loadMasters() {
     */
     console.error(error);
     staffChoices = [];
+    updateStaffFilterOptions();
     setMessage("職員一覧を取得できませんでした。", true);
   }
 }
@@ -383,6 +407,67 @@ function normalizeStaffChoices(rawStaff) {
     .filter(Boolean)
     .filter((name, index, array) => array.indexOf(name) === index)
     .sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+
+/**
+ * 職員一覧から担当者フィルターの選択肢を作ります。
+ */
+function updateStaffFilterOptions() {
+  const select = document.getElementById("staffFilter");
+
+  if (!select) return;
+
+  const currentValue = selectedStaffFilter || select.value;
+  select.innerHTML = "";
+
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "全員";
+  select.appendChild(allOption);
+
+  staffChoices.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+
+  if (currentValue && staffChoices.includes(currentValue)) {
+    select.value = currentValue;
+    selectedStaffFilter = currentValue;
+  } else {
+    select.value = "";
+    selectedStaffFilter = "";
+  }
+}
+
+
+/**
+ * 主担当・副担当・担当3・担当4のどこかに、
+ * 選択した職員名があるか確認します。
+ */
+function matchesStaffFilter(item) {
+  if (!selectedStaffFilter) return true;
+
+  return [
+    item.staff1,
+    item.staff2,
+    item.staff3,
+    item.staff4
+  ].some(name => {
+    return String(name || "").trim() === selectedStaffFilter;
+  });
+}
+
+
+/**
+ * 選択した曜日と基本シフトの曜日が一致するか確認します。
+ */
+function matchesWeekdayFilter(item) {
+  if (!selectedWeekdayFilter) return true;
+
+  return String(item.weekday || "").trim() === selectedWeekdayFilter;
 }
 
 /* =============================================================
@@ -496,12 +581,35 @@ function renderTable() {
 
   tbody.innerHTML = "";
 
-  document.getElementById("recordCount").textContent =
-    `${currentWeekItems.length}件`;
+  const displayItems = currentWeekItems.filter(item => {
+    return (
+      matchesStaffFilter(item) &&
+      matchesWeekdayFilter(item)
+    );
+  });
 
-  if (currentWeekItems.length === 0) {
+  document.getElementById("recordCount").textContent =
+    `${displayItems.length}件`;
+
+  if (displayItems.length === 0) {
     tableScroll.classList.add("hidden");
     emptyArea.classList.remove("hidden");
+
+    if (selectedStaffFilter && selectedWeekdayFilter) {
+      emptyArea.textContent =
+        `${selectedStaffFilter}さんの${selectedWeekdayFilter}曜日の基本シフトはありません。`;
+    } else if (selectedStaffFilter) {
+      emptyArea.textContent =
+        `${selectedStaffFilter}さんが担当する基本シフトはありません。`;
+    } else if (selectedWeekdayFilter) {
+      emptyArea.textContent =
+        `${selectedWeekdayFilter}曜日の基本シフトはありません。`;
+    } else {
+      emptyArea.textContent =
+        "この週の基本シフトはまだありません。";
+    }
+
+    updateInstructionToggleButton();
 
     /* データがないときは上側スクロールバーも隠します。 */
     updateHorizontalScrollWidth();
@@ -510,8 +618,9 @@ function renderTable() {
 
   tableScroll.classList.remove("hidden");
   emptyArea.classList.add("hidden");
+  emptyArea.textContent = "この週の基本シフトはまだありません。";
 
-  currentWeekItems.forEach(item => {
+  displayItems.forEach(item => {
     tbody.appendChild(createMainRow(item));
 
     /*
