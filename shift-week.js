@@ -71,7 +71,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 function bindScreenEvents() {
   document
     .getElementById("instructionToggleButton")
-    .addEventListener("click", toggleInstructionRows);
+    .addEventListener("click", async () => {
+      await toggleInstructionRows();
+    });
 
   document
     .getElementById("previousWeekButton")
@@ -573,7 +575,9 @@ function createMainRow(item) {
 
   row
     .querySelector(".user-detail-button")
-    .addEventListener("click", () => toggleDetail(item.shiftId));
+    .addEventListener("click", async () => {
+      await toggleDetail(item.shiftId);
+    });
 
   row.querySelectorAll(".staff-select").forEach(select => {
     select.addEventListener("change", async event => {
@@ -622,7 +626,13 @@ function createStaffSelect(item, fieldName) {
  * 見出しの「指示」ボタンで、
  * 各利用者の2段目を一斉に表示・非表示にします。
  */
-function toggleInstructionRows() {
+async function toggleInstructionRows() {
+  if (instructionRowsVisible) {
+    const saved = await saveChangedInstructionRows();
+
+    if (!saved) return;
+  }
+
   instructionRowsVisible = !instructionRowsVisible;
   renderTable();
 }
@@ -647,7 +657,13 @@ function updateInstructionToggleButton() {
 }
 
 
-function toggleDetail(shiftId) {
+async function toggleDetail(shiftId) {
+  if (openDetailShiftId) {
+    const saved = await saveOpenDetailIfChanged();
+
+    if (!saved) return;
+  }
+
   openDetailShiftId =
     openDetailShiftId === shiftId ? "" : shiftId;
 
@@ -661,6 +677,7 @@ function toggleDetail(shiftId) {
 function createDetailRow(item) {
   const row = document.createElement("tr");
   row.className = "detail-row";
+  row.dataset.shiftId = item.shiftId;
 
   const cell = document.createElement("td");
   cell.colSpan = 16;
@@ -675,22 +692,6 @@ function createDetailRow(item) {
             ${escapeHtml(item.startTime)}～${escapeHtml(item.endTime)}
           </span>
           <span class="detail-summary">${escapeHtml(item.service)}</span>
-        </div>
-
-        <div class="detail-actions">
-          <button
-            type="button"
-            class="detail-save-button"
-          >
-            詳細を保存
-          </button>
-
-          <button
-            type="button"
-            class="detail-close-button"
-          >
-            閉じる
-          </button>
         </div>
       </div>
 
@@ -721,19 +722,6 @@ function createDetailRow(item) {
 
   row.appendChild(cell);
 
-  cell
-    .querySelector(".detail-close-button")
-    .addEventListener("click", () => {
-      openDetailShiftId = "";
-      renderTable();
-    });
-
-  cell
-    .querySelector(".detail-save-button")
-    .addEventListener("click", async event => {
-      await saveDetail(item.shiftId, cell, event.currentTarget);
-    });
-
   return row;
 }
 
@@ -744,6 +732,7 @@ function createDetailRow(item) {
 function createInstructionRow(item) {
   const row = document.createElement("tr");
   row.className = "instruction-row";
+  row.dataset.shiftId = item.shiftId;
 
   const cell = document.createElement("td");
   cell.colSpan = 16;
@@ -824,27 +813,11 @@ function createInstructionRow(item) {
           ${createTextareaField("簡易メモ", "simpleMemo", item.simpleMemo)}
         </div>
 
-        <button
-          type="button"
-          class="instruction-save-button"
-        >
-          保存
-        </button>
       </div>
     </div>
   `;
 
   row.appendChild(cell);
-
-  cell
-    .querySelector(".instruction-save-button")
-    .addEventListener("click", async event => {
-      await saveInstructionRow(
-        item.shiftId,
-        cell,
-        event.currentTarget
-      );
-    });
 
   return row;
 }
@@ -853,34 +826,6 @@ function createInstructionRow(item) {
 /**
  * 指示表示で編集した4項目を保存します。
  */
-async function saveInstructionRow(shiftId, instructionCell, saveButton) {
-  const changes = {};
-
-  instructionCell
-    .querySelectorAll("[data-detail-field]")
-    .forEach(input => {
-      changes[input.dataset.detailField] = input.value;
-    });
-
-  const originalText = saveButton.textContent;
-
-  saveButton.disabled = true;
-  saveButton.textContent = "保存中...";
-
-  try {
-    await updateShiftWeek(shiftId, changes);
-    updateLocalItem(shiftId, changes);
-    setMessage("指示内容を保存しました。");
-    renderTable();
-  } catch (error) {
-    showApiError(error, "指示内容の保存に失敗しました");
-  } finally {
-    saveButton.disabled = false;
-    saveButton.textContent = originalText;
-  }
-}
-
-
 function createInputField(label, fieldName, value) {
   return `
     <div class="detail-field">
@@ -951,32 +896,127 @@ async function saveStaffChange(shiftId, fieldName, value) {
   }
 }
 
-async function saveDetail(shiftId, detailCell, saveButton) {
+/**
+ * 表示中の入力値と元データを比較し、
+ * 変更された項目だけを返します。
+ */
+function collectChangedFields(container, item) {
   const changes = {};
 
-  detailCell
+  container
     .querySelectorAll("[data-detail-field]")
     .forEach(input => {
-      changes[input.dataset.detailField] = input.value;
+      const fieldName = input.dataset.detailField;
+      const newValue = String(input.value ?? "");
+      const oldValue = String(item[fieldName] ?? "");
+
+      if (newValue !== oldValue) {
+        changes[fieldName] = newValue;
+      }
     });
 
-  const originalText = saveButton.textContent;
+  return changes;
+}
 
-  saveButton.disabled = true;
-  saveButton.textContent = "保存中...";
+
+function hasChanges(changes) {
+  return Object.keys(changes).length > 0;
+}
+
+
+/**
+ * 現在開いている利用者の詳細を、
+ * 変更がある場合だけ保存します。
+ */
+async function saveOpenDetailIfChanged() {
+  if (!openDetailShiftId) return true;
+
+  const detailRow = Array.from(
+    document.querySelectorAll(".detail-row[data-shift-id]")
+  ).find(row => row.dataset.shiftId === openDetailShiftId);
+
+  const item = currentWeekItems.find(
+    currentItem => currentItem.shiftId === openDetailShiftId
+  );
+
+  if (!detailRow || !item) return true;
+
+  const changes = collectChangedFields(detailRow, item);
+
+  if (!hasChanges(changes)) return true;
 
   try {
-    await updateShiftWeek(shiftId, changes);
-    updateLocalItem(shiftId, changes);
-    setMessage("詳細内容を保存しました。");
-    renderTable();
+    setMessage("変更した詳細内容を保存しています。");
+
+    await updateShiftWeek(openDetailShiftId, changes);
+    updateLocalItem(openDetailShiftId, changes);
+
+    setMessage("変更した詳細内容を保存しました。");
+    return true;
   } catch (error) {
     showApiError(error, "詳細内容の保存に失敗しました");
-  } finally {
-    saveButton.disabled = false;
-    saveButton.textContent = originalText;
+    return false;
   }
 }
+
+
+/**
+ * 指示欄を閉じる前に、
+ * 変更された利用者だけを順番に保存します。
+ */
+async function saveChangedInstructionRows() {
+  const changedRows = [];
+
+  document
+    .querySelectorAll(".instruction-row[data-shift-id]")
+    .forEach(row => {
+      const shiftId = row.dataset.shiftId;
+
+      const item = currentWeekItems.find(
+        currentItem => currentItem.shiftId === shiftId
+      );
+
+      if (!item) return;
+
+      const changes = collectChangedFields(row, item);
+
+      if (hasChanges(changes)) {
+        changedRows.push({ shiftId, changes });
+      }
+    });
+
+  if (changedRows.length === 0) return true;
+
+  const button = document.getElementById("instructionToggleButton");
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "保存中...";
+
+  try {
+    for (const rowData of changedRows) {
+      await updateShiftWeek(
+        rowData.shiftId,
+        rowData.changes
+      );
+
+      updateLocalItem(
+        rowData.shiftId,
+        rowData.changes
+      );
+    }
+
+    setMessage(`${changedRows.length}件の変更を保存しました。`);
+    return true;
+  } catch (error) {
+    showApiError(error, "指示内容の保存に失敗しました");
+    return false;
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
 
 async function updateShiftWeek(shiftId, changes) {
   return jsonpRequest(
