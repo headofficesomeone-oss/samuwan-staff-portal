@@ -23,6 +23,9 @@ const SHIFT_WEEK_API_URL =
 const SHIFT_WEEK_CACHE_KEY = "shiftWeekCacheV3";
 const SHIFT_WEEK_CACHE_LIMIT = 3;
 
+/* 対象週エリアの折りたたみ状態を端末へ保存するキーです。 */
+const WEEK_CONTROL_COLLAPSE_KEY = "shiftWeekControlsCollapsed";
+
 let currentWeekItems = [];
 let staffChoices = [];
 let openDetailShiftId = "";
@@ -39,6 +42,9 @@ let selectedWeekdayFilter = "";
 */
 let instructionRowsVisible = false;
 
+/* true のとき、対象週の大きな操作エリアを折りたたみます。 */
+let weekControlsCollapsed = false;
+
 class ApiError extends Error {
   constructor(message, errorId = "") {
     super(message || "処理に失敗しました");
@@ -53,6 +59,9 @@ class ApiError extends Error {
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindScreenEvents();
+
+  /* 前回の折りたたみ状態を復元します。 */
+  restoreWeekControlState();
 
   /*
     見出し上の横スクロールバーと表本体を連動させます。
@@ -75,6 +84,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function bindScreenEvents() {
+  document
+    .getElementById("collapseWeekControlsButton")
+    .addEventListener("click", () => {
+      setWeekControlsCollapsed(true);
+    });
+
+  document
+    .getElementById("expandWeekControlsButton")
+    .addEventListener("click", () => {
+      setWeekControlsCollapsed(false);
+    });
+
   document
     .getElementById("staffFilter")
     .addEventListener("change", event => {
@@ -135,6 +156,73 @@ function bindScreenEvents() {
 }
 
 /* =============================================================
+   対象週エリアの折りたたみ
+   ============================================================= */
+
+/**
+ * 保存されている折りたたみ状態を復元します。
+ */
+function restoreWeekControlState() {
+  weekControlsCollapsed =
+    localStorage.getItem(WEEK_CONTROL_COLLAPSE_KEY) === "true";
+
+  applyWeekControlState();
+}
+
+
+/**
+ * 折りたたみ状態を変更して端末へ保存します。
+ */
+function setWeekControlsCollapsed(collapsed) {
+  weekControlsCollapsed = Boolean(collapsed);
+
+  localStorage.setItem(
+    WEEK_CONTROL_COLLAPSE_KEY,
+    String(weekControlsCollapsed)
+  );
+
+  applyWeekControlState();
+}
+
+
+/**
+ * 大きな対象週エリアと小さな表示バーを切り替えます。
+ */
+function applyWeekControlState() {
+  const controlCard =
+    document.getElementById("weekControlCard");
+
+  const collapsedBar =
+    document.getElementById("collapsedWeekBar");
+
+  if (!controlCard || !collapsedBar) return;
+
+  controlCard.classList.toggle(
+    "hidden",
+    weekControlsCollapsed
+  );
+
+  collapsedBar.classList.toggle(
+    "hidden",
+    !weekControlsCollapsed
+  );
+
+  document.body.classList.toggle(
+    "week-controls-collapsed",
+    weekControlsCollapsed
+  );
+
+  /*
+    一覧の高さが変わるため、
+    上側横スクロールバーの幅も再計算します。
+  */
+  requestAnimationFrame(() => {
+    updateHorizontalScrollWidth();
+  });
+}
+
+
+/* =============================================================
    日付処理
    ============================================================= */
 
@@ -186,10 +274,13 @@ function setWeekMonday(date) {
 
   input.value = formatLocalDate(date);
 
-  document.getElementById("weekRange").textContent =
+  const rangeText =
     `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日` +
     " ～ " +
     `${sunday.getFullYear()}年${sunday.getMonth() + 1}月${sunday.getDate()}日`;
+
+  document.getElementById("weekRange").textContent = rangeText;
+  document.getElementById("collapsedWeekRange").textContent = rangeText;
 }
 
 async function moveWeek(days) {

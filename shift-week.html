@@ -49,7 +49,17 @@
     <!-- =======================================================
          対象週の選択
          ======================================================= -->
-    <section class="control-card">
+    <section id="weekControlCard" class="control-card">
+      <div class="week-control-actions">
+        <button
+          id="collapseWeekControlsButton"
+          class="week-collapse-button"
+          type="button"
+        >
+          折りたたむ
+        </button>
+      </div>
+
       <div class="week-navigation">
         <div class="week-side week-side-left">
           <button
@@ -89,6 +99,22 @@
           </button>
         </div>
       </div>
+    </section>
+
+    <!--
+      対象週エリアを折りたたんだときに表示する小さなバーです。
+      現在の対象期間だけは確認できるように残します。
+    -->
+    <section id="collapsedWeekBar" class="collapsed-week-bar hidden">
+      <strong id="collapsedWeekRange"></strong>
+
+      <button
+        id="expandWeekControlsButton"
+        class="secondary-button"
+        type="button"
+      >
+        表示する
+      </button>
     </section>
 
     <!-- =======================================================

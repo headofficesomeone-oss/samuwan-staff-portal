@@ -124,7 +124,63 @@ select {
 }
 
 .control-card {
+  position: relative;
   padding: 18px 24px 22px;
+}
+
+/* 対象週エリア右上の「折りたたむ」ボタンです。 */
+.week-control-actions {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+}
+
+.week-collapse-button {
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--muted);
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.week-collapse-button:hover {
+  color: var(--green-dark);
+  border-color: var(--green);
+  background: var(--green-light);
+}
+
+/*
+  対象週エリアを閉じたときに表示する小さなバーです。
+*/
+.collapsed-week-bar {
+  min-height: 52px;
+  margin-bottom: 10px;
+  border: 1px solid #e2e9e4;
+  border-radius: 12px;
+  padding: 8px 12px 8px 18px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(34, 48, 60, 0.05);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.collapsed-week-bar strong {
+  color: #31533e;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.collapsed-week-bar .secondary-button {
+  height: 34px;
+  padding: 0 13px;
+  font-size: 12px;
 }
 
 .week-navigation {
@@ -317,6 +373,14 @@ select {
 .table-scroll {
   max-height: calc(100vh - 315px);
   overflow: auto;
+}
+
+/*
+  対象週エリアを折りたたんだときは、
+  空いた高さを一覧へ渡します。
+*/
+body.week-controls-collapsed .table-scroll {
+  max-height: calc(100vh - 205px);
 }
 
 .shift-table {
