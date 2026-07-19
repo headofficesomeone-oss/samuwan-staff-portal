@@ -243,6 +243,27 @@ select {
   overflow: hidden;
 }
 
+/*
+  表の見出し上に表示する横スクロールバーです。
+  JavaScriptで表本体の横スクロール位置と同期します。
+*/
+.top-scroll {
+  width: 100%;
+  height: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid #e5ece7;
+  background: #ffffff;
+}
+
+/*
+  実際の表と同じ横幅をJavaScriptから設定します。
+  高さは不要なため1pxだけ持たせます。
+*/
+.top-scroll-inner {
+  height: 1px;
+}
+
 .table-scroll {
   max-height: calc(100vh - 315px);
   overflow: auto;

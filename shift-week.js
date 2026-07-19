@@ -42,6 +42,12 @@ class ApiError extends Error {
 document.addEventListener("DOMContentLoaded", async () => {
   bindScreenEvents();
 
+  /*
+    見出し上の横スクロールバーと表本体を連動させます。
+    HTMLが読み込まれた後に一度だけ設定します。
+  */
+  setupHorizontalScrollSync();
+
   /* 担当者プルダウン用の職員一覧を取得します。 */
   await loadMasters();
 
@@ -161,6 +167,81 @@ async function moveWeek(days) {
 
   setWeekMonday(addDays(current, days));
   await loadCurrentWeek();
+}
+
+/* =============================================================
+   上側横スクロールバー
+   ============================================================= */
+
+/**
+ * 見出し上の横スクロールバーと、表本体の横スクロールを
+ * 双方向に同期させます。
+ *
+ * この関数は画面起動時に一度だけ実行します。
+ */
+function setupHorizontalScrollSync() {
+  const topScroll = document.getElementById("topScroll");
+  const tableScroll = document.getElementById("tableScroll");
+
+  if (!topScroll || !tableScroll) {
+    return;
+  }
+
+  let syncingFromTop = false;
+  let syncingFromTable = false;
+
+  /* 上側バーを動かした場合、表本体も同じ位置へ動かします。 */
+  topScroll.addEventListener("scroll", () => {
+    if (syncingFromTable) return;
+
+    syncingFromTop = true;
+    tableScroll.scrollLeft = topScroll.scrollLeft;
+    syncingFromTop = false;
+  });
+
+  /* 表本体を動かした場合、上側バーも同じ位置へ動かします。 */
+  tableScroll.addEventListener("scroll", () => {
+    if (syncingFromTop) return;
+
+    syncingFromTable = true;
+    topScroll.scrollLeft = tableScroll.scrollLeft;
+    syncingFromTable = false;
+  });
+
+  /* 画面幅が変わった際は、表の横幅を測り直します。 */
+  window.addEventListener("resize", updateHorizontalScrollWidth);
+
+  updateHorizontalScrollWidth();
+}
+
+/**
+ * 上側スクロールバーの中身を、実際の表の横幅へ合わせます。
+ *
+ * 表が画面幅より広い場合だけ上側バーを表示し、
+ * 横スクロールが不要な場合やデータがない場合は隠します。
+ */
+function updateHorizontalScrollWidth() {
+  const topScroll = document.getElementById("topScroll");
+  const topScrollInner = document.getElementById("topScrollInner");
+  const tableScroll = document.getElementById("tableScroll");
+  const table = document.querySelector(".shift-table");
+
+  if (!topScroll || !topScrollInner || !tableScroll || !table) {
+    return;
+  }
+
+  const tableIsHidden = tableScroll.classList.contains("hidden");
+  const tableWidth = Math.max(table.scrollWidth, tableScroll.scrollWidth);
+  const needsHorizontalScroll = tableWidth > tableScroll.clientWidth + 1;
+
+  topScrollInner.style.width = `${tableWidth}px`;
+  topScroll.classList.toggle(
+    "hidden",
+    tableIsHidden || !needsHorizontalScroll
+  );
+
+  /* 表側で保持している現在位置も上側へ反映します。 */
+  topScroll.scrollLeft = tableScroll.scrollLeft;
 }
 
 /* =============================================================
@@ -409,6 +490,9 @@ function renderTable() {
   if (currentWeekItems.length === 0) {
     tableScroll.classList.add("hidden");
     emptyArea.classList.remove("hidden");
+
+    /* データがないときは上側スクロールバーも隠します。 */
+    updateHorizontalScrollWidth();
     return;
   }
 
@@ -422,6 +506,12 @@ function renderTable() {
       tbody.appendChild(createDetailRow(item));
     }
   });
+
+  /*
+    行や詳細欄の描画が終わった後に、
+    上側スクロールバーの横幅を表全体へ合わせます。
+  */
+  requestAnimationFrame(updateHorizontalScrollWidth);
 }
 
 function createMainRow(item) {

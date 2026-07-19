@@ -115,7 +115,14 @@
          基本シフト一覧
          ======================================================= -->
     <section class="table-card">
-      <div class="table-scroll">
+
+      <!-- 見出しの上に表示する横スクロールバー -->
+      <div id="topScroll" class="top-scroll" aria-label="表の横スクロール">
+        <div id="topScrollInner" class="top-scroll-inner"></div>
+      </div>
+
+      <!-- 表本体のスクロール領域 -->
+      <div id="tableScroll" class="table-scroll">
         <table class="shift-table">
           <colgroup>
             <col class="col-user">
