@@ -750,12 +750,79 @@ function createInstructionRow(item) {
 
   cell.innerHTML = `
     <div class="instruction-panel">
-      <div class="instruction-panel-header">
-        <span class="instruction-panel-user">
-          ${escapeHtml(item.user)}
-          ${escapeHtml(formatShortDate(item.date))}
-          ${escapeHtml(item.startTime)}～${escapeHtml(item.endTime)}
-        </span>
+      <div class="instruction-row-layout">
+        <div
+          class="instruction-flow-icon"
+          aria-hidden="true"
+          title="この行の指示入力"
+        >
+          <svg
+            viewBox="0 0 56 40"
+            class="instruction-flow-svg"
+            role="img"
+            aria-hidden="true"
+          >
+            <rect
+              x="1.5"
+              y="1.5"
+              width="53"
+              height="37"
+              rx="10"
+              fill="#f4fff7"
+              stroke="#cfe0d4"
+              stroke-width="1.5"
+            ></rect>
+
+            <path
+              d="M13 8 V31"
+              fill="none"
+              stroke="#27a857"
+              stroke-width="4"
+              stroke-linecap="round"
+            ></path>
+
+            <path
+              d="M13 20 H27"
+              fill="none"
+              stroke="#ff9f43"
+              stroke-width="4"
+              stroke-linecap="round"
+            ></path>
+
+            <path
+              d="M23 15.5 L30 20 L23 24.5"
+              fill="none"
+              stroke="#ff9f43"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+
+            <path
+              d="M13 27 H34"
+              fill="none"
+              stroke="#ff7a59"
+              stroke-width="4"
+              stroke-linecap="round"
+            ></path>
+
+            <path
+              d="M30 22.5 L37 27 L30 31.5"
+              fill="none"
+              stroke="#ff7a59"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+        </div>
+
+        <div class="instruction-row-fields">
+          ${createTextareaField("支援内容", "support", item.support)}
+          ${createTextareaField("当日の指示", "instruction", item.instruction)}
+          ${createTextareaField("詳細注意", "detailNote", item.detailNote)}
+          ${createTextareaField("簡易メモ", "simpleMemo", item.simpleMemo)}
+        </div>
 
         <button
           type="button"
@@ -763,13 +830,6 @@ function createInstructionRow(item) {
         >
           保存
         </button>
-      </div>
-
-      <div class="instruction-row-fields">
-        ${createTextareaField("支援内容", "support", item.support)}
-        ${createTextareaField("当日の指示", "instruction", item.instruction)}
-        ${createTextareaField("詳細注意", "detailNote", item.detailNote)}
-        ${createTextareaField("簡易メモ", "simpleMemo", item.simpleMemo)}
       </div>
     </div>
   `;

@@ -357,23 +357,47 @@ select {
   padding: 9px 12px 11px;
 }
 
-.instruction-panel-header {
-  margin-bottom: 6px;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/*
+  指示行は、
+  矢印 → 4つの入力欄 → 保存ボタン
+  の順で横並びにします。
+*/
+/*
+  指示行は、
+  アイコン → 4つの入力欄 → 保存ボタン
+  の順で横並びにします。
+*/
+.instruction-row-layout {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 58px;
+  gap: 8px;
+  align-items: end;
 }
 
-.instruction-panel-user {
-  color: #187b3d;
-  font-size: 12px;
-  font-weight: 900;
+/*
+  左側のポップな案内アイコンです。
+  ユーザー希望の
+  「｜」「｜→→」
+  のイメージをSVGで表現しています。
+*/
+.instruction-flow-icon {
+  width: 46px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instruction-flow-svg {
+  width: 44px;
+  height: 36px;
+  overflow: visible;
+  filter: drop-shadow(0 1px 0 rgba(39, 168, 87, 0.08));
 }
 
 .instruction-save-button {
-  height: 30px;
+  height: 34px;
   border: none;
   border-radius: 7px;
   padding: 0 12px;
