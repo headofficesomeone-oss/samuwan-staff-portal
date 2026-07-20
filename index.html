@@ -1,10 +1,224 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>職員ポータル</title><link rel="stylesheet" href="index.css"></head><body>
-<header class="app-header"><div class="logo"><div class="logo-mark">✿</div><div>訪問ケア<br>ぷーどる</div></div><div class="page-title">職員ポータル</div><button class="help-button" type="button">使い方</button></header>
-<main class="page"><section class="card">
-<div id="registerArea"><div class="steps"><div class="step active"><div class="step-number">1</div><div>本人確認</div></div><div class="step"><div class="step-number">2</div><div>LINE ID 登録</div></div><div class="step"><div class="step-number">3</div><div>登録完了</div></div></div>
-<div class="section-title"><div class="icon-circle">👤</div><div><h1>本人確認を行います</h1><p>ご自身の情報を入力して、LINE IDを登録してください。</p></div></div>
-<form id="registerForm"><div class="form-group"><label for="employeeName">氏名を選択してください<span class="required">必須</span></label><select id="employeeName" required><option value="">読み込み中...</option></select></div><div class="form-group"><label for="tempId">仮登録IDを入力してください<span class="required">必須</span></label><input type="password" id="tempId" placeholder="仮登録IDを入力してください" required></div><button type="button" class="back-button" onclick="issueTempIdFromScreen()">仮登録IDを発行する</button><div class="info-box"><div class="info-title">初めて登録する方へ</div><p>氏名を選択して「仮登録IDを発行する」を押してください。<br>LINEに仮登録IDが届きますので、そのIDを入力して登録してください。</p></div><button type="submit" class="main-button">確認する</button></form>
-<div class="security-text">ご登録いただいた情報は安全に管理されます。</div><div class="support-box"><div class="support-icon">?</div><div class="support-text"><strong>お困りですか？</strong>登録方法がわからない場合は、管理者までお問い合わせください。</div><button type="button" class="sub-button">お問い合わせ</button></div></div>
-<div id="completeArea" class="complete-area hidden"><div class="complete-icon">✓</div><h2>登録が完了しました</h2><p id="registerCompleteMessage">LINE IDの登録が完了しました。</p><button type="button" class="main-button" onclick="showPortalArea()">ポータルへ進む</button></div>
-<div id="portalArea" class="portal-area hidden"><div class="section-title"><div class="icon-circle">🏠</div><div><h1>職員ポータル</h1><p id="portalUserName"></p><p>利用するメニューを選択してください。</p></div></div><div class="quick-menu-grid"><button class="quick-menu-card"><div class="quick-menu-icon">🚶</div><div class="quick-menu-title">向かいます</div></button><button class="quick-menu-card"><div class="quick-menu-icon">🏠</div><div class="quick-menu-title">入りました</div></button><button class="quick-menu-card"><div class="quick-menu-icon">✅</div><div class="quick-menu-title">終わりました</div></button></div><div class="menu-grid"><button class="menu-card" onclick="goShiftRequest()"><div class="menu-icon">📅</div><div class="menu-title">利用者依頼受付</div><div class="menu-text">利用者の支援予定を登録します</div></button><button class="menu-card disabled"><div class="menu-icon">📋</div><div class="menu-title">シフト確認</div><div class="menu-text">準備中</div></button><button class="menu-card disabled"><div class="menu-icon">📝</div><div class="menu-title">実績入力</div><div class="menu-text">準備中</div></button><button class="menu-card disabled"><div class="menu-icon">💴</div><div class="menu-title">給与明細</div><div class="menu-text">既存ポータルと連携予定</div></button></div><button class="back-button" onclick="logoutPortal()">登録情報を解除する</button></div>
-</section></main><script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="common.js"></script><script src="portal.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>職員ポータル</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="logo">
+      <div class="logo-mark">✿</div>
+      <div>
+        訪問ケア<br>
+        ぷーどる
+      </div>
+    </div>
+
+    <div class="page-title">職員ポータル</div>
+
+    <button class="help-button" type="button">
+      使い方
+    </button>
+  </header>
+
+  <main class="page">
+    <section class="card">
+
+      <!-- 本人確認中 -->
+      <div id="loadingArea" class="loading-area">
+        <div class="loading-spinner"></div>
+        <h1>本人確認中です</h1>
+        <p>
+          LINEの登録情報を確認しています。<br>
+          そのままお待ちください。
+        </p>
+      </div>
+
+      <!-- 初回登録・本人確認 -->
+      <div id="registerArea" class="hidden">
+
+        <div class="steps">
+          <div class="step active">
+            <div class="step-number">1</div>
+            <div>本人確認</div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <div>LINE ID 登録</div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <div>登録完了</div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <div class="icon-circle">👤</div>
+
+          <div>
+            <h1>本人確認を行います</h1>
+            <p>
+              ご自身の情報を入力して、LINE IDを登録してください。
+            </p>
+          </div>
+        </div>
+
+        <form id="registerForm">
+
+          <div class="form-group">
+            <label for="employeeName">
+              氏名を選択してください
+              <span class="required">必須</span>
+            </label>
+
+            <select id="employeeName" required>
+              <option value="">氏名一覧を準備しています…</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="tempId">
+              仮登録IDを入力してください
+              <span class="required">必須</span>
+            </label>
+
+            <input
+              type="password"
+              id="tempId"
+              placeholder="仮登録IDを入力してください"
+              required
+            >
+          </div>
+
+          <button
+            type="button"
+            class="back-button"
+            onclick="issueTempIdFromScreen()"
+          >
+            仮登録IDを発行する
+          </button>
+
+          <div class="info-box">
+            <div class="info-title">初めて登録する方へ</div>
+
+            <p>
+              氏名を選択して「仮登録IDを発行する」を押してください。<br>
+              LINEに仮登録IDが届きますので、そのIDを入力して登録してください。
+            </p>
+          </div>
+
+          <button type="submit" class="main-button">
+            確認する
+          </button>
+        </form>
+
+        <div class="security-text">
+          ご登録いただいた情報は安全に管理されます。
+        </div>
+
+        <div class="support-box">
+          <div class="support-icon">?</div>
+
+          <div class="support-text">
+            <strong>お困りですか？</strong>
+            登録方法がわからない場合は、管理者までお問い合わせください。
+          </div>
+
+          <button type="button" class="sub-button">
+            お問い合わせ
+          </button>
+        </div>
+      </div>
+
+      <!-- 登録完了 -->
+      <div id="completeArea" class="complete-area hidden">
+        <div class="complete-icon">✓</div>
+        <h2>登録が完了しました</h2>
+
+        <p id="registerCompleteMessage">
+          LINE IDの登録が完了しました。
+        </p>
+
+        <button
+          type="button"
+          class="main-button"
+          onclick="showPortalArea()"
+        >
+          ポータルへ進む
+        </button>
+      </div>
+
+      <!-- 職員ポータル -->
+      <div id="portalArea" class="portal-area hidden">
+
+        <div class="section-title">
+          <div class="icon-circle">🏠</div>
+
+          <div>
+            <h1>職員ポータル</h1>
+            <p id="portalUserName"></p>
+            <p>利用するメニューを選択してください。</p>
+          </div>
+        </div>
+
+        <div class="quick-menu-grid">
+          <button class="quick-menu-card">
+            <div class="quick-menu-icon">🚶</div>
+            <div class="quick-menu-title">向かいます</div>
+          </button>
+
+          <button class="quick-menu-card">
+            <div class="quick-menu-icon">🏠</div>
+            <div class="quick-menu-title">入りました</div>
+          </button>
+
+          <button class="quick-menu-card">
+            <div class="quick-menu-icon">✅</div>
+            <div class="quick-menu-title">終わりました</div>
+          </button>
+        </div>
+
+        <div class="menu-grid">
+          <button class="menu-card" onclick="goShiftRequest()">
+            <div class="menu-icon">📅</div>
+            <div class="menu-title">利用者依頼受付</div>
+            <div class="menu-text">利用者の支援予定を登録します</div>
+          </button>
+
+          <button class="menu-card disabled">
+            <div class="menu-icon">📋</div>
+            <div class="menu-title">シフト確認</div>
+            <div class="menu-text">準備中</div>
+          </button>
+
+          <button class="menu-card disabled">
+            <div class="menu-icon">📝</div>
+            <div class="menu-title">実績入力</div>
+            <div class="menu-text">準備中</div>
+          </button>
+
+          <button class="menu-card disabled">
+            <div class="menu-icon">💴</div>
+            <div class="menu-title">給与明細</div>
+            <div class="menu-text">既存ポータルと連携予定</div>
+          </button>
+        </div>
+
+        <button class="back-button" onclick="logoutPortal()">
+          登録情報を解除する
+        </button>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="common.js"></script>
+  <script src="portal.js"></script>
+</body>
+</html>
