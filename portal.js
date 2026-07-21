@@ -460,12 +460,38 @@ let todayStaffShifts = [];
  * ログイン職員の本日の担当シフトを取得します。
  */
 async function loadTodayStaffShifts() {
+  console.log(
+    "loadTodayStaffShifts開始",
+    {
+      currentUser: currentUser,
+      select:
+        document.getElementById(
+          "todayShiftSelect"
+        )
+    }
+  );
+
   const select =
     document.getElementById(
       "todayShiftSelect"
     );
 
-  if (!select || !currentUser) {
+  if (!select) {
+    console.error(
+      "todayShiftSelectが見つかりません"
+    );
+    return;
+  }
+
+  if (!currentUser) {
+    select.innerHTML =
+      '<option value="">' +
+      '職員情報を確認できませんでした' +
+      '</option>';
+
+    console.error(
+      "currentUserが設定されていません"
+    );
     return;
   }
 
@@ -473,18 +499,31 @@ async function loadTodayStaffShifts() {
 
   select.innerHTML =
     '<option value="">' +
-    '本日の担当シフトを読み込んでいます…' +
+    '本日の担当シフトを取得しています…' +
     '</option>';
 
   try {
+    console.log(
+      "GASへ送信する職員情報",
+      currentUser
+    );
+
     const result =
       await postGas({
-        action: "getTodayStaffShifts",
+        action:
+          "getTodayStaffShifts",
+
         employeeId:
           currentUser.employeeId,
+
         employeeName:
           currentUser.employeeName
       });
+
+    console.log(
+      "シフト取得結果",
+      result
+    );
 
     if (!result.success) {
       throw new Error(
@@ -501,19 +540,32 @@ async function loadTodayStaffShifts() {
     );
 
   } catch (error) {
+    console.error(
+      "シフト取得エラー",
+      error
+    );
+
     select.innerHTML =
       '<option value="">' +
-      'シフトを取得できませんでした' +
+      '取得エラー：' +
+      escapeHtmlForOption_(
+        error.message
+      ) +
       '</option>';
-
-    alert(
-      "本日の担当シフトの取得に失敗しました：" +
-      error.message
-    );
 
   } finally {
     select.disabled = false;
   }
+}
+
+
+function escapeHtmlForOption_(
+  value
+) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 
