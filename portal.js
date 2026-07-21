@@ -594,7 +594,7 @@ function setTodayShiftOptions(shifts) {
       '</option>';
 
     setStaffActionButtonsDisabled(
-      true
+      ""
     );
 
     return;
@@ -609,6 +609,10 @@ function setTodayShiftOptions(shifts) {
     option.value =
       shift.shiftId;
 
+    const currentState =
+      shift.currentState ||
+      "未開始";
+
     option.textContent =
       shift.startTime +
       "～" +
@@ -616,7 +620,10 @@ function setTodayShiftOptions(shifts) {
       "　" +
       shift.clientName +
       "　" +
-      shift.service;
+      shift.service +
+      "　【" +
+      currentState +
+      "】";
 
     select.appendChild(option);
   });
@@ -627,7 +634,7 @@ function setTodayShiftOptions(shifts) {
   );
 
   setStaffActionButtonsDisabled(
-    true
+    ""
   );
 }
 
@@ -649,12 +656,16 @@ function handleTodayShiftChange() {
       statusArea.textContent = "";
     }
 
-    setStaffActionButtonsDisabled(
-      true
+    setStaffActionButtonsByState(
+      ""
     );
 
     return;
   }
+
+  const currentState =
+    shift.currentState ||
+    "未開始";
 
   if (statusArea) {
     statusArea.textContent =
@@ -664,15 +675,76 @@ function handleTodayShiftChange() {
       "～" +
       shift.endTime +
       "／現在：" +
-      (
-        shift.currentState ||
-        "未開始"
-      );
+      currentState;
   }
 
-  setStaffActionButtonsDisabled(
-    false
+  setStaffActionButtonsByState(
+    currentState
   );
+}
+
+function setStaffActionButtonsByState(
+  currentState
+) {
+  const moveButton =
+    document.getElementById(
+      "moveButton"
+    );
+
+  const enterButton =
+    document.getElementById(
+      "enterButton"
+    );
+
+  const finishButton =
+    document.getElementById(
+      "finishButton"
+    );
+
+  // 最初に全て使用不可
+  if (moveButton) {
+    moveButton.disabled = true;
+  }
+
+  if (enterButton) {
+    enterButton.disabled = true;
+  }
+
+  if (finishButton) {
+    finishButton.disabled = true;
+  }
+
+  switch (currentState) {
+    case "未開始":
+      if (moveButton) {
+        moveButton.disabled = false;
+      }
+      break;
+
+    case "移動中":
+      if (enterButton) {
+        enterButton.disabled = false;
+      }
+      break;
+
+    case "支援中":
+      if (finishButton) {
+        finishButton.disabled = false;
+      }
+      break;
+
+    case "終了":
+      // 全て使用不可のまま
+      break;
+
+    default:
+      // 状態不明時も全て使用不可
+      console.warn(
+        "不明な現在状態です",
+        currentState
+      );
+      break;
+  }
 }
 
 
@@ -828,10 +900,20 @@ async function sendStaffAction(
     );
 
   } finally {
-    setStaffActionButtonsDisabled(
-      false
-    );
+    const selectedShift =
+      getSelectedTodayShift();
+    if (selectedShift) {
+      setStaffActionButtonsByState(
+        selectedShift.currentState ||
+        "未開始"
+      );
+    } else {
+      setStaffActionButtonsByState(
+        ""
+      );
+    }
   }
+
 }
 
 
