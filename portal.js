@@ -242,6 +242,8 @@ function showPortalAreaDirect() {
     ?.classList.remove("hidden");
 
   showPortalUserName();
+
+  loadTodayStaffShifts();
 }
 
 
@@ -450,3 +452,353 @@ async function issueTempIdFromScreen() {
     );
   }
 }
+
+let todayStaffShifts = [];
+
+
+/**
+ * ログイン職員の本日の担当シフトを取得します。
+ */
+async function loadTodayStaffShifts() {
+  const select =
+    document.getElementById(
+      "todayShiftSelect"
+    );
+
+  if (!select || !currentUser) {
+    return;
+  }
+
+  select.disabled = true;
+
+  select.innerHTML =
+    '<option value="">' +
+    '本日の担当シフトを読み込んでいます…' +
+    '</option>';
+
+  try {
+    const result =
+      await postGas({
+        action: "getTodayStaffShifts",
+        employeeId:
+          currentUser.employeeId,
+        employeeName:
+          currentUser.employeeName
+      });
+
+    if (!result.success) {
+      throw new Error(
+        result.message ||
+        "シフトの取得に失敗しました。"
+      );
+    }
+
+    todayStaffShifts =
+      result.shifts || [];
+
+    setTodayShiftOptions(
+      todayStaffShifts
+    );
+
+  } catch (error) {
+    select.innerHTML =
+      '<option value="">' +
+      'シフトを取得できませんでした' +
+      '</option>';
+
+    alert(
+      "本日の担当シフトの取得に失敗しました：" +
+      error.message
+    );
+
+  } finally {
+    select.disabled = false;
+  }
+}
+
+
+/**
+ * 本日のシフトを選択欄へ表示します。
+ */
+function setTodayShiftOptions(shifts) {
+  const select =
+    document.getElementById(
+      "todayShiftSelect"
+    );
+
+  if (!select) {
+    return;
+  }
+
+  select.innerHTML =
+    '<option value="">' +
+    '支援を選択してください' +
+    '</option>';
+
+  if (shifts.length === 0) {
+    select.innerHTML =
+      '<option value="">' +
+      '本日の担当シフトはありません' +
+      '</option>';
+
+    setStaffActionButtonsDisabled(
+      true
+    );
+
+    return;
+  }
+
+  shifts.forEach(shift => {
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      shift.shiftId;
+
+    option.textContent =
+      shift.startTime +
+      "～" +
+      shift.endTime +
+      "　" +
+      shift.clientName +
+      "　" +
+      shift.service;
+
+    select.appendChild(option);
+  });
+
+  select.addEventListener(
+    "change",
+    handleTodayShiftChange
+  );
+
+  setStaffActionButtonsDisabled(
+    true
+  );
+}
+
+
+/**
+ * 操作対象シフトが選択されたときの表示です。
+ */
+function handleTodayShiftChange() {
+  const shift =
+    getSelectedTodayShift();
+
+  const statusArea =
+    document.getElementById(
+      "selectedShiftStatus"
+    );
+
+  if (!shift) {
+    if (statusArea) {
+      statusArea.textContent = "";
+    }
+
+    setStaffActionButtonsDisabled(
+      true
+    );
+
+    return;
+  }
+
+  if (statusArea) {
+    statusArea.textContent =
+      shift.clientName +
+      "／" +
+      shift.startTime +
+      "～" +
+      shift.endTime +
+      "／現在：" +
+      (
+        shift.currentState ||
+        "未開始"
+      );
+  }
+
+  setStaffActionButtonsDisabled(
+    false
+  );
+}
+
+
+/**
+ * 選択中のシフト情報を返します。
+ */
+function getSelectedTodayShift() {
+  const select =
+    document.getElementById(
+      "todayShiftSelect"
+    );
+
+  if (!select || !select.value) {
+    return null;
+  }
+
+  return (
+    todayStaffShifts.find(
+      shift =>
+        shift.shiftId ===
+        select.value
+    ) || null
+  );
+}
+
+async function sendStaffAction(
+  actionType
+) {
+  const shift =
+    getSelectedTodayShift();
+
+  if (!shift) {
+    alert(
+      "操作する支援を選択してください。"
+    );
+
+    return;
+  }
+
+  if (!currentUser) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      shift.clientName +
+      "\n" +
+      shift.startTime +
+      "～" +
+      shift.endTime +
+      "\n\n" +
+      "「" +
+      actionType +
+      "」を記録しますか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  setStaffActionButtonsDisabled(
+    true
+  );
+
+  try {
+    const deviceTime =
+      new Date().toISOString();
+
+    const sendId =
+      createStaffActionSendId(
+        currentUser.employeeId,
+        shift.shiftId,
+        actionType
+      );
+
+    const result =
+      await postGas({
+        action: "recordStaffAction",
+
+        employeeId:
+          currentUser.employeeId,
+
+        employeeName:
+          currentUser.employeeName,
+
+        shiftId:
+          shift.shiftId,
+
+        clientName:
+          shift.clientName,
+
+        supportDate:
+          shift.supportDate,
+
+        service:
+          shift.service,
+
+        scheduledStart:
+          shift.startTime,
+
+        scheduledEnd:
+          shift.endTime,
+
+        actionType:
+          actionType,
+
+        deviceTime:
+          deviceTime,
+
+        sendId:
+          sendId,
+
+        registrationMethod:
+          "職員ポータル",
+
+        note: ""
+      });
+
+    if (!result.success) {
+      throw new Error(
+        result.message ||
+        "操作を登録できませんでした。"
+      );
+    }
+
+    alert(result.message);
+
+    await loadTodayStaffShifts();
+
+  } catch (error) {
+    alert(
+      "操作の登録に失敗しました：" +
+      error.message
+    );
+
+  } finally {
+    setStaffActionButtonsDisabled(
+      false
+    );
+  }
+}
+
+
+function createStaffActionSendId(
+  employeeId,
+  shiftId,
+  actionType
+) {
+  return [
+    employeeId,
+    shiftId,
+    actionType,
+    Date.now(),
+    Math.random()
+      .toString(36)
+      .substring(2, 10)
+  ].join("-");
+}
+
+
+function setStaffActionButtonsDisabled(
+  disabled
+) {
+  [
+    "moveButton",
+    "enterButton",
+    "finishButton"
+  ].forEach(id => {
+    const button =
+      document.getElementById(id);
+
+    if (button) {
+      button.disabled = disabled;
+    }
+  });
+}
+

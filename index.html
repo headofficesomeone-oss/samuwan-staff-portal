@@ -166,22 +166,56 @@
           </div>
         </div>
 
-        <div class="quick-menu-grid">
-          <button class="quick-menu-card">
-            <div class="quick-menu-icon">🚶</div>
-            <div class="quick-menu-title">向かいます</div>
-          </button>
+				<div class="today-shift-box">
+				  <label for="todayShiftSelect">
+				    操作する支援を選択してください
+				  </label>
 
-          <button class="quick-menu-card">
-            <div class="quick-menu-icon">🏠</div>
-            <div class="quick-menu-title">入りました</div>
-          </button>
+				  <select id="todayShiftSelect">
+				    <option value="">
+				      本日の担当シフトを読み込んでいます…
+				    </option>
+				  </select>
 
-          <button class="quick-menu-card">
-            <div class="quick-menu-icon">✅</div>
-            <div class="quick-menu-title">終わりました</div>
-          </button>
-        </div>
+				  <div
+				    id="selectedShiftStatus"
+				    class="selected-shift-status"
+				  ></div>
+				</div>
+
+				<div class="quick-menu-grid">
+
+				  <button
+				    id="moveButton"
+				    class="quick-menu-card"
+				    type="button"
+				    onclick="sendStaffAction('向かいます')"
+				  >
+				    <div class="quick-menu-icon">🚶</div>
+				    <div class="quick-menu-title">向かいます</div>
+				  </button>
+
+				  <button
+				    id="enterButton"
+				    class="quick-menu-card"
+				    type="button"
+				    onclick="sendStaffAction('入りました')"
+				  >
+				    <div class="quick-menu-icon">🏠</div>
+				    <div class="quick-menu-title">入りました</div>
+				  </button>
+
+				  <button
+				    id="finishButton"
+				    class="quick-menu-card"
+				    type="button"
+				    onclick="sendStaffAction('終わりました')"
+				  >
+				    <div class="quick-menu-icon">✅</div>
+				    <div class="quick-menu-title">終わりました</div>
+				  </button>
+
+				</div>
 
         <div class="menu-grid">
           <button class="menu-card" onclick="goShiftRequest()">
