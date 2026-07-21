@@ -802,9 +802,24 @@ async function sendStaffAction(
       );
     }
 
+    const selectedShiftId =
+      shift.shiftId;
+
     alert(result.message);
 
     await loadTodayStaffShifts();
+
+    const select =
+      document.getElementById(
+        "todayShiftSelect"
+      );
+
+    if (select) {
+      select.value =
+        selectedShiftId;
+
+      handleTodayShiftChange();
+    }
 
   } catch (error) {
     alert(
