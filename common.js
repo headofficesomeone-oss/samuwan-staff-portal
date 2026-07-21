@@ -2,13 +2,100 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwoQp13Pi9DWYep8D-F9uUE
 const LIFF_ID = "2009935343-GyNpF9lj";
 const STAFF_PORTAL_USER_KEY = "staffPortalCurrentUser";
 
-async function postGas(data) {
+async function postGas2(data) {
   const response = await fetch(GAS_URL, {
     method: "POST",
     body: JSON.stringify(data)
   });
   return response.json();
 }
+
+
+async function postGas(data) {
+  try {
+    console.log(
+      "GAS送信開始",
+      data
+    );
+
+    const response =
+      await fetch(
+        GAS_API_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(data),
+          redirect: "follow"
+        }
+      );
+
+    console.log(
+      "GAS応答",
+      {
+        status: response.status,
+        ok: response.ok,
+        url: response.url,
+        contentType:
+          response.headers.get(
+            "content-type"
+          )
+      }
+    );
+
+    const responseText =
+      await response.text();
+
+    console.log(
+      "GAS応答本文",
+      responseText
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "HTTPエラー：" +
+        response.status
+      );
+    }
+
+    let result;
+
+    try {
+      result =
+        JSON.parse(responseText);
+
+    } catch (parseError) {
+      throw new Error(
+        "GASの応答がJSONではありません。" +
+        " 応答：" +
+        responseText.substring(
+          0,
+          200
+        )
+      );
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error(
+      "postGasエラー",
+      error
+    );
+
+    throw new Error(
+      error.message ||
+      "GASへ接続できませんでした"
+    );
+  }
+}
+
+
+
+
+
 
 function getSavedPortalUser() {
   const saved = localStorage.getItem(STAFF_PORTAL_USER_KEY);
