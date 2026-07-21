@@ -1380,6 +1380,10 @@ function jsonpRequest(
     script.src =
       `${SHIFT_WEEK_API_URL}?${parameters.toString()}`;
 
+    console.log(
+      "基本シフトGAS URL:",
+      script.src
+
     script.onerror = () => {
       if (finished) return;
 
