@@ -49,3 +49,64 @@ function removePageMessage() {
   const messageBox = document.getElementById("messageBox");
   if (messageBox) messageBox.remove();
 }
+
+
+
+
+const STAFF_PORTAL_API_URL =
+  "https://script.google.com/macros/s/AKfycbwoQp13Pi9DWYep8D-F9uUETF2YTjsXDBAwKTdGtclRqCZVuzfVtnJPPIbYhAV4b-YyZA/exec";
+
+async function postGas(data) {
+  try {
+    const response = await fetch(
+      STAFF_PORTAL_API_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(data),
+        redirect: "follow"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "HTTPエラー：" +
+        response.status
+      );
+    }
+
+    const text =
+      await response.text();
+
+    let result;
+
+    try {
+      result = JSON.parse(text);
+    } catch (error) {
+      console.error(
+        "GAS応答本文",
+        text
+      );
+
+      throw new Error(
+        "GASの応答を読み取れませんでした。"
+      );
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error(
+      "postGasエラー",
+      error
+    );
+
+    throw new Error(
+      error.message ||
+      "GASへ接続できませんでした"
+    );
+  }
+}
