@@ -1383,6 +1383,7 @@ function jsonpRequest(
     console.log(
       "基本シフトGAS URL:",
       script.src
+    );
 
     script.onerror = () => {
       if (finished) return;
