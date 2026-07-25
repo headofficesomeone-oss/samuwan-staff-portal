@@ -139,6 +139,26 @@ function bindScreenEvents() {
       await loadCurrentWeek({ forceReload: true });
     });
 
+	document
+	  .getElementById("newShiftButton")
+	  .addEventListener("click", openNewShiftModal);
+
+	document
+	  .getElementById("closeNewShiftButton")
+	  .addEventListener("click", closeNewShiftModal);
+
+	document
+	  .getElementById("cancelNewShiftButton")
+	  .addEventListener("click", closeNewShiftModal);
+
+	document
+	  .querySelector("#newShiftModal .shift-modal-backdrop")
+	  .addEventListener("click", closeNewShiftModal);
+
+	document
+	  .getElementById("newShiftForm")
+	  .addEventListener("submit", saveNewShiftFromForm);
+  
   document
     .getElementById("createButton")
     .addEventListener("click", createInitialWeek);
@@ -1414,3 +1434,511 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value);
 }
+
+/* =============================================================
+   基本シフトの個別新規追加
+   ============================================================= */
+
+/**
+ * 新規シフト入力画面を開きます。
+ */
+function openNewShiftModal() {
+  const modal =
+    document.getElementById("newShiftModal");
+
+  const form =
+    document.getElementById("newShiftForm");
+
+  if (!modal || !form) {
+    return;
+  }
+
+  form.reset();
+
+  setNewShiftFormMessage("");
+
+  setNewShiftStaffOptions();
+  setNewShiftUserAndServiceOptions();
+
+  /*
+   * 初期日付は、表示している週の月曜日にします。
+   */
+  const weekMonday =
+    document.getElementById("weekMonday").value;
+
+  document.getElementById("newShiftDate").value =
+    weekMonday || "";
+
+  modal.classList.remove("hidden");
+  document.body.classList.add("shift-modal-open");
+
+  document
+    .getElementById("newShiftUser")
+    .focus();
+}
+
+
+/**
+ * 新規シフト入力画面を閉じます。
+ */
+function closeNewShiftModal() {
+  const modal =
+    document.getElementById("newShiftModal");
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("hidden");
+  document.body.classList.remove("shift-modal-open");
+
+  setNewShiftFormMessage("");
+}
+
+
+/**
+ * 主担当から担当4までの選択肢を設定します。
+ */
+function setNewShiftStaffOptions() {
+  [
+    "newShiftStaff1",
+    "newShiftStaff2",
+    "newShiftStaff3",
+    "newShiftStaff4"
+  ].forEach(selectId => {
+    const select =
+      document.getElementById(selectId);
+
+    if (!select) {
+      return;
+    }
+
+    select.innerHTML = "";
+
+    const blankOption =
+      document.createElement("option");
+
+    blankOption.value = "";
+    blankOption.textContent = "未定";
+
+    select.appendChild(blankOption);
+
+    staffChoices.forEach(name => {
+      const option =
+        document.createElement("option");
+
+      option.value = name;
+      option.textContent = name;
+
+      select.appendChild(option);
+    });
+  });
+}
+
+
+/**
+ * 現在読み込んでいる基本シフトから、
+ * 利用者とサービスの入力候補を作ります。
+ */
+function setNewShiftUserAndServiceOptions() {
+  const users = [
+    ...new Set(
+      currentWeekItems
+        .map(item =>
+          String(item.user || "").trim()
+        )
+        .filter(Boolean)
+    )
+  ].sort((a, b) =>
+    a.localeCompare(b, "ja")
+  );
+
+  const services = [
+    ...new Set(
+      currentWeekItems
+        .map(item =>
+          String(item.service || "").trim()
+        )
+        .filter(Boolean)
+    )
+  ].sort((a, b) =>
+    a.localeCompare(b, "ja")
+  );
+
+  setNewShiftDataListOptions(
+    "newShiftUserList",
+    users
+  );
+
+  setNewShiftDataListOptions(
+    "newShiftServiceList",
+    services
+  );
+}
+
+
+/**
+ * datalistへ候補を設定します。
+ */
+function setNewShiftDataListOptions(
+  listId,
+  values
+) {
+  const list =
+    document.getElementById(listId);
+
+  if (!list) {
+    return;
+  }
+
+  list.innerHTML = "";
+
+  values.forEach(value => {
+    const option =
+      document.createElement("option");
+
+    option.value = value;
+    list.appendChild(option);
+  });
+}
+
+
+/**
+ * 入力した新規シフトをGASへ送信します。
+ */
+async function saveNewShiftFromForm(event) {
+  event.preventDefault();
+
+  const form =
+    document.getElementById("newShiftForm");
+
+  const saveButton =
+    document.getElementById("saveNewShiftButton");
+
+  if (!form || !saveButton) {
+    return;
+  }
+
+  if (!form.reportValidity()) {
+    return;
+  }
+
+  const data =
+    getNewShiftFormData();
+
+  const validationMessage =
+    validateNewShiftFormData(data);
+
+  if (validationMessage) {
+    setNewShiftFormMessage(
+      validationMessage,
+      true
+    );
+    return;
+  }
+
+  const confirmed = confirm(
+    [
+      "次の内容で新しい基本シフトを登録します。",
+      "",
+      data.user,
+      data.date,
+      data.startTime + "～" + data.endTime,
+      data.service,
+      "",
+      "依頼情報にも同時に登録されます。",
+      "シフト規定値には登録されません。"
+    ].join("\n")
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const originalText =
+    saveButton.textContent;
+
+  saveButton.disabled = true;
+  saveButton.textContent = "登録中...";
+
+  setNewShiftFormMessage(
+    "新しい基本シフトを登録しています。"
+  );
+
+  try {
+    const result =
+      await jsonpRequest(
+        "week-create-with-request",
+        {
+          data: data
+        },
+        "shiftWeekDirectCreateCallback"
+      );
+
+    setMessage(
+      result.message ||
+      "新しい基本シフトを登録しました。"
+    );
+
+    closeNewShiftModal();
+
+    /*
+     * 登録後は端末保存ではなく、
+     * GASから最新データを再取得します。
+     */
+    await loadCurrentWeek({
+      forceReload: true
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    const message =
+      error && error.message
+        ? error.message
+        : "新規登録に失敗しました";
+
+    setNewShiftFormMessage(
+      message +
+      (
+        error && error.errorId
+          ? "　エラー番号：" + error.errorId
+          : ""
+      ),
+      true
+    );
+
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent =
+      originalText;
+  }
+}
+
+
+/**
+ * 入力画面から登録内容を取得します。
+ */
+function getNewShiftFormData() {
+  return {
+    weekMonday:
+      document
+        .getElementById("weekMonday")
+        .value,
+
+    user:
+      getNewShiftInputValue(
+        "newShiftUser"
+      ),
+
+    date:
+      getNewShiftInputValue(
+        "newShiftDate"
+      ),
+
+    startTime:
+      getNewShiftInputValue(
+        "newShiftStartTime"
+      ),
+
+    endTime:
+      getNewShiftInputValue(
+        "newShiftEndTime"
+      ),
+
+    service:
+      getNewShiftInputValue(
+        "newShiftService"
+      ),
+
+    vehicle:
+      getNewShiftInputValue(
+        "newShiftVehicle"
+      ),
+
+    staff1:
+      getNewShiftInputValue(
+        "newShiftStaff1"
+      ),
+
+    staff2:
+      getNewShiftInputValue(
+        "newShiftStaff2"
+      ),
+
+    staff3:
+      getNewShiftInputValue(
+        "newShiftStaff3"
+      ),
+
+    staff4:
+      getNewShiftInputValue(
+        "newShiftStaff4"
+      ),
+
+    destination:
+      getNewShiftInputValue(
+        "newShiftDestination"
+      ),
+
+    meeting:
+      getNewShiftInputValue(
+        "newShiftMeeting"
+      ),
+
+    transport:
+      getNewShiftInputValue(
+        "newShiftTransport"
+      ),
+
+    startPlace:
+      getNewShiftInputValue(
+        "newShiftStartPlace"
+      ),
+
+    endPlace:
+      getNewShiftInputValue(
+        "newShiftEndPlace"
+      ),
+
+    meetingInfo:
+      getNewShiftInputValue(
+        "newShiftMeetingInfo"
+      ),
+
+    reservationInfo:
+      getNewShiftInputValue(
+        "newShiftReservationInfo"
+      ),
+
+    support:
+      getNewShiftInputValue(
+        "newShiftSupport"
+      ),
+
+    instruction:
+      getNewShiftInputValue(
+        "newShiftInstruction"
+      ),
+
+    detailNote:
+      getNewShiftInputValue(
+        "newShiftDetailNote"
+      ),
+
+    simpleMemo:
+      getNewShiftInputValue(
+        "newShiftSimpleMemo"
+      ),
+
+    note:
+      getNewShiftInputValue(
+        "newShiftNote"
+      )
+  };
+}
+
+
+/**
+ * 指定した入力欄の値を取得します。
+ */
+function getNewShiftInputValue(id) {
+  const element =
+    document.getElementById(id);
+
+  return element
+    ? String(element.value || "").trim()
+    : "";
+}
+
+
+/**
+ * ブラウザ側でも必須内容を確認します。
+ */
+function validateNewShiftFormData(data) {
+  if (!data.user) {
+    return "利用者を入力してください。";
+  }
+
+  if (!data.date) {
+    return "日付を入力してください。";
+  }
+
+  if (!data.startTime) {
+    return "開始時刻を入力してください。";
+  }
+
+  if (!data.endTime) {
+    return "終了時刻を入力してください。";
+  }
+
+  if (!data.service) {
+    return "サービスを入力してください。";
+  }
+
+  if (data.endTime <= data.startTime) {
+    return "終了時刻は開始時刻より後にしてください。";
+  }
+
+  const date =
+    parseLocalDate(data.date);
+
+  const weekMonday =
+    parseLocalDate(data.weekMonday);
+
+  if (!date || !weekMonday) {
+    return "日付を確認してください。";
+  }
+
+  const weekSunday =
+    addDays(weekMonday, 6);
+
+  if (
+    date.getTime() <
+      weekMonday.getTime() ||
+    date.getTime() >
+      weekSunday.getTime()
+  ) {
+    return (
+      "日付は、現在表示している週の" +
+      "月曜日から日曜日の範囲で入力してください。"
+    );
+  }
+
+  return "";
+}
+
+
+/**
+ * 新規登録画面内のメッセージを表示します。
+ */
+function setNewShiftFormMessage(
+  message,
+  isError = false
+) {
+  const area =
+    document.getElementById(
+      "newShiftFormMessage"
+    );
+
+  if (!area) {
+    return;
+  }
+
+  area.textContent =
+    message || "";
+
+  area.className =
+    "new-shift-form-message" +
+    (
+      isError
+        ? " error"
+        : ""
+    ) +
+    (
+      message
+        ? ""
+        : " hidden"
+    );
+}
+

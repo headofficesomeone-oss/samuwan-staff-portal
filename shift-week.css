@@ -678,3 +678,219 @@ body.week-controls-collapsed .table-scroll {
   text-align: center;
   font-weight: 700;
 }
+
+/* =============================================================
+   新規シフト追加モーダル
+   ============================================================= */
+
+.shift-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+}
+
+.shift-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 38, 30, 0.48);
+}
+
+.shift-modal-card {
+  position: relative;
+  z-index: 1;
+
+  width: min(1180px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+
+  border-radius: 18px;
+  padding: 22px 24px 24px;
+
+  background: #ffffff;
+  box-shadow:
+    0 20px 60px
+    rgba(20, 35, 27, 0.25);
+}
+
+.shift-modal-header {
+  margin-bottom: 14px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.shift-modal-subtitle {
+  margin-bottom: 3px;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.shift-modal-header h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.shift-modal-close-button {
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid var(--border);
+  border-radius: 50%;
+
+  color: var(--muted);
+  background: #ffffff;
+
+  font-size: 26px;
+  line-height: 1;
+}
+
+.shift-modal-close-button:hover {
+  color: var(--danger);
+  border-color: #e6b3b0;
+  background: #fff4f3;
+}
+
+.shift-modal-notice {
+  margin-bottom: 18px;
+  border: 1px solid #cfe3d5;
+  border-radius: 10px;
+  padding: 11px 13px;
+
+  color: #31533e;
+  background: var(--green-light);
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.new-shift-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(180px, 1fr));
+  gap: 13px 14px;
+}
+
+.new-shift-field {
+  min-width: 0;
+}
+
+.new-shift-field label {
+  display: block;
+  margin-bottom: 5px;
+
+  color: #41514a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.new-shift-field input,
+.new-shift-field select,
+.new-shift-field textarea {
+  width: 100%;
+  border: 1px solid #d5dfd8;
+  border-radius: 8px;
+  padding: 8px 10px;
+
+  color: var(--text);
+  background: #ffffff;
+}
+
+.new-shift-field input,
+.new-shift-field select {
+  min-height: 40px;
+}
+
+.new-shift-field textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.new-shift-field input:focus,
+.new-shift-field select:focus,
+.new-shift-field textarea:focus {
+  outline: 2px solid
+    rgba(47, 168, 90, 0.18);
+
+  border-color: var(--green);
+}
+
+.new-shift-field-wide {
+  grid-column: span 2;
+}
+
+.new-shift-field-full {
+  grid-column: 1 / -1;
+}
+
+.required-mark {
+  margin-left: 5px;
+  border-radius: 5px;
+  padding: 2px 5px;
+
+  color: #ffffff;
+  background: var(--danger);
+
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.new-shift-form-message {
+  margin-top: 16px;
+  border-radius: 9px;
+  padding: 10px 12px;
+
+  color: var(--green-dark);
+  background: var(--green-light);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.new-shift-form-message.error {
+  color: var(--danger);
+  background: #fff1f0;
+}
+
+.shift-modal-actions {
+  margin-top: 20px;
+
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.shift-modal-actions button {
+  min-width: 120px;
+}
+
+body.shift-modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 1350px) {
+  .new-shift-form-grid {
+    grid-template-columns:
+      repeat(3, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 1050px) {
+  .new-shift-form-grid {
+    grid-template-columns:
+      repeat(2, minmax(180px, 1fr));
+  }
+
+  .new-shift-field-wide {
+    grid-column: span 2;
+  }
+}
+
