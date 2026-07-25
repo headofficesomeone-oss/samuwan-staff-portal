@@ -978,3 +978,288 @@ function setStaffActionButtonsDisabled(
   });
 }
 
+/*
+ * 基本シフト用GASのURLです。
+ */
+const SHIFT_WEEK_VERSION_API_URL =
+  "https://script.google.com/macros/s/AKfycbwBQOZ5MjFRwQyKKYXLVpM5npEl9od34CQjoW9rWimQaphIf_sTK8_uIjxSVrMxvtGX/exec";
+
+
+/*
+ * 本日の担当シフトを保存するキーです。
+ */
+const TODAY_STAFF_SHIFT_CACHE_KEY =
+  "todayStaffShiftCacheV1";
+
+
+/**
+ * 基本シフトの更新番号を取得します。
+ */
+function getStaffShiftVersion() {
+  return new Promise(
+    (resolve, reject) => {
+      const callbackName =
+        "staffShiftVersionCallback_" +
+        Date.now() +
+        "_" +
+        Math.floor(
+          Math.random() * 100000
+        );
+
+      const script =
+        document.createElement(
+          "script"
+        );
+
+      let finished = false;
+
+      const cleanup = () => {
+        delete window[callbackName];
+
+        if (script.parentNode) {
+          script.parentNode
+            .removeChild(script);
+        }
+      };
+
+      /*
+       * 10秒経過しても応答がない場合
+       */
+      const timer =
+        setTimeout(() => {
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+          cleanup();
+
+          reject(
+            new Error(
+              "更新確認がタイムアウトしました。"
+            )
+          );
+        }, 10000);
+
+      /*
+       * GASから呼び出される関数
+       */
+      window[callbackName] =
+        result => {
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+          clearTimeout(timer);
+          cleanup();
+
+          if (
+            !result ||
+            result.success !== true
+          ) {
+            reject(
+              new Error(
+                result?.message ||
+                "更新番号を取得できませんでした。"
+              )
+            );
+
+            return;
+          }
+
+          resolve(
+            String(
+              result.version || "0"
+            )
+          );
+        };
+
+      const parameters =
+        new URLSearchParams();
+
+      parameters.set(
+        "action",
+        "week-version"
+      );
+
+      parameters.set(
+        "callback",
+        callbackName
+      );
+
+      parameters.set(
+        "_",
+        Date.now()
+      );
+
+      script.src =
+        SHIFT_WEEK_VERSION_API_URL +
+        "?" +
+        parameters.toString();
+
+      script.onerror = () => {
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+        clearTimeout(timer);
+        cleanup();
+
+        reject(
+          new Error(
+            "基本シフトの更新確認に接続できませんでした。"
+          )
+        );
+      };
+
+      document.body.appendChild(
+        script
+      );
+    }
+  );
+}
+
+
+/**
+ * 本日のシフトを端末へ保存します。
+ */
+function saveTodayStaffShiftCache(
+  version,
+  shifts
+) {
+  if (!currentUser) {
+    return;
+  }
+
+  const cache = {
+    date:
+      getTodayLocalDateText(),
+
+    version:
+      String(version || "0"),
+
+    employeeId:
+      currentUser.employeeId,
+
+    shifts:
+      shifts,
+
+    savedAt:
+      new Date().toISOString()
+  };
+
+  localStorage.setItem(
+    TODAY_STAFF_SHIFT_CACHE_KEY,
+    JSON.stringify(cache)
+  );
+}
+
+
+/**
+ * 保存済みの本日のシフトを取得します。
+ */
+function getTodayStaffShiftCache() {
+  if (!currentUser) {
+    return null;
+  }
+
+  const text =
+    localStorage.getItem(
+      TODAY_STAFF_SHIFT_CACHE_KEY
+    );
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    const cache =
+      JSON.parse(text);
+
+    if (
+      !cache ||
+      !Array.isArray(cache.shifts)
+    ) {
+      return null;
+    }
+
+    /*
+     * 保存日が今日でなければ使用しません。
+     */
+    if (
+      cache.date !==
+      getTodayLocalDateText()
+    ) {
+      return null;
+    }
+
+    /*
+     * 別の職員の保存データは
+     * 使用しません。
+     */
+    if (
+      cache.employeeId !==
+      currentUser.employeeId
+    ) {
+      return null;
+    }
+
+    return cache;
+
+  } catch (error) {
+    console.error(
+      "本日のシフト保存情報を読めませんでした",
+      error
+    );
+
+    localStorage.removeItem(
+      TODAY_STAFF_SHIFT_CACHE_KEY
+    );
+
+    return null;
+  }
+}
+
+
+/**
+ * 日本時間の今日の日付を
+ * yyyy-MM-dd形式で返します。
+ */
+function getTodayLocalDateText() {
+  const now =
+    new Date();
+
+  const parts =
+    new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        timeZone:
+          "Asia/Tokyo",
+        year:
+          "numeric",
+        month:
+          "2-digit",
+        day:
+          "2-digit"
+      }
+    )
+      .formatToParts(now);
+
+  const values = {};
+
+  parts.forEach(part => {
+    values[part.type] =
+      part.value;
+  });
+
+  return (
+    values.year +
+    "-" +
+    values.month +
+    "-" +
+    values.day
+  );
+}
+
