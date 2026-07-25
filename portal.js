@@ -1263,3 +1263,21 @@ function getTodayLocalDateText() {
   );
 }
 
+async function testStaffShiftVersion() {
+  try {
+    const version =
+      await getStaffShiftVersion();
+
+    alert(
+      "基本シフト更新番号：" +
+      version
+    );
+
+  } catch (error) {
+    alert(
+      "更新番号の取得に失敗：" +
+      error.message
+    );
+  }
+}
+
