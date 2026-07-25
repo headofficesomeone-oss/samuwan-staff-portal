@@ -6,7 +6,9 @@ document.addEventListener(
   "DOMContentLoaded",
   async () => {
     const form =
-      document.getElementById("registerForm");
+      document.getElementById(
+        "registerForm"
+      );
 
     if (form) {
       form.addEventListener(
@@ -15,12 +17,30 @@ document.addEventListener(
       );
     }
 
+    /*
+     * 先に端末へ保存された
+     * 本人情報を確認します。
+     */
+    currentUser =
+      getSavedPortalUser();
+
+    if (currentUser) {
+      showPortalAreaDirect();
+      return;
+    }
+
+    /*
+     * 保存情報がない場合だけ
+     * 本人確認画面を表示します。
+     */
     showLoadingArea();
 
     currentLineProfile =
       await initLiff();
 
-    // LINE IDで本人確認
+    /*
+     * LINE IDで本人確認します。
+     */
     if (
       currentLineProfile &&
       currentLineProfile.lineId
@@ -39,23 +59,21 @@ document.addEventListener(
             loginResult.employeeName
         };
 
-        savePortalUser(currentUser);
+        savePortalUser(
+          currentUser
+        );
+
         showPortalAreaDirect();
         return;
       }
     }
 
-    // 端末に保存された本人情報を確認
-    currentUser =
-      getSavedPortalUser();
-
-    if (currentUser) {
-      showPortalAreaDirect();
-      return;
-    }
-
-    // 本人確認できない場合だけ初回登録画面を表示
+    /*
+     * 本人確認できない場合だけ
+     * 初回登録画面を表示します。
+     */
     showRegisterArea();
+
     await loadEmployeeList();
   }
 );
