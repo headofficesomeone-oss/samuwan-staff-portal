@@ -261,6 +261,12 @@ function showPortalAreaDirect() {
 
   showPortalUserName();
 
+  /*
+   * シフト確認が終わるまでは
+   * 3つのボタンをすべて使用不可
+   */
+  setStaffActionButtonsByState("");
+  
   loadTodayStaffShifts();
 }
 
@@ -478,6 +484,9 @@ let todayStaffShifts = [];
  * ログイン職員の本日の担当シフトを取得します。
  */
 async function loadTodayStaffShifts() {
+  
+  setStaffActionButtonsByState("");
+  
   console.log(
     "loadTodayStaffShifts開始",
     {
