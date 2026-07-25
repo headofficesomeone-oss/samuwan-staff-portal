@@ -611,7 +611,7 @@ function setTodayShiftOptions(shifts) {
       '本日の担当シフトはありません' +
       '</option>';
 
-    setStaffActionButtonsDisabled(
+    setStaffActionButtonsByState(
       ""
     );
 
@@ -651,7 +651,7 @@ function setTodayShiftOptions(shifts) {
     handleTodayShiftChange
   );
 
-  setStaffActionButtonsDisabled(
+  setStaffActionButtonsByState(
     ""
   );
 }
