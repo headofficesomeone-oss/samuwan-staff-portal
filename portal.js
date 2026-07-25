@@ -481,23 +481,13 @@ let todayStaffShifts = [];
 
 
 /**
- * ログイン職員の本日の担当シフトを取得します。
+ * 本日の担当シフトを表示します。
+ *
+ * 1. 保存済みシフトがあれば即時表示
+ * 2. 基本シフトの更新番号を確認
+ * 3. 変更時だけ最新シフトを再取得
  */
 async function loadTodayStaffShifts() {
-  
-  setStaffActionButtonsByState("");
-  
-  console.log(
-    "loadTodayStaffShifts開始",
-    {
-      currentUser: currentUser,
-      select:
-        document.getElementById(
-          "todayShiftSelect"
-        )
-    }
-  );
-
   const select =
     document.getElementById(
       "todayShiftSelect"
@@ -507,8 +497,15 @@ async function loadTodayStaffShifts() {
     console.error(
       "todayShiftSelectが見つかりません"
     );
+
     return;
   }
+
+  /*
+   * 確認が終わるまでは、
+   * 3つの操作ボタンを使用不可にします。
+   */
+  setStaffActionButtonsByState("");
 
   if (!currentUser) {
     select.innerHTML =
@@ -516,25 +513,63 @@ async function loadTodayStaffShifts() {
       '職員情報を確認できませんでした' +
       '</option>';
 
-    console.error(
-      "currentUserが設定されていません"
-    );
     return;
   }
 
-  select.disabled = true;
+  /*
+   * 前回保存した本日のシフトを取得します。
+   */
+  const cache =
+    getTodayStaffShiftCache();
 
-  select.innerHTML =
-    '<option value="">' +
-    '本日の担当シフトを取得しています…' +
-    '</option>';
+  /*
+   * 保存済みシフトがあれば、
+   * 通信を待たずに先に表示します。
+   */
+  if (cache) {
+    todayStaffShifts =
+      cache.shifts || [];
 
-  try {
-    console.log(
-      "GASへ送信する職員情報",
-      currentUser
+    setTodayShiftOptions(
+      todayStaffShifts
     );
 
+  } else {
+    select.innerHTML =
+      '<option value="">' +
+      '本日の担当シフトを確認しています…' +
+      '</option>';
+  }
+
+  try {
+    /*
+     * 基本シフトの更新番号だけ確認します。
+     */
+    const latestVersion =
+      await getStaffShiftVersion();
+
+    const cacheIsCurrent =
+      cache &&
+      String(cache.version) ===
+        String(latestVersion);
+
+    /*
+     * 更新番号が同じなら、
+     * シフト一覧は再取得しません。
+     */
+    if (cacheIsCurrent) {
+      console.log(
+        "基本シフトの変更なし：" +
+        "保存済みシフトを使用します。"
+      );
+
+      return;
+    }
+
+    /*
+     * 更新番号が変わった場合だけ、
+     * 最新の担当シフトを取得します。
+     */
     const result =
       await postGas({
         action:
@@ -547,11 +582,6 @@ async function loadTodayStaffShifts() {
           currentUser.employeeName
       });
 
-    console.log(
-      "シフト取得結果",
-      result
-    );
-
     if (!result.success) {
       throw new Error(
         result.message ||
@@ -559,18 +589,68 @@ async function loadTodayStaffShifts() {
       );
     }
 
-    todayStaffShifts =
+    const oldShifts =
+      cache &&
+      Array.isArray(cache.shifts)
+        ? cache.shifts
+        : [];
+
+    const newShifts =
       result.shifts || [];
 
+    /*
+     * 前回にはなかったシフトを確認します。
+     */
+    const addedShifts =
+      findAddedTodayShifts(
+        oldShifts,
+        newShifts
+      );
+
+    todayStaffShifts =
+      newShifts;
+
+    /*
+     * プルダウンを最新状態へ更新します。
+     */
     setTodayShiftOptions(
       todayStaffShifts
     );
 
+    /*
+     * 最新シフトと更新番号を端末へ保存します。
+     */
+    saveTodayStaffShiftCache(
+      latestVersion,
+      todayStaffShifts
+    );
+
+    /*
+     * 初回取得では通知せず、
+     * 前回データがある場合だけ通知します。
+     */
+    if (
+      cache &&
+      addedShifts.length > 0
+    ) {
+      showAddedShiftNotice(
+        addedShifts
+      );
+    }
+
   } catch (error) {
     console.error(
-      "シフト取得エラー",
+      "本日のシフト確認エラー",
       error
     );
+
+    /*
+     * 保存済みシフトがある場合は、
+     * 通信エラーでもその表示を維持します。
+     */
+    if (cache) {
+      return;
+    }
 
     select.innerHTML =
       '<option value="">' +
@@ -580,11 +660,9 @@ async function loadTodayStaffShifts() {
       ) +
       '</option>';
 
-  } finally {
-    select.disabled = false;
+    setStaffActionButtonsByState("");
   }
 }
-
 
 function escapeHtmlForOption_(
   value
@@ -689,6 +767,12 @@ function handleTodayShiftChange() {
 
     return;
   }
+
+	/*
+	 * 実際に支援を選択したため、
+	 * 追加通知を消します。
+	 */
+	hideAddedShiftNotice();
 
   const currentState =
     shift.currentState ||
@@ -1279,5 +1363,119 @@ async function testStaffShiftVersion() {
       error.message
     );
   }
+}
+
+/**
+ * 前回にはなく、最新一覧に追加された
+ * シフトを返します。
+ */
+function findAddedTodayShifts(
+  oldShifts,
+  newShifts
+) {
+  if (
+    !Array.isArray(oldShifts) ||
+    !Array.isArray(newShifts)
+  ) {
+    return [];
+  }
+
+  const oldShiftIds =
+    new Set(
+      oldShifts
+        .map(shift =>
+          String(
+            shift.shiftId || ""
+          )
+        )
+        .filter(Boolean)
+    );
+
+  return newShifts.filter(
+    shift => {
+      const shiftId =
+        String(
+          shift.shiftId || ""
+        );
+
+      return (
+        shiftId &&
+        !oldShiftIds.has(shiftId)
+      );
+    }
+  );
+}
+
+/**
+ * 追加シフトの通知を表示します。
+ */
+function showAddedShiftNotice(
+  addedShifts
+) {
+  const notice =
+    document.getElementById(
+      "addedShiftNotice"
+    );
+
+  if (
+    !notice ||
+    !Array.isArray(addedShifts) ||
+    addedShifts.length === 0
+  ) {
+    return;
+  }
+
+  const details =
+    addedShifts
+      .map(shift => {
+        return (
+          shift.startTime +
+          "～" +
+          shift.endTime +
+          "　" +
+          shift.clientName +
+          "　" +
+          shift.service
+        );
+      })
+      .join("\n");
+
+  notice.textContent =
+    addedShifts.length === 1
+      ? (
+          "追加のシフトがあります。\n" +
+          details
+        )
+      : (
+          "追加のシフトが" +
+          addedShifts.length +
+          "件あります。\n" +
+          details
+        );
+
+  notice.classList.remove(
+    "hidden"
+  );
+}
+
+
+/**
+ * 追加シフト通知を消します。
+ */
+function hideAddedShiftNotice() {
+  const notice =
+    document.getElementById(
+      "addedShiftNotice"
+    );
+
+  if (!notice) {
+    return;
+  }
+
+  notice.textContent = "";
+
+  notice.classList.add(
+    "hidden"
+  );
 }
 

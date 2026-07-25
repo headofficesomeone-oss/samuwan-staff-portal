@@ -68,3 +68,18 @@
   cursor: not-allowed;
 }
 
+.added-shift-notice {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e0a63a;
+  border-radius: 10px;
+  background: #fff8e8;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.added-shift-notice.hidden {
+  display: none;
+}
+
