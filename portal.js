@@ -5,76 +5,91 @@ let currentLineProfile = null;
 document.addEventListener(
   "DOMContentLoaded",
   async () => {
-    const form =
-      document.getElementById(
-        "registerForm"
-      );
-
-    if (form) {
-      form.addEventListener(
-        "submit",
-        handleRegister
-      );
-    }
-
-    /*
-     * 先に端末へ保存された
-     * 本人情報を確認します。
-     */
-    currentUser =
-      getSavedPortalUser();
-
-    if (currentUser) {
-      showPortalAreaDirect();
-      return;
-    }
-
-    /*
-     * 保存情報がない場合だけ
-     * 本人確認画面を表示します。
-     */
-    showLoadingArea();
-
-    currentLineProfile =
-      await initLiff();
-
-    /*
-     * LINE IDで本人確認します。
-     */
-    if (
-      currentLineProfile &&
-      currentLineProfile.lineId
-    ) {
-      const loginResult =
-        await loginByLineId(
-          currentLineProfile.lineId
+    try {
+      const form =
+        document.getElementById(
+          "registerForm"
         );
 
-      if (loginResult.success) {
-        currentUser = {
-          employeeId:
-            loginResult.employeeId,
-
-          employeeName:
-            loginResult.employeeName
-        };
-
-        savePortalUser(
-          currentUser
+      if (form) {
+        form.addEventListener(
+          "submit",
+          handleRegister
         );
+      }
 
+      /*
+       * Chromeに保存された本人情報を確認
+       */
+      currentUser =
+        getSavedPortalUser();
+
+      if (currentUser) {
         showPortalAreaDirect();
         return;
       }
+
+      showLoadingArea();
+
+      /*
+       * LINE情報を取得
+       */
+      currentLineProfile =
+        await initLiff();
+
+      if (
+        currentLineProfile &&
+        currentLineProfile.lineId
+      ) {
+        const loginResult =
+          await loginByLineId(
+            currentLineProfile.lineId
+          );
+
+        if (loginResult.success) {
+          currentUser = {
+            employeeId:
+              loginResult.employeeId,
+
+            employeeName:
+              loginResult.employeeName
+          };
+
+          savePortalUser(
+            currentUser
+          );
+
+          showPortalAreaDirect();
+          return;
+        }
+      }
+
+      /*
+       * 本人確認できなかった場合は
+       * 初回登録画面を表示
+       */
+      showRegisterArea();
+
+      await loadEmployeeList();
+
+    } catch (error) {
+      console.error(
+        "ポータル初期化エラー:",
+        error
+      );
+
+      /*
+       * エラー時もくるくる画面から抜ける
+       */
+      showRegisterArea();
+
+      setPageMessage(
+        "本人確認を完了できませんでした。" +
+        "LINEから開き直してください。",
+        "error",
+        "registerForm"
+      );
     }
-
-    /*
-     * 本人確認できない場合だけ
-     * 初回登録画面を表示します。
-     */
-    showRegisterArea();
-
-    await loadEmployeeList();
   }
 );
 
@@ -373,9 +388,33 @@ function showPortalUserName() {
 
 async function initLiff() {
   try {
-    await liff.init({
-      liffId: LIFF_ID
-    });
+    /*
+     * LIFFのJavaScript自体を読み込めていない場合
+     */
+    if (typeof liff === "undefined") {
+      console.warn("LIFFを読み込めませんでした。");
+      return null;
+    }
+
+    /*
+     * LIFF初期化を最大8秒まで待ちます。
+     * 通常Chromeなどで止まった場合は先へ進みます。
+     */
+    await Promise.race([
+      liff.init({
+        liffId: LIFF_ID
+      }),
+
+      new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(
+            new Error(
+              "LIFF初期化がタイムアウトしました。"
+            )
+          );
+        }, 8000);
+      })
+    ]);
 
     if (liff.isLoggedIn()) {
       const profile =
@@ -387,7 +426,18 @@ async function initLiff() {
       };
     }
 
-    liff.login();
+    /*
+     * LINEアプリ内で開いている場合だけ
+     * LINEログイン画面へ移動します。
+     */
+    if (liff.isInClient()) {
+      liff.login();
+    }
+
+    /*
+     * 通常Chromeでは自動ログインせず、
+     * 初回登録画面へ進みます。
+     */
     return null;
 
   } catch (error) {
