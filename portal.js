@@ -542,16 +542,74 @@ async function loadTodayStaffShifts() {
   }
 
   try {
-    /*
-     * 基本シフトの更新番号だけ確認します。
-     */
-    const latestVersion =
-      await getStaffShiftVersion();
+/*
+ * 基本シフトの更新番号を確認します。
+ * 更新番号を取得できない場合も、
+ * 本日の支援一覧は通常どおり取得します。
+ */
+let latestVersion = "";
+let versionCheckSucceeded = false;
 
-    const cacheIsCurrent =
-      cache &&
-      String(cache.version) ===
-        String(latestVersion);
+try {
+  latestVersion =
+    await getStaffShiftVersion();
+
+  versionCheckSucceeded = true;
+
+} catch (versionError) {
+  console.warn(
+    "基本シフトの更新番号を取得できませんでした。" +
+    "本日の支援一覧を直接取得します。",
+    versionError
+  );
+
+  /*
+   * 更新番号を確認できなかった場合は、
+   * 保存データを最新版とは判断しません。
+   */
+  latestVersion =
+    "unverified-" + Date.now();
+}
+
+const cacheIsCurrent =
+  versionCheckSucceeded &&
+  cache &&
+  String(cache.version) ===
+    String(latestVersion);/*
+
+	 * 基本シフトの更新番号を確認します。
+	 * 更新番号を取得できない場合も、
+	 * 本日の支援一覧は通常どおり取得します。
+	 */
+	let latestVersion = "";
+	let versionCheckSucceeded = false;
+
+	try {
+	  latestVersion =
+	    await getStaffShiftVersion();
+
+	  versionCheckSucceeded = true;
+
+	} catch (versionError) {
+	  console.warn(
+	    "基本シフトの更新番号を取得できませんでした。" +
+	    "本日の支援一覧を直接取得します。",
+	    versionError
+	  );
+
+	  /*
+	   * 更新番号を確認できなかった場合は、
+	   * 保存データを最新版とは判断しません。
+	   */
+	  latestVersion =
+	    "unverified-" + Date.now();
+	}
+
+	const cacheIsCurrent =
+	  versionCheckSucceeded &&
+	  cache &&
+	  String(cache.version) ===
+	    String(latestVersion);
 
     /*
      * 更新番号が同じなら、
