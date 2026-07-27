@@ -631,8 +631,6 @@ async function loadTodayStaffShifts() {
 	 * 更新番号を取得できない場合も、
 	 * 本日の支援一覧は通常どおり取得します。
 	 */
-	let latestVersion = "";
-	let versionCheckSucceeded = false;
 
 	try {
 	  latestVersion =
