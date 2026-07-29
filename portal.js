@@ -538,7 +538,8 @@ let todayStaffShifts = [];
  * 2. 基本シフトの更新番号を確認
  * 3. 変更時だけ最新シフトを再取得
  */
-async function loadTodayStaffShifts() {
+async function loadTodayStaffShifts(forceRefresh = false) {
+
   const select =
     document.getElementById(
       "todayShiftSelect"
@@ -623,11 +624,13 @@ async function loadTodayStaffShifts() {
 	}
 
 	const cacheIsCurrent =
+	  !forceRefresh &&
 	  versionCheckSucceeded &&
 	  cache &&
 	  String(cache.version) ===
-	    String(latestVersion);/*
-
+	    String(latestVersion);
+    
+	 /*
 	 * 基本シフトの更新番号を確認します。
 	 * 更新番号を取得できない場合も、
 	 * 本日の支援一覧は通常どおり取得します。
@@ -1267,7 +1270,7 @@ async function sendStaffAction(
 
     alert(result.message);
 
-    await loadTodayStaffShifts();
+    await loadTodayStaffShifts(true);
 
     const select =
       document.getElementById(
