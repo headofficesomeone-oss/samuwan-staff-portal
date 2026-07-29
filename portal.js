@@ -282,15 +282,6 @@ function showPortalAreaDirect() {
    */
 	setStaffActionButtonsByState("");
 
-	const instructionButton =
-	  document.getElementById(
-	    "instructionButton"
-	  );
-
-	if (instructionButton) {
-	  instructionButton.disabled = true;
-	}
-
 	loadTodayStaffShifts();
 
 }
@@ -1038,6 +1029,11 @@ function closeInstructionModal() {
 function setStaffActionButtonsByState(
   currentState
 ) {
+  const instructionButton =
+    document.getElementById(
+      "instructionButton"
+    );
+
   const moveButton =
     document.getElementById(
       "moveButton"
@@ -1053,7 +1049,13 @@ function setStaffActionButtonsByState(
       "finishButton"
     );
 
-  // 最初に全て使用不可
+  /*
+   * 最初に4つすべて無効にします。
+   */
+  if (instructionButton) {
+    instructionButton.disabled = true;
+  }
+
   if (moveButton) {
     moveButton.disabled = true;
   }
@@ -1067,38 +1069,72 @@ function setStaffActionButtonsByState(
   }
 
   switch (currentState) {
+    /*
+     * 支援選択直後
+     */
     case "未開始":
+      if (instructionButton) {
+        instructionButton.disabled = false;
+      }
+
       if (moveButton) {
         moveButton.disabled = false;
       }
+
       break;
 
+    /*
+     * 向かいます押下後
+     */
     case "移動中":
+      if (instructionButton) {
+        instructionButton.disabled = false;
+      }
+
       if (enterButton) {
         enterButton.disabled = false;
       }
+
       break;
 
+    /*
+     * 入りました押下後
+     */
     case "支援中":
+      if (instructionButton) {
+        instructionButton.disabled = false;
+      }
+
       if (finishButton) {
         finishButton.disabled = false;
       }
+
       break;
 
+    /*
+     * 終わりました押下後
+     */
     case "終了":
-      // 全て使用不可のまま
+      /*
+       * すべて無効のままです。
+       */
       break;
 
     default:
-      // 状態不明時も全て使用不可
-      console.warn(
-        "不明な現在状態です",
-        currentState
-      );
+      /*
+       * 支援未選択や状態不明の場合も
+       * すべて無効のままです。
+       */
+      if (currentState) {
+        console.warn(
+          "不明な現在状態です",
+          currentState
+        );
+      }
+
       break;
   }
 }
-
 
 /**
  * 選択中のシフト情報を返します。
