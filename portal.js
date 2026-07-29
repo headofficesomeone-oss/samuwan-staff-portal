@@ -1353,7 +1353,7 @@ const SHIFT_WEEK_VERSION_API_URL =
  * 本日の担当シフトを保存するキーです。
  */
 const TODAY_STAFF_SHIFT_CACHE_KEY =
-  "todayStaffShiftCacheV1";
+  "todayStaffShiftCacheV2";
 
 
 /**
