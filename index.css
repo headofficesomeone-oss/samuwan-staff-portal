@@ -83,3 +83,180 @@
   display: none;
 }
 
+/* ================================
+   支援指示ポップアップ
+================================ */
+
+.instruction-button {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.instruction-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+}
+
+.instruction-modal.hidden {
+  display: none;
+}
+
+.instruction-modal-backdrop {
+  position: absolute;
+  inset: 0;
+
+  background:
+    rgba(0, 0, 0, 0.45);
+}
+
+.instruction-modal-card {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 32px);
+
+  background: #ffffff;
+  border-radius: 16px;
+
+  box-shadow:
+    0 12px 36px
+    rgba(0, 0, 0, 0.25);
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.instruction-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 16px 18px;
+
+  border-bottom:
+    1px solid #dddddd;
+}
+
+.instruction-modal-header h2 {
+  margin: 0;
+
+  font-size: 1.2rem;
+}
+
+.instruction-close-button {
+  width: 40px;
+  height: 40px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #eeeeee;
+
+  font-size: 1.6rem;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.instruction-modal-body {
+  padding: 18px;
+
+  overflow-y: auto;
+}
+
+.instruction-shift-summary {
+  margin-bottom: 16px;
+  padding: 12px;
+
+  background: #f5f5f5;
+  border-radius: 10px;
+
+  font-weight: bold;
+  line-height: 1.6;
+
+  white-space: pre-line;
+}
+
+.instruction-section {
+  margin-bottom: 16px;
+  padding: 14px;
+
+  border: 1px solid #dddddd;
+  border-radius: 10px;
+}
+
+.instruction-section h3 {
+  margin:
+    0 0 10px;
+
+  font-size: 1rem;
+}
+
+.instruction-section p {
+  margin: 0;
+
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.instruction-section.important {
+  border-width: 2px;
+}
+
+.instruction-modal-footer {
+  padding: 14px 18px;
+
+  border-top:
+    1px solid #dddddd;
+}
+
+.instruction-modal-footer .main-button {
+  width: 100%;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+/*
+ * スマホ表示
+ */
+@media screen and (max-width: 600px) {
+  .instruction-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .instruction-modal-card {
+    max-width: none;
+    max-height: 88vh;
+
+    border-radius:
+      18px 18px 0 0;
+  }
+
+  .instruction-modal-header {
+    padding:
+      14px 16px;
+  }
+
+  .instruction-modal-body {
+    padding: 16px;
+  }
+
+  .instruction-section {
+    padding: 12px;
+  }
+}
+

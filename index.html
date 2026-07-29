@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="index.css?v=20260730-1">
 </head>
 <body>
 
@@ -186,7 +186,18 @@
 				  <div
 				    id="selectedShiftStatus"
 				    class="selected-shift-status"
-				  ></div>
+				  ></div>				  
+
+					<button
+					  id="instructionButton"
+					  class="main-button instruction-button"
+					  type="button"
+					  onclick="openInstructionModal()"
+					  disabled
+					>
+					  指示を見る
+					</button>
+
 				</div>
 
 				<div class="quick-menu-grid">
@@ -257,8 +268,75 @@
     </section>
   </main>
 
+	<!-- 支援指示ポップアップ -->
+	<div
+	  id="instructionModal"
+	  class="instruction-modal hidden"
+	  role="dialog"
+	  aria-modal="true"
+	  aria-labelledby="instructionModalTitle"
+	>
+	  <div class="instruction-modal-backdrop"></div>
+
+	  <div class="instruction-modal-card">
+
+	    <div class="instruction-modal-header">
+	      <h2 id="instructionModalTitle">
+	        支援指示
+	      </h2>
+
+	      <button
+	        type="button"
+	        class="instruction-close-button"
+	        onclick="closeInstructionModal()"
+	        aria-label="閉じる"
+	      >
+	        ×
+	      </button>
+	    </div>
+
+	    <div class="instruction-modal-body">
+
+	      <div
+	        id="instructionShiftSummary"
+	        class="instruction-shift-summary"
+	      ></div>
+
+	      <section class="instruction-section">
+	        <h3>通常の指示</h3>
+
+	        <p id="normalInstructionText">
+	          定期的に休憩を取り、無理のないペースで歩いてください。
+	          歩行時はヘルパーの右肘を持ちます。
+	        </p>
+	      </section>
+
+	      <section class="instruction-section important">
+	        <h3>今日の重要指示</h3>
+
+	        <p id="todayInstructionText">
+	          現在、特別な指示はありません。
+	        </p>
+	      </section>
+
+	    </div>
+
+	    <div class="instruction-modal-footer">
+	      <button
+	        type="button"
+	        class="main-button"
+	        onclick="closeInstructionModal()"
+	      >
+	        閉じる
+	      </button>
+	    </div>
+
+	  </div>
+	</div>
+
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="common.js?v=20260721-3"></script>
-	<script src="portal.js?v=20260727-2"></script>
+	<script src="portal.js?v=20260730-1"></script>
 </body>
 </html>

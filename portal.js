@@ -280,9 +280,19 @@ function showPortalAreaDirect() {
    * シフト確認が終わるまでは
    * 3つのボタンをすべて使用不可
    */
-  setStaffActionButtonsByState("");
-  
-  loadTodayStaffShifts();
+	setStaffActionButtonsByState("");
+
+	const instructionButton =
+	  document.getElementById(
+	    "instructionButton"
+	  );
+
+	if (instructionButton) {
+	  instructionButton.disabled = true;
+	}
+
+	loadTodayStaffShifts();
+
 }
 
 
@@ -856,9 +866,24 @@ function handleTodayShiftChange() {
       "selectedShiftStatus"
     );
 
+  const instructionButton =
+    document.getElementById(
+      "instructionButton"
+    );
+
+  /*
+   * 支援が選択されていない場合
+   */
   if (!shift) {
     if (statusArea) {
       statusArea.textContent = "";
+    }
+
+    /*
+     * 指示を見るボタンを無効にします。
+     */
+    if (instructionButton) {
+      instructionButton.disabled = true;
     }
 
     setStaffActionButtonsByState(
@@ -868,11 +893,11 @@ function handleTodayShiftChange() {
     return;
   }
 
-	/*
-	 * 実際に支援を選択したため、
-	 * 追加通知を消します。
-	 */
-	hideAddedShiftNotice();
+  /*
+   * 実際に支援を選択したため、
+   * 追加通知を消します。
+   */
+  hideAddedShiftNotice();
 
   const currentState =
     shift.currentState ||
@@ -889,8 +914,124 @@ function handleTodayShiftChange() {
       currentState;
   }
 
+  /*
+   * 支援が選択されたため、
+   * 指示を見るボタンを有効にします。
+   */
+  if (instructionButton) {
+    instructionButton.disabled = false;
+  }
+
   setStaffActionButtonsByState(
     currentState
+  );
+}
+
+/**
+ * 選択中の支援について、
+ * 支援指示ポップアップを表示します。
+ */
+function openInstructionModal() {
+  const shift =
+    getSelectedTodayShift();
+
+  if (!shift) {
+    alert(
+      "先に支援を選択してください。"
+    );
+
+    return;
+  }
+
+  const modal =
+    document.getElementById(
+      "instructionModal"
+    );
+
+  const summary =
+    document.getElementById(
+      "instructionShiftSummary"
+    );
+
+  const normalText =
+    document.getElementById(
+      "normalInstructionText"
+    );
+
+  const todayText =
+    document.getElementById(
+      "todayInstructionText"
+    );
+
+  if (!modal) {
+    console.error(
+      "instructionModalが見つかりません。"
+    );
+
+    return;
+  }
+
+  /*
+   * 選択した支援の概要を表示します。
+   */
+  if (summary) {
+    summary.textContent =
+      shift.clientName +
+      "　" +
+      shift.service +
+      "\n" +
+      shift.startTime +
+      "～" +
+      shift.endTime;
+  }
+
+  /*
+   * 今回は画面確認用の仮文章です。
+   * 後でスプレッドシートの情報に置き換えます。
+   */
+  if (normalText) {
+    normalText.textContent =
+      "定期的に休憩を取り、" +
+      "無理のないペースで歩いてください。" +
+      "歩行時はヘルパーの右肘を持ちます。";
+  }
+
+  if (todayText) {
+    todayText.textContent =
+      "現在、特別な指示はありません。";
+  }
+
+  modal.classList.remove(
+    "hidden"
+  );
+
+  /*
+   * ポップアップ表示中に、
+   * 背景画面が動かないようにします。
+   */
+  document.body.classList.add(
+    "modal-open"
+  );
+}
+
+
+/**
+ * 支援指示ポップアップを閉じます。
+ */
+function closeInstructionModal() {
+  const modal =
+    document.getElementById(
+      "instructionModal"
+    );
+
+  if (modal) {
+    modal.classList.add(
+      "hidden"
+    );
+  }
+
+  document.body.classList.remove(
+    "modal-open"
   );
 }
 
