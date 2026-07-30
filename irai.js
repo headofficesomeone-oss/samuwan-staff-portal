@@ -23,22 +23,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     form.addEventListener("submit", handleShiftRequestSubmit);
   }
 
-  /*
-   * 開始時刻と終了予定へ
-   * 5分刻みの選択肢を追加します。
-   */
-  initializeTimeOptions();
-  
 	const startTimeInput =
 	  document.getElementById("startTime");
 
 	const durationInput =
 	  document.getElementById("durationHours");
 
+	const endTimeInput =
+	  document.getElementById("endTime");
+
 	if (startTimeInput) {
 	  startTimeInput.addEventListener(
 	    "change",
-	    calculateEndTime
+	    function() {
+	      normalizeTimeToFiveMinutes(
+	        startTimeInput
+	      );
+
+	      calculateEndTime();
+	    }
 	  );
 	}
 
@@ -51,6 +54,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 	  durationInput.addEventListener(
 	    "change",
 	    calculateEndTime
+	  );
+	}
+
+	if (endTimeInput) {
+	  endTimeInput.addEventListener(
+	    "change",
+	    function() {
+	      normalizeTimeToFiveMinutes(
+	        endTimeInput
+	      );
+	    }
 	  );
 	}
 
@@ -628,70 +642,72 @@ function calculateEndTime() {
 }
 
 /**
- * 開始時刻と終了予定へ、
- * 5分刻みの選択肢を作成します。
+ * 入力された時刻を最も近い5分単位へ直します。
+ *
+ * 例：
+ * 10:23 → 10:25
+ * 10:21 → 10:20
  */
-function initializeTimeOptions() {
-  const startTimeSelect =
-    document.getElementById("startTime");
-
-  const endTimeSelect =
-    document.getElementById("endTime");
-
+function normalizeTimeToFiveMinutes(
+  inputElement
+) {
   if (
-    !startTimeSelect ||
-    !endTimeSelect
+    !inputElement ||
+    !inputElement.value
   ) {
     return;
   }
 
-  const timeOptions = [];
+  const parts =
+    inputElement.value.split(":");
 
-  for (
-    let hour = 0;
-    hour < 24;
-    hour++
-  ) {
-    for (
-      let minute = 0;
-      minute < 60;
-      minute += 5
-    ) {
-      const time =
-        String(hour).padStart(2, "0") +
-        ":" +
-        String(minute).padStart(2, "0");
-
-      timeOptions.push(time);
-    }
+  if (parts.length !== 2) {
+    return;
   }
 
-  addTimeOptions_(
-    startTimeSelect,
-    timeOptions
-  );
+  const hour =
+    Number(parts[0]);
 
-  addTimeOptions_(
-    endTimeSelect,
-    timeOptions
-  );
-}
+  const minute =
+    Number(parts[1]);
 
+  if (
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute)
+  ) {
+    return;
+  }
 
-/**
- * 時刻選択肢をselectへ追加します。
- */
-function addTimeOptions_(
-  selectElement,
-  timeOptions
-) {
-  timeOptions.forEach(function(time) {
-    const option =
-      document.createElement("option");
+  let totalMinutes =
+    hour * 60 +
+    minute;
 
-    option.value = time;
-    option.textContent = time;
+  /*
+   * 最も近い5分へ丸めます。
+   */
+  totalMinutes =
+    Math.round(
+      totalMinutes / 5
+    ) * 5;
 
-    selectElement.appendChild(option);
-  });
+  /*
+   * 24時を超えた場合は0時へ戻します。
+   */
+  totalMinutes =
+    totalMinutes % (24 * 60);
+
+  const normalizedHour =
+    Math.floor(
+      totalMinutes / 60
+    );
+
+  const normalizedMinute =
+    totalMinutes % 60;
+
+  inputElement.value =
+    String(normalizedHour)
+      .padStart(2, "0") +
+    ":" +
+    String(normalizedMinute)
+      .padStart(2, "0");
 }

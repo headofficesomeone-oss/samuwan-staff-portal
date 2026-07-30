@@ -111,14 +111,12 @@
 					      <span class="required">必須</span>
 					    </label>
 
-					    <select
+					    <input
+					      type="time"
 					      id="startTime"
+					      step="300"
 					      required
 					    >
-					      <option value="">
-					        時刻を選択
-					      </option>
-					    </select>
 					  </div>
 
 					  <div class="form-group duration-group">
@@ -137,11 +135,11 @@
 					  <div class="form-group end-time-group">
 					    <label>終了予定</label>
 
-					    <select id="endTime">
-					      <option value="">
-					        時刻を選択
-					      </option>
-					    </select>
+					    <input
+					      type="time"
+					      id="endTime"
+					      step="300"
+					    >
 					  </div>
 
 					</div>
@@ -249,6 +247,6 @@
   </main>
 
 	<script src="common.js?v=20260721-3"></script>
-	<script src="irai.js?v=20260731-3"></script>
+	<script src="irai.js?v=20260731-4"></script>
 </body>
 </html>
