@@ -103,6 +103,7 @@ async function handleShiftRequestSubmit(event) {
   const meetingPlace = document.getElementById("meetingPlace").value.trim();
   const transportation = document.getElementById("transportation").value.trim();
   const specialNotes = document.getElementById("specialNotes").value.trim();
+	const reporterWillSupport = document.getElementById("reporterWillSupport") ?.checked === true;
 
   if (!clientId || !requestType || !startTime) {
     alert("未入力があります");
@@ -141,24 +142,46 @@ async function handleShiftRequestSubmit(event) {
     }
   }
 
-  pendingShiftRequestData = {
-    action: "saveShiftRequest",
-    reporter: currentUser.employeeName,
-    clientId,
-    clientName,
-    requestType,
-    startTime,
-    endTime,
-    destination,
-    meetingPlace,
-    transportation,
-    specialNotes,
-    requests,
-    requestKind: "新規",
-    relatedShiftId: "",
-    conflictType: "なし",
-    conflictConfirmation: "不要"
-  };
+	pendingShiftRequestData = {
+	  action: "saveShiftRequest",
+
+	  reporter:
+	    currentUser.employeeName,
+
+	  reporterEmployeeId:
+	    currentUser.employeeId,
+
+	  clientId,
+	  clientName,
+	  requestType,
+	  startTime,
+	  endTime,
+	  destination,
+	  meetingPlace,
+	  transportation,
+	  specialNotes,
+	  requests,
+
+	  reporterWillSupport,
+
+	  assignedEmployeeId:
+	    reporterWillSupport
+	      ? currentUser.employeeId
+	      : "",
+
+	  assignedEmployeeName:
+	    reporterWillSupport
+	      ? currentUser.employeeName
+	      : "",
+
+	  shiftAutoCreateRequested:
+	    reporterWillSupport,
+
+	  requestKind: "新規",
+	  relatedShiftId: "",
+	  conflictType: "なし",
+	  conflictConfirmation: "不要"
+	};
 
   currentConflictResult = null;
   selectedConflictIndex = -1;
@@ -199,6 +222,7 @@ function showShiftConfirm(data) {
 
   document.getElementById("shiftConfirmContent").innerHTML = `
     <div class="confirm-row"><div class="confirm-label">報告者</div><div>${escapeHtml(data.reporter)}</div></div>
+    <div class="confirm-row"><div class="confirm-label">担当予定</div><div>${data.reporterWillSupport ? escapeHtml(data.assignedEmployeeName) + "（入力者本人）" : "担当者未指定"}</div></div>
     <div class="confirm-row"><div class="confirm-label">利用者</div><div>${escapeHtml(data.clientName)}</div></div>
     <div class="confirm-row"><div class="confirm-label">区分</div><div>${escapeHtml(data.requestType)}</div></div>
     <div class="confirm-row"><div class="confirm-label">対象日</div><div>${data.requests.length}件</div><div class="date-list">${datesHtml}</div></div>

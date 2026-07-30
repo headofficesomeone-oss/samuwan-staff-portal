@@ -2,3 +2,59 @@
 
 /* 重複・近接予定の比較画面 */
 .warning-title{border-color:#f0d98a}.warning-icon{background:#fff6d9;color:#b77900}.warning-box{background:#fff8e5;border:1px solid #f0d98a;border-radius:14px;padding:18px;margin-bottom:20px;line-height:1.7;color:#6b5200}.conflict-list{display:grid;gap:16px;margin-bottom:24px}.conflict-card{border:2px solid #dde5ea;border-radius:16px;padding:18px;background:#fff;cursor:pointer;transition:.18s}.conflict-card:hover{border-color:#84c99e}.conflict-card.selected{border-color:#2fa85a;box-shadow:0 0 0 3px rgba(47,168,90,.13)}.conflict-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.conflict-source{font-weight:700;color:#2fa85a}.conflict-badge{padding:4px 9px;border-radius:999px;background:#fff1cf;color:#8a6200;font-size:12px;font-weight:700}.conflict-grid{display:grid;grid-template-columns:130px 1fr;gap:7px 12px;line-height:1.55}.conflict-grid dt{font-weight:700;color:#52616c}.conflict-grid dd{margin:0}.conflict-select-note{margin-top:12px;font-size:13px;color:#697780}.conflict-choice-list{display:grid;gap:12px}.conflict-choice-card{display:flex;gap:12px;align-items:flex-start;border:1px solid #cfd8df;border-radius:14px;padding:16px;background:#fff;cursor:pointer}.conflict-choice-card:has(input:checked){border-color:#2fa85a;box-shadow:0 0 0 3px rgba(47,168,90,.12)}.conflict-choice-card input{width:auto;height:auto;margin-top:4px}.conflict-choice-card strong{display:block;margin-bottom:4px}.conflict-choice-card small{display:block;line-height:1.55;color:#697780}.compare-new-box{background:#f4fbf7;border-left:5px solid #2fa85a;border-radius:12px;padding:16px;margin-bottom:20px}.compare-new-box h3{margin:0 0 10px;font-size:17px}.muted{color:#6c7983}.main-button:disabled{cursor:not-allowed;opacity:.65}@media(max-width:640px){.conflict-grid{grid-template-columns:1fr}.conflict-grid dt{margin-top:6px}}
+
+/* 入力者本人が担当する */
+
+.support-self-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+
+  border: 2px solid #cfd8df;
+  border-radius: 14px;
+
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.support-self-card:has(
+  input:checked
+) {
+  border-color: #2fa85a;
+
+  background: #f4fbf7;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(47, 168, 90, 0.12);
+}
+
+.support-self-card input {
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+
+  flex-shrink: 0;
+}
+
+.support-self-text {
+  display: block;
+}
+
+.support-self-text strong {
+  display: block;
+  margin-bottom: 5px;
+
+  font-size: 17px;
+}
+
+.support-self-text small {
+  display: block;
+
+  color: #697780;
+  line-height: 1.6;
+}

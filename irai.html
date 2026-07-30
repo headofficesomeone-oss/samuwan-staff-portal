@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>利用依頼受付</title>
-  <link rel="stylesheet" href="irai.css">
+  <link rel="stylesheet" href="irai.css?v=20260730-1">
 </head>
 <body>
   <header class="app-header">
@@ -125,6 +125,26 @@
             <textarea id="specialNotes" rows="5"></textarea>
           </div>
 
+					<div class="form-group">
+					  <label class="support-self-card">
+					    <input
+					      type="checkbox"
+					      id="reporterWillSupport"
+					    >
+
+					    <span class="support-self-text">
+					      <strong>
+					        入力者本人がこの支援を担当する
+					      </strong>
+
+					      <small>
+					        チェックした場合、入力者を担当予定者として
+					        基本シフトへの反映対象にします。
+					      </small>
+					    </span>
+					  </label>
+					</div>
+
           <button class="main-button" type="submit">依頼内容を確認する</button>
           <button class="back-button" type="button" onclick="backToPortal()">ポータルへ戻る</button>
         </form>
@@ -190,7 +210,7 @@
     </section>
   </main>
 
-  <script src="common.js"></script>
-  <script src="irai.js"></script>
+	<script src="common.js?v=20260721-3"></script>
+	<script src="irai.js?v=20260730-1"></script>
 </body>
 </html>
