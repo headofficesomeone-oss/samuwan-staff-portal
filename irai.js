@@ -23,6 +23,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     form.addEventListener("submit", handleShiftRequestSubmit);
   }
 
+  /*
+   * 開始時刻と終了予定へ
+   * 5分刻みの選択肢を追加します。
+   */
+  initializeTimeOptions();
+  
 	const startTimeInput =
 	  document.getElementById("startTime");
 
@@ -619,4 +625,73 @@ function calculateEndTime() {
     ":" +
     String(endMinute)
       .padStart(2, "0");
+}
+
+/**
+ * 開始時刻と終了予定へ、
+ * 5分刻みの選択肢を作成します。
+ */
+function initializeTimeOptions() {
+  const startTimeSelect =
+    document.getElementById("startTime");
+
+  const endTimeSelect =
+    document.getElementById("endTime");
+
+  if (
+    !startTimeSelect ||
+    !endTimeSelect
+  ) {
+    return;
+  }
+
+  const timeOptions = [];
+
+  for (
+    let hour = 0;
+    hour < 24;
+    hour++
+  ) {
+    for (
+      let minute = 0;
+      minute < 60;
+      minute += 5
+    ) {
+      const time =
+        String(hour).padStart(2, "0") +
+        ":" +
+        String(minute).padStart(2, "0");
+
+      timeOptions.push(time);
+    }
+  }
+
+  addTimeOptions_(
+    startTimeSelect,
+    timeOptions
+  );
+
+  addTimeOptions_(
+    endTimeSelect,
+    timeOptions
+  );
+}
+
+
+/**
+ * 時刻選択肢をselectへ追加します。
+ */
+function addTimeOptions_(
+  selectElement,
+  timeOptions
+) {
+  timeOptions.forEach(function(time) {
+    const option =
+      document.createElement("option");
+
+    option.value = time;
+    option.textContent = time;
+
+    selectElement.appendChild(option);
+  });
 }

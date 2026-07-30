@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>利用依頼受付</title>
-  <link rel="stylesheet" href="irai.css?v=20260731-1">
+  <link rel="stylesheet" href="irai.css?v=20260731-2">
 </head>
 <body>
   <header class="app-header">
@@ -104,18 +104,21 @@
           </div>
 
 					<div class="time-row">
-					  <div class="form-group">
+
+					  <div class="form-group start-time-group">
 					    <label>
 					      開始時刻
 					      <span class="required">必須</span>
 					    </label>
 
-					    <input
-					      type="time"
+					    <select
 					      id="startTime"
-					      step="300"
 					      required
 					    >
+					      <option value="">
+					        時刻を選択
+					      </option>
+					    </select>
 					  </div>
 
 					  <div class="form-group duration-group">
@@ -127,19 +130,20 @@
 					      min="0"
 					      step="0.25"
 					      inputmode="decimal"
-					      placeholder="例 1.5"
+					      value="0"
 					    >
 					  </div>
 
-					  <div class="form-group">
+					  <div class="form-group end-time-group">
 					    <label>終了予定</label>
 
-					    <input
-					      type="time"
-					      id="endTime"
-					      step="300"
-					    >
+					    <select id="endTime">
+					      <option value="">
+					        時刻を選択
+					      </option>
+					    </select>
 					  </div>
+
 					</div>
 
           <div class="form-group">
@@ -245,6 +249,6 @@
   </main>
 
 	<script src="common.js?v=20260721-3"></script>
-	<script src="irai.js?v=20260731-2"></script>
+	<script src="irai.js?v=20260731-3"></script>
 </body>
 </html>
