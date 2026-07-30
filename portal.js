@@ -1268,9 +1268,11 @@ async function sendStaffAction(
     const selectedShiftId =
       shift.shiftId;
 
-    alert(result.message);
-
-    await loadTodayStaffShifts(true);
+		/*
+		 * 完了メッセージは表示せず、
+		 * 最新状態を取得して次のボタンへ切り替えます。
+		 */
+		await loadTodayStaffShifts(true);
 
     const select =
       document.getElementById(
