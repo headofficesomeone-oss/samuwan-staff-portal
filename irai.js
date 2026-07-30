@@ -23,6 +23,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     form.addEventListener("submit", handleShiftRequestSubmit);
   }
 
+	const startTimeInput =
+	  document.getElementById("startTime");
+
+	const endTimeInput =
+	  document.getElementById("endTime");
+
+	if (startTimeInput && endTimeInput) {
+	  startTimeInput.addEventListener(
+	    "change",
+	    setDefaultEndTime
+	  );
+	}
+
   await loadClientList();
   changeRequestMode();
 });
@@ -494,4 +507,90 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+/**
+ * 開始時刻を入力したとき、
+ * 終了予定が空欄なら1時間後を自動入力します。
+ *
+ * すでに終了予定が入力されている場合は、
+ * 利用者が修正した値を変更しません。
+ */
+function setDefaultEndTime() {
+  const startTimeInput =
+    document.getElementById("startTime");
+
+  const endTimeInput =
+    document.getElementById("endTime");
+
+  if (
+    !startTimeInput ||
+    !endTimeInput
+  ) {
+    return;
+  }
+
+  const startTime =
+    String(
+      startTimeInput.value || ""
+    ).trim();
+
+  if (!startTime) {
+    return;
+  }
+
+  /*
+   * 終了予定がすでに入っている場合は、
+   * 自動で上書きしません。
+   */
+  if (endTimeInput.value) {
+    endTimeInput.focus();
+    return;
+  }
+
+  const parts =
+    startTime.split(":");
+
+  if (parts.length !== 2) {
+    return;
+  }
+
+  const startHour =
+    Number(parts[0]);
+
+  const startMinute =
+    Number(parts[1]);
+
+  if (
+    Number.isNaN(startHour) ||
+    Number.isNaN(startMinute)
+  ) {
+    return;
+  }
+
+  const totalMinutes =
+    startHour * 60 +
+    startMinute +
+    60;
+
+  const endHour =
+    Math.floor(
+      totalMinutes / 60
+    ) % 24;
+
+  const endMinute =
+    totalMinutes % 60;
+
+  endTimeInput.value =
+    String(endHour)
+      .padStart(2, "0") +
+    ":" +
+    String(endMinute)
+      .padStart(2, "0");
+
+  /*
+   * 自動入力後、終了予定へ
+   * カーソルを移します。
+   */
+  endTimeInput.focus();
 }
