@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>利用依頼受付</title>
-  <link rel="stylesheet" href="irai.css?v=20260730-1">
+  <link rel="stylesheet" href="irai.css?v=20260731-1">
 </head>
 <body>
   <header class="app-header">
@@ -103,16 +103,44 @@
             </div>
           </div>
 
-          <div class="time-row">
-            <div class="form-group">
-              <label>開始時刻<span class="required">必須</span></label>
-              <input type="time" id="startTime" step="300" required>
-            </div>
-            <div class="form-group">
-              <label>終了予定</label>
-              <input type="time" id="endTime" step="300">
-            </div>
-          </div>
+					<div class="time-row">
+					  <div class="form-group">
+					    <label>
+					      開始時刻
+					      <span class="required">必須</span>
+					    </label>
+
+					    <input
+					      type="time"
+					      id="startTime"
+					      step="300"
+					      required
+					    >
+					  </div>
+
+					  <div class="form-group duration-group">
+					    <label>時間数</label>
+
+					    <input
+					      type="number"
+					      id="durationHours"
+					      min="0"
+					      step="0.25"
+					      inputmode="decimal"
+					      placeholder="例 1.5"
+					    >
+					  </div>
+
+					  <div class="form-group">
+					    <label>終了予定</label>
+
+					    <input
+					      type="time"
+					      id="endTime"
+					      step="300"
+					    >
+					  </div>
+					</div>
 
           <div class="form-group">
             <label>行き先場所</label>
@@ -217,6 +245,6 @@
   </main>
 
 	<script src="common.js?v=20260721-3"></script>
-	<script src="irai.js?v=20260731-1"></script>
+	<script src="irai.js?v=20260731-2"></script>
 </body>
 </html>

@@ -58,3 +58,36 @@
   color: #697780;
   line-height: 1.6;
 }
+
+/* 時間数入力欄 */
+.duration-group {
+  flex: 0 0 90px;
+}
+
+.duration-group input {
+  width: 90px;
+  min-width: 90px;
+  text-align: center;
+}
+
+/* スマホ表示 */
+@media (max-width: 600px) {
+  .time-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .time-row .form-group {
+    width: 100%;
+  }
+
+  .duration-group {
+    flex: none;
+  }
+
+  .duration-group input {
+    width: 110px;
+    min-width: 110px;
+  }
+}

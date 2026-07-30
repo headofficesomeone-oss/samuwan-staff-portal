@@ -26,13 +26,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const startTimeInput =
 	  document.getElementById("startTime");
 
-	const endTimeInput =
-	  document.getElementById("endTime");
+	const durationInput =
+	  document.getElementById("durationHours");
 
-	if (startTimeInput && endTimeInput) {
+	if (startTimeInput) {
 	  startTimeInput.addEventListener(
 	    "change",
-	    setDefaultEndTime
+	    calculateEndTime
+	  );
+	}
+
+	if (durationInput) {
+	  durationInput.addEventListener(
+	    "input",
+	    calculateEndTime
+	  );
+
+	  durationInput.addEventListener(
+	    "change",
+	    calculateEndTime
 	  );
 	}
 
@@ -510,21 +522,24 @@ function escapeHtml(value) {
 }
 
 /**
- * 開始時刻を入力したとき、
- * 終了予定が空欄なら1時間後を自動入力します。
+ * 開始時刻と時間数から終了予定を計算します。
  *
- * すでに終了予定が入力されている場合は、
- * 利用者が修正した値を変更しません。
+ * 時間数が空欄または0以下の場合は、
+ * 終了予定を空欄にします。
  */
-function setDefaultEndTime() {
+function calculateEndTime() {
   const startTimeInput =
     document.getElementById("startTime");
+
+  const durationInput =
+    document.getElementById("durationHours");
 
   const endTimeInput =
     document.getElementById("endTime");
 
   if (
     !startTimeInput ||
+    !durationInput ||
     !endTimeInput
   ) {
     return;
@@ -535,16 +550,20 @@ function setDefaultEndTime() {
       startTimeInput.value || ""
     ).trim();
 
-  if (!startTime) {
-    return;
-  }
+  const durationHours =
+    Number(durationInput.value);
 
   /*
-   * 終了予定がすでに入っている場合は、
-   * 自動で上書きしません。
+   * 開始時刻がない場合、
+   * または時間数が空欄・0以下の場合は
+   * 終了予定を空欄にします。
    */
-  if (endTimeInput.value) {
-    endTimeInput.focus();
+  if (
+    !startTime ||
+    !Number.isFinite(durationHours) ||
+    durationHours <= 0
+  ) {
+    endTimeInput.value = "";
     return;
   }
 
@@ -552,6 +571,7 @@ function setDefaultEndTime() {
     startTime.split(":");
 
   if (parts.length !== 2) {
+    endTimeInput.value = "";
     return;
   }
 
@@ -562,16 +582,28 @@ function setDefaultEndTime() {
     Number(parts[1]);
 
   if (
-    Number.isNaN(startHour) ||
-    Number.isNaN(startMinute)
+    !Number.isFinite(startHour) ||
+    !Number.isFinite(startMinute)
   ) {
+    endTimeInput.value = "";
     return;
   }
+
+  /*
+   * 時間数を分へ変換します。
+   *
+   * 例：
+   * 1.5時間 × 60 ＝ 90分
+   */
+  const durationMinutes =
+    Math.round(
+      durationHours * 60
+    );
 
   const totalMinutes =
     startHour * 60 +
     startMinute +
-    60;
+    durationMinutes;
 
   const endHour =
     Math.floor(
@@ -587,10 +619,4 @@ function setDefaultEndTime() {
     ":" +
     String(endMinute)
       .padStart(2, "0");
-
-  /*
-   * 自動入力後、終了予定へ
-   * カーソルを移します。
-   */
-  endTimeInput.focus();
 }
