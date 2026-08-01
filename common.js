@@ -2,13 +2,6 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwoQp13Pi9DWYep8D-F9uUE
 const LIFF_ID = "2009935343-GyNpF9lj";
 const STAFF_PORTAL_USER_KEY = "staffPortalCurrentUser";
 
-async function postGas2(data) {
-  const response = await fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify(data)
-  });
-  return response.json();
-}
 
 function getSavedPortalUser() {
   const saved = localStorage.getItem(STAFF_PORTAL_USER_KEY);

@@ -79,6 +79,15 @@ async function loadOutingClientList_() {
     return;
   }
 
+
+  console.log(
+    "利用者一覧取得開始",
+    typeof postGas,
+    STAFF_PORTAL_API_URL
+  );
+  
+
+
   select.disabled = true;
 
   try {
