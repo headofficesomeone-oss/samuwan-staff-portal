@@ -7,7 +7,7 @@ const OUTING_ROUTE_API_URL =
 
 
 let outingCurrentUser = null;
-
+let currentOutingSummaryContext = null;
 
 /*
  * 二重クリック防止のため、
@@ -679,9 +679,10 @@ function showOutingMessage_(
 
 
 /**
- * 現在の行程を経由地到着として登録します。
+ * 到着後の選択内容に応じて、
+ * 経由地到着または最終到着を登録します。
  */
-async function arriveAtOutingViaPoint_() {
+async function registerOutingArrival_() {
   const activeOuting =
     getActiveOutingFromBrowser_();
 
@@ -733,6 +734,9 @@ async function arriveAtOutingViaPoint_() {
       "arrivalOdometerKm"
     );
 
+  const afterAction =
+    getSelectedArrivalAfterAction_();
+
   if (!arrivalPlace) {
     alert(
       "到着場所を入力してください。"
@@ -741,13 +745,48 @@ async function arriveAtOutingViaPoint_() {
     return;
   }
 
+  if (!afterAction) {
+    alert(
+      "到着後の動きを選択してください。"
+    );
+
+    return;
+  }
+
+  const arrivalType =
+    afterAction === "finish"
+      ? "最終到着"
+      : "経由地";
+
+  let confirmationText =
+    activeOuting.userName +
+    "さんの移動について、\n\n" +
+    arrivalPlace +
+    "への到着を登録します。\n\n";
+
+  if (afterAction === "finish") {
+    confirmationText +=
+      "この到着で外出支援を終了し、" +
+      "一連の行程を表示します。";
+
+  } else if (
+    afterAction === "continue"
+  ) {
+    confirmationText +=
+      "到着後も続けて行程を入力します。";
+
+  } else {
+    confirmationText +=
+      "到着後は職員ポータルへ戻ります。\n" +
+      "外出支援は待機中として保存されます。";
+  }
+
+  confirmationText +=
+    "\n\nよろしいですか？";
+
   const confirmed =
     confirm(
-      activeOuting.userName +
-      "さんの移動について、\n\n" +
-      arrivalPlace +
-      "への到着を登録します。\n\n" +
-      "よろしいですか？"
+      confirmationText
     );
 
   if (!confirmed) {
@@ -765,13 +804,14 @@ async function arriveAtOutingViaPoint_() {
   try {
     if (button) {
       button.disabled = true;
-
       button.textContent =
         "到着処理中…";
     }
 
     showOutingMessage_(
-      "経由地への到着を登録しています。",
+      arrivalType === "最終到着"
+        ? "最終到着と外出支援終了を登録しています。"
+        : "到着を登録しています。",
       "loading"
     );
 
@@ -787,10 +827,13 @@ async function arriveAtOutingViaPoint_() {
               activeOuting.routeId,
 
             arrivalType:
-              "経由地",
+              arrivalType,
 
             arrivalPlaceType:
-              arrivalPlaceType,
+              arrivalType ===
+                "最終到着"
+                ? "自宅等"
+                : arrivalPlaceType,
 
             arrivalPlace:
               arrivalPlace,
@@ -801,12 +844,16 @@ async function arriveAtOutingViaPoint_() {
             distanceKm:
               distanceText === ""
                 ? ""
-                : Number(distanceText),
+                : Number(
+                    distanceText
+                  ),
 
             odometerArrivalKm:
               odometerText === ""
                 ? ""
-                : Number(odometerText),
+                : Number(
+                    odometerText
+                  ),
 
             endReport:
               "",
@@ -834,6 +881,62 @@ async function arriveAtOutingViaPoint_() {
       );
     }
 
+		const cancelArea =
+		  document.getElementById(
+		    "cancelLastDepartureArea"
+		  );
+
+		if (cancelArea) {
+		  cancelArea.classList.add(
+		    "hidden"
+		  );
+		}
+
+
+    /*
+     * この到着で終了する場合
+     */
+    if (
+      afterAction === "finish"
+    ) {
+      currentOutingSummaryContext = {
+        outingResultId:
+          activeOuting.outingResultId,
+
+        routeId:
+          activeOuting.routeId,
+
+        userId:
+          activeOuting.userId || "",
+
+        userName:
+          activeOuting.userName || "",
+
+        currentPlace:
+          result.arrivalPlace ||
+          arrivalPlace
+      };
+
+      localStorage.removeItem(
+        "staffPortalActiveOuting"
+      );
+
+      await loadAndShowOutingSummary_(
+        activeOuting.outingResultId
+      );
+
+      showOutingMessage_(
+        result.message ||
+        "外出支援を終了しました。",
+        "success"
+      );
+
+      return;
+    }
+
+    /*
+     * 経由地到着として端末へ保存します。
+     */
     activeOuting.currentPlace =
       result.arrivalPlace ||
       arrivalPlace;
@@ -851,49 +954,71 @@ async function arriveAtOutingViaPoint_() {
       )
     );
 
-    setOutingText_(
-      "waitingCurrentPlace",
-      result.arrivalPlace ||
-      arrivalPlace
-    );
-
-    setOutingText_(
-      "waitingMovementMinutes",
-      String(
-        result.movementMinutes ?? 0
-      ) + "分"
-    );
-
-    document
-      .getElementById(
-        "outingArrivalArea"
-      )
-      .classList.add(
-        "hidden"
+    /*
+     * 続けて入力する場合
+     */
+    if (
+      afterAction === "continue"
+    ) {
+      setOutingText_(
+        "waitingCurrentPlace",
+        result.arrivalPlace ||
+        arrivalPlace
       );
 
-    document
-      .getElementById(
-        "outingWaitingArea"
-      )
-      .classList.remove(
-        "hidden"
+      setOutingText_(
+        "waitingMovementMinutes",
+        String(
+          result.movementMinutes ?? 0
+        ) + "分"
       );
 
+      document
+        .getElementById(
+          "outingArrivalArea"
+        )
+        .classList.add(
+          "hidden"
+        );
+
+      document
+        .getElementById(
+          "outingWaitingArea"
+        )
+        .classList.remove(
+          "hidden"
+        );
+
+      showOutingMessage_(
+        result.message ||
+        "到着を登録しました。",
+        "success"
+      );
+
+      return;
+    }
+
+    /*
+     * 到着だけ登録して、
+     * ポータルへ戻る場合
+     */
     showOutingMessage_(
       result.message ||
-      "経由地への到着を登録しました。",
+      "到着を登録しました。",
       "success"
     );
 
+    location.href =
+      "./index.html?v=20260801-2";
+
   } catch (error) {
     console.error(
-      "経由地到着エラー",
+      "到着登録エラー",
       error
     );
 
     showOutingMessage_(
-      "経由地への到着登録に失敗しました。" +
+      "到着登録に失敗しました。" +
       error.message,
       "error"
     );
@@ -901,11 +1026,388 @@ async function arriveAtOutingViaPoint_() {
   } finally {
     if (button) {
       button.disabled = false;
-
       button.textContent =
-        "経由地に到着";
+        "到着を登録";
     }
   }
+}
+
+
+/**
+ * 到着後の動きとして選択された値を取得します。
+ */
+function getSelectedArrivalAfterAction_() {
+  const selected =
+    document.querySelector(
+      'input[name="arrivalAfterAction"]:checked'
+    );
+
+  return selected
+    ? String(
+        selected.value || ""
+      ).trim()
+    : "";
+}
+
+
+/**
+ * 一連の行程を取得し、
+ * 終了確認画面へ表示します。
+ */
+async function loadAndShowOutingSummary_(
+  outingResultId
+) {
+  const result =
+    await callOutingApi_(
+      "outing-summary",
+      {
+        data: {
+          outingResultId:
+            outingResultId
+        }
+      }
+    );
+
+  if (
+    !result ||
+    result.success !== true
+  ) {
+    throw new Error(
+      result && result.message
+        ? result.message
+        : "一連の行程を取得できませんでした"
+    );
+  }
+
+  renderOutingSummary_(
+    result
+  );
+
+  const arrivalArea =
+    document.getElementById(
+      "outingArrivalArea"
+    );
+
+  const waitingArea =
+    document.getElementById(
+      "outingWaitingArea"
+    );
+
+  const summaryArea =
+    document.getElementById(
+      "outingSummaryArea"
+    );
+
+  if (arrivalArea) {
+    arrivalArea.classList.add(
+      "hidden"
+    );
+  }
+
+  if (waitingArea) {
+    waitingArea.classList.add(
+      "hidden"
+    );
+  }
+
+  if (summaryArea) {
+    summaryArea.classList.remove(
+      "hidden"
+    );
+  }
+}
+
+
+/**
+ * 行程一覧を終了確認画面へ表示します。
+ */
+function renderOutingSummary_(
+  result
+) {
+  const summary =
+    result &&
+    result.summary
+      ? result.summary
+      : {};
+
+  const routes =
+    Array.isArray(
+      result.routes
+    )
+      ? result.routes
+      : [];
+
+  const cancelledRoutes =
+    Array.isArray(
+      result.cancelledRoutes
+    )
+      ? result.cancelledRoutes
+      : [];
+
+  setOutingText_(
+    "summaryUserName",
+    summary.userName || "―"
+  );
+
+  setOutingText_(
+    "summaryStartedAt",
+    summary.startedAt || "―"
+  );
+
+  setOutingText_(
+    "summaryEndedAt",
+    summary.endedAt || "―"
+  );
+
+  setOutingText_(
+    "summaryRouteCount",
+    String(
+      summary.routeCount ??
+      routes.length
+    ) + "行程"
+  );
+
+  setOutingText_(
+    "summaryMovementMinutes",
+    String(
+      summary.totalMovementMinutes ??
+      0
+    ) + "分"
+  );
+
+  setOutingText_(
+    "summaryWaitingMinutes",
+    String(
+      summary.totalWaitingMinutes ??
+      0
+    ) + "分"
+  );
+
+  setOutingText_(
+    "summaryDistanceKm",
+    String(
+      summary.totalDistanceKm ??
+      0
+    ) + "km"
+  );
+
+  const routeList =
+    document.getElementById(
+      "summaryRouteList"
+    );
+
+  if (routeList) {
+    routeList.innerHTML =
+      routes.length > 0
+        ? routes
+            .map(
+              createOutingRouteSummaryHtml_
+            )
+            .join("")
+        : (
+            '<div class="summary-route-card">' +
+            "行程がありません" +
+            "</div>"
+          );
+  }
+
+  const cancelledArea =
+    document.getElementById(
+      "summaryCancelledArea"
+    );
+
+  const cancelledList =
+    document.getElementById(
+      "summaryCancelledRouteList"
+    );
+
+  if (
+    cancelledRoutes.length > 0
+  ) {
+    if (cancelledList) {
+      cancelledList.innerHTML =
+        cancelledRoutes
+          .map(
+            createOutingRouteSummaryHtml_
+          )
+          .join("");
+    }
+
+    if (cancelledArea) {
+      cancelledArea.classList.remove(
+        "hidden"
+      );
+    }
+
+  } else if (cancelledArea) {
+    cancelledArea.classList.add(
+      "hidden"
+    );
+  }
+
+  currentOutingSummaryContext = {
+    outingResultId:
+      summary.outingResultId || "",
+
+    routeId:
+      summary.currentRouteId || "",
+
+    userId:
+      summary.userId || "",
+
+    userName:
+      summary.userName || "",
+
+    currentPlace:
+      summary.currentPlace ||
+      summary.finalArrivalPlace ||
+      "",
+
+    routeNumber:
+      summary.currentRouteNumber || 0
+  };
+}
+
+
+/**
+ * 1行程分の表示HTMLを作ります。
+ */
+function createOutingRouteSummaryHtml_(
+  route
+) {
+  const departurePlace =
+    escapeOutingHtml_(
+      route.departurePlace || "―"
+    );
+
+  const arrivalPlace =
+    escapeOutingHtml_(
+      route.arrivalPlace || "未到着"
+    );
+
+  const transport =
+    escapeOutingHtml_(
+      route.transport || "―"
+    );
+
+  const movementMinutes =
+    Number(
+      route.movementMinutes || 0
+    );
+
+  const distanceKm =
+    Number(
+      route.distanceKm || 0
+    );
+
+  const routeNumber =
+    Number(
+      route.routeNumber || 0
+    );
+
+  const state =
+    escapeOutingHtml_(
+      route.state || ""
+    );
+
+  let detailText =
+    "移動手段：" +
+    transport +
+    "　移動時間：" +
+    movementMinutes +
+    "分";
+
+  if (distanceKm > 0) {
+    detailText +=
+      "　距離：" +
+      distanceKm +
+      "km";
+  }
+
+  if (
+    route.driverName
+  ) {
+    detailText +=
+      "　運転手：" +
+      escapeOutingHtml_(
+        route.driverName
+      );
+  }
+
+  return (
+    '<div class="summary-route-card">' +
+
+      '<div class="summary-route-number">' +
+        "行程 " +
+        routeNumber +
+        (
+          state === "取消"
+            ? "（取消）"
+            : ""
+        ) +
+      "</div>" +
+
+      '<div class="summary-route-main">' +
+        departurePlace +
+        '<div class="summary-route-arrow">↓</div>' +
+        arrivalPlace +
+      "</div>" +
+
+      '<div class="summary-route-detail">' +
+        detailText +
+      "</div>" +
+
+    "</div>"
+  );
+}
+
+
+/**
+ * HTMLへ表示する文字を安全な形へ変換します。
+ */
+function escapeOutingHtml_(
+  value
+) {
+  return String(
+    value === null ||
+    value === undefined
+      ? ""
+      : value
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+}
+
+
+/**
+ * 外出支援終了後に
+ * 職員ポータルへ戻ります。
+ */
+function returnToPortalAfterOuting_() {
+  localStorage.removeItem(
+    "staffPortalActiveOuting"
+  );
+
+  location.href =
+    "./index.html?v=20260801-2";
 }
 
 
@@ -1004,6 +1506,30 @@ function showSavedActiveOuting_(
         "hidden"
       );
   }
+  
+	  const cancelArea =
+	  document.getElementById(
+	    "cancelLastDepartureArea"
+	  );
+
+	if (
+	  cancelArea &&
+	  activeOuting.movementStatus ===
+	    "移動中" &&
+	  Number(
+	    activeOuting.routeNumber || 0
+	  ) > 1
+	) {
+	  cancelArea.classList.remove(
+	    "hidden"
+	  );
+
+	} else if (cancelArea) {
+	  cancelArea.classList.add(
+	    "hidden"
+	  );
+	}
+  
 }
 
 /**
@@ -1222,6 +1748,23 @@ async function departNextOutingRoute_() {
         "hidden"
       );
 
+			const cancelArea =
+			  document.getElementById(
+			    "cancelLastDepartureArea"
+			  );
+
+			if (
+			  cancelArea &&
+			  Number(
+			    activeOuting.routeNumber || 0
+			  ) > 1
+			) {
+			  cancelArea.classList.remove(
+			    "hidden"
+			  );
+			}
+
+
     clearNextDepartureInputs_();
     clearArrivalInputs_();
 
@@ -1317,3 +1860,565 @@ function clearArrivalInputs_() {
     }
   );
 }
+
+
+/**
+ * 待機中になっている現在の到着を、
+ * 後から最終到着へ変更します。
+ */
+async function finishOutingFromWaiting_() {
+  const activeOuting =
+    getActiveOutingFromBrowser_();
+
+  if (
+    !activeOuting ||
+    !activeOuting.outingResultId ||
+    !activeOuting.routeId
+  ) {
+    alert(
+      "進行中の外出支援を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    !outingCurrentUser ||
+    !outingCurrentUser.employeeId
+  ) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    activeOuting.movementStatus !==
+    "待機中"
+  ) {
+    alert(
+      "現在は待機中ではありません。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      "この到着で外出支援が終了していたものとして修正します。\n\n" +
+      "新しい行程は作成せず、最後の到着時刻を終了時刻にします。\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "finishCurrentArrivalButton"
+    );
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent =
+        "終了処理中…";
+    }
+
+    showOutingMessage_(
+      "最後の到着を外出支援の終了へ変更しています。",
+      "loading"
+    );
+
+    const result =
+      await callOutingApi_(
+        "outing-finish-current-arrival",
+        {
+          data: {
+            outingResultId:
+              activeOuting.outingResultId,
+
+            routeId:
+              activeOuting.routeId,
+
+            endReport:
+              "終了登録の付け忘れを修正",
+
+            operatorId:
+              outingCurrentUser.employeeId,
+
+            operatorName:
+              outingCurrentUser.employeeName,
+
+            operationId:
+              createBrowserOutingOperationId_()
+          }
+        }
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result && result.message
+          ? result.message
+          : "外出支援を終了できませんでした"
+      );
+    }
+
+    currentOutingSummaryContext = {
+      outingResultId:
+        activeOuting.outingResultId,
+
+      routeId:
+        activeOuting.routeId,
+
+      userId:
+        activeOuting.userId || "",
+
+      userName:
+        activeOuting.userName || "",
+
+      currentPlace:
+        result.arrivalPlace ||
+        activeOuting.currentPlace ||
+        "",
+
+      routeNumber:
+        activeOuting.routeNumber || 0
+    };
+
+    localStorage.removeItem(
+      "staffPortalActiveOuting"
+    );
+
+    await loadAndShowOutingSummary_(
+      activeOuting.outingResultId
+    );
+
+    showOutingMessage_(
+      result.message ||
+      "外出支援を終了しました。",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "待機中からの終了処理エラー",
+      error
+    );
+
+    showOutingMessage_(
+      "外出支援の終了に失敗しました。" +
+      error.message,
+      "error"
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent =
+        "この到着で外出支援を終了する";
+    }
+  }
+}
+
+
+/**
+ * 終了済みの外出支援を取り消し、
+ * 最後の到着地点で待機中へ戻します。
+ */
+async function undoOutingFinishFromSummary_() {
+  const context =
+    currentOutingSummaryContext;
+
+  if (
+    !context ||
+    !context.outingResultId ||
+    !context.routeId
+  ) {
+    alert(
+      "終了した外出支援の情報を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    !outingCurrentUser ||
+    !outingCurrentUser.employeeId
+  ) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      "外出支援の終了を取り消します。\n\n" +
+      "最後の到着を経由地到着へ戻し、" +
+      "その場所で待機中として再開します。\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "undoOutingFinishButton"
+    );
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent =
+        "終了取消処理中…";
+    }
+
+    showOutingMessage_(
+      "外出支援の終了を取り消しています。",
+      "loading"
+    );
+
+    const result =
+      await callOutingApi_(
+        "outing-undo-finish",
+        {
+          data: {
+            outingResultId:
+              context.outingResultId,
+
+            routeId:
+              context.routeId,
+
+            operatorId:
+              outingCurrentUser.employeeId,
+
+            operatorName:
+              outingCurrentUser.employeeName,
+
+            operationId:
+              createBrowserOutingOperationId_()
+          }
+        }
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result && result.message
+          ? result.message
+          : "終了を取り消せませんでした"
+      );
+    }
+
+    const activeOuting = {
+      outingResultId:
+        result.outingResultId ||
+        context.outingResultId,
+
+      routeId:
+        result.routeId ||
+        context.routeId,
+
+      routeNumber:
+        result.routeNumber ||
+        context.routeNumber ||
+        0,
+
+      userId:
+        context.userId || "",
+
+      userName:
+        context.userName || "",
+
+      currentPlace:
+        result.currentPlace ||
+        context.currentPlace ||
+        "",
+
+      movementStatus:
+        "待機中",
+
+      arrivalType:
+        "経由地"
+    };
+
+    localStorage.setItem(
+      "staffPortalActiveOuting",
+      JSON.stringify(
+        activeOuting
+      )
+    );
+
+    setOutingText_(
+      "startedOutingId",
+      activeOuting.outingResultId
+    );
+
+    setOutingText_(
+      "startedRouteId",
+      activeOuting.routeId
+    );
+
+    setOutingText_(
+      "waitingCurrentPlace",
+      activeOuting.currentPlace
+    );
+
+    setOutingText_(
+      "waitingMovementMinutes",
+      "登録済み"
+    );
+
+    const summaryArea =
+      document.getElementById(
+        "outingSummaryArea"
+      );
+
+    const waitingArea =
+      document.getElementById(
+        "outingWaitingArea"
+      );
+
+    const arrivalArea =
+      document.getElementById(
+        "outingArrivalArea"
+      );
+
+    if (summaryArea) {
+      summaryArea.classList.add(
+        "hidden"
+      );
+    }
+
+    if (arrivalArea) {
+      arrivalArea.classList.add(
+        "hidden"
+      );
+    }
+
+    if (waitingArea) {
+      waitingArea.classList.remove(
+        "hidden"
+      );
+    }
+
+    currentOutingSummaryContext =
+      null;
+
+    showOutingMessage_(
+      result.message ||
+      "終了を取り消して待機中へ戻しました。",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "外出支援終了取消エラー",
+      error
+    );
+
+    showOutingMessage_(
+      "終了の取消に失敗しました。" +
+      error.message,
+      "error"
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent =
+        "終了を取り消して行程を続ける";
+    }
+  }
+}
+
+
+/**
+ * 誤って開始した直前の行程を取り消し、
+ * 1つ前の到着地点で外出支援を終了します。
+ */
+async function cancelLastDepartureAndFinish_() {
+  const activeOuting =
+    getActiveOutingFromBrowser_();
+
+  if (
+    !activeOuting ||
+    !activeOuting.outingResultId ||
+    !activeOuting.routeId
+  ) {
+    alert(
+      "進行中の外出支援を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    !outingCurrentUser ||
+    !outingCurrentUser.employeeId
+  ) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    activeOuting.movementStatus !==
+    "移動中"
+  ) {
+    alert(
+      "現在は移動中ではありません。"
+    );
+
+    return;
+  }
+
+  if (
+    Number(
+      activeOuting.routeNumber || 0
+    ) <= 1
+  ) {
+    alert(
+      "最初の出発は、この処理では取り消せません。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      "直前の出発登録を取り消します。\n\n" +
+      "現在の行程は「取消」として履歴に残し、" +
+      "1つ前の到着地点で外出支援が終了していたものとして修正します。\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "cancelLastDepartureButton"
+    );
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent =
+        "出発取消処理中…";
+    }
+
+    showOutingMessage_(
+      "直前の出発を取り消しています。",
+      "loading"
+    );
+
+    const result =
+      await callOutingApi_(
+        "outing-cancel-last-departure",
+        {
+          data: {
+            outingResultId:
+              activeOuting.outingResultId,
+
+            routeId:
+              activeOuting.routeId,
+
+            cancelReason:
+              "直前の出発登録誤り",
+
+            endReport:
+              "直前の出発を取り消し、前の到着地点で終了",
+
+            operatorId:
+              outingCurrentUser.employeeId,
+
+            operatorName:
+              outingCurrentUser.employeeName,
+
+            operationId:
+              createBrowserOutingOperationId_()
+          }
+        }
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result && result.message
+          ? result.message
+          : "直前の出発を取り消せませんでした"
+      );
+    }
+
+    currentOutingSummaryContext = {
+      outingResultId:
+        activeOuting.outingResultId,
+
+      routeId:
+        result.previousRouteId || "",
+
+      userId:
+        activeOuting.userId || "",
+
+      userName:
+        activeOuting.userName || "",
+
+      currentPlace:
+        result.arrivalPlace || "",
+
+      routeNumber:
+        result.routeNumber || 0
+    };
+
+    localStorage.removeItem(
+      "staffPortalActiveOuting"
+    );
+
+    await loadAndShowOutingSummary_(
+      activeOuting.outingResultId
+    );
+
+    showOutingMessage_(
+      result.message ||
+      "直前の出発を取り消して外出支援を終了しました。",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "直前出発取消エラー",
+      error
+    );
+
+    showOutingMessage_(
+      "直前の出発取消に失敗しました。" +
+      error.message,
+      "error"
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent =
+        "直前の出発を取り消して、前の到着地点で終了する";
+    }
+  }
+}
+

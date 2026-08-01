@@ -15,12 +15,12 @@
 
   <link
     rel="stylesheet"
-    href="./index.css?v=20260801-2""
+    href="./index.css?v=20260801-2"
   >
 
   <link
     rel="stylesheet"
-    href="./outing.css?v=20260801-3""
+    href="./outing.css?v=20260802-1"
   >
 </head>
 
@@ -463,15 +463,100 @@
 				    </div>
 				  </div>
 
+					<div class="arrival-action-select">
 
-				  <button
-				    type="button"
-				    id="viaArrivalButton"
-				    class="via-arrival-button"
-				    onclick="arriveAtOutingViaPoint_()"
-				  >
-				    経由地に到着
-				  </button>
+					  <h4>
+					    到着後の動きを選択
+					  </h4>
+
+					  <label class="action-radio-card">
+					    <input
+					      type="radio"
+					      name="arrivalAfterAction"
+					      value="finish"
+					    >
+
+					    <span>
+					      <strong>
+					        この到着で外出支援を終了する
+					      </strong>
+
+					      <small>
+					        一連の行程を表示して終了します
+					      </small>
+					    </span>
+					  </label>
+
+
+					  <label class="action-radio-card">
+					    <input
+					      type="radio"
+					      name="arrivalAfterAction"
+					      value="continue"
+					    >
+
+					    <span>
+					      <strong>
+					        到着後も続けて入力する
+					      </strong>
+
+					      <small>
+					        待機中画面を表示し、次の出発を登録します
+					      </small>
+					    </span>
+					  </label>
+
+
+					  <label class="action-radio-card">
+					    <input
+					      type="radio"
+					      name="arrivalAfterAction"
+					      value="portal"
+					      checked
+					    >
+
+					    <span>
+					      <strong>
+					        到着だけ登録してポータルへ戻る
+					      </strong>
+
+					      <small>
+					        外出支援は待機中として保存され、後から再開できます
+					      </small>
+					    </span>
+					  </label>
+
+					</div>
+
+					<div
+					  id="cancelLastDepartureArea"
+					  class="cancel-last-departure-area hidden"
+					>
+
+					  <p>
+					    直前の出発登録を間違えた場合
+					  </p>
+
+					  <button
+					    type="button"
+					    id="cancelLastDepartureButton"
+					    class="cancel-last-departure-button"
+					    onclick="cancelLastDepartureAndFinish_()"
+					  >
+					    直前の出発を取り消して、
+					    前の到着地点で終了する
+					  </button>
+
+					</div>
+
+					<button
+					  type="button"
+					  id="viaArrivalButton"
+					  class="via-arrival-button"
+					  onclick="registerOutingArrival_()"
+					>
+					  到着を登録
+					</button>
 
 				</div>
 
@@ -526,6 +611,24 @@
 				    次に移動するときは、
 				    「次の場所へ出発」を登録します。
 				  </p>
+
+					<div class="finish-from-waiting-box">
+
+					  <p>
+					    実際には、この到着で外出支援が
+					    終了していましたか？
+					  </p>
+
+					  <button
+					    type="button"
+					    id="finishCurrentArrivalButton"
+					    class="finish-current-arrival-button"
+					    onclick="finishOutingFromWaiting_()"
+					  >
+					    この到着で外出支援を終了する
+					  </button>
+
+					</div>
 
 					<div class="next-departure-form">
 
@@ -615,6 +718,140 @@
 
 				</div>
 
+				<div
+				  id="outingSummaryArea"
+				  class="outing-operation-area outing-summary-area hidden"
+				>
+
+				  <div class="summary-complete-icon">
+				    ✓
+				  </div>
+
+				  <h3>
+				    外出支援を終了しました
+				  </h3>
+
+				  <div class="started-information">
+
+				    <div>
+				      <span>
+				        利用者
+				      </span>
+
+				      <strong id="summaryUserName">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        開始日時
+				      </span>
+
+				      <strong id="summaryStartedAt">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        終了日時
+				      </span>
+
+				      <strong id="summaryEndedAt">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        行程数
+				      </span>
+
+				      <strong id="summaryRouteCount">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        総移動時間
+				      </span>
+
+				      <strong id="summaryMovementMinutes">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        総待機時間
+				      </span>
+
+				      <strong id="summaryWaitingMinutes">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        総走行距離
+				      </span>
+
+				      <strong id="summaryDistanceKm">
+				        ―
+				      </strong>
+				    </div>
+
+				  </div>
+
+
+				  <h4 class="route-summary-heading">
+				    一連の行程
+				  </h4>
+
+				  <div
+				    id="summaryRouteList"
+				    class="summary-route-list"
+				  >
+				  </div>
+
+
+				  <div
+				    id="summaryCancelledArea"
+				    class="summary-cancelled-area hidden"
+				  >
+
+				    <h4>
+				      取消となった行程
+				    </h4>
+
+				    <div id="summaryCancelledRouteList">
+				    </div>
+
+				  </div>
+
+
+				  <button
+				    type="button"
+				    id="undoOutingFinishButton"
+				    class="undo-finish-button"
+				    onclick="undoOutingFinishFromSummary_()"
+				  >
+				    終了を取り消して行程を続ける
+				  </button>
+
+
+				  <button
+				    type="button"
+				    class="outing-portal-button"
+				    onclick="returnToPortalAfterOuting_()"
+				  >
+				    職員ポータルへ戻る
+				  </button>
+
+				</div>
+
 
       </section>
 
@@ -633,7 +870,7 @@
 
 
 <script src="./common.js?v=20260801-2"></script>
-<script src="./outing.js?v=20260802-1"></script>
+<script src="./outing.js?v=20260802-3"></script>
 
 </body>
 </html>
