@@ -24,10 +24,27 @@ document.addEventListener(
       currentUser =
         getSavedPortalUser();
 
-      if (currentUser) {
-        showPortalAreaDirect();
-        return;
-      }
+			if (currentUser) {
+			  try {
+			    showPortalAreaDirect();
+
+			  } catch (error) {
+			    console.error(
+			      "保存済み本人情報での表示エラー",
+			      error
+			    );
+
+			    showRegisterArea();
+
+			    setPageMessage(
+			      "ポータル画面の表示中にエラーが発生しました。",
+			      "error",
+			      "registerForm"
+			    );
+			  }
+
+			  return;
+			}
 
       showLoadingArea();
 
@@ -274,15 +291,18 @@ function showPortalAreaDirect() {
     .getElementById("portalArea")
     ?.classList.remove("hidden");
 
-  showPortalUserName();
+	showPortalUserName();
 
-  /*
-   * シフト確認が終わるまでは
-   * 3つのボタンをすべて使用不可
-   */
-	setStaffActionButtonsByState("");
+	try {
+	  setStaffActionButtonsByState("");
+	  loadTodayStaffShifts();
 
-	loadTodayStaffShifts();
+	} catch (error) {
+	  console.error(
+	    "ポータル初期表示エラー",
+	    error
+	  );
+	}
 
 }
 
