@@ -1006,3 +1006,314 @@ function showSavedActiveOuting_(
   }
 }
 
+/**
+ * 待機中の場所から次の行程を開始します。
+ */
+async function departNextOutingRoute_() {
+  const activeOuting =
+    getActiveOutingFromBrowser_();
+
+  if (
+    !activeOuting ||
+    !activeOuting.outingResultId ||
+    !activeOuting.routeId
+  ) {
+    alert(
+      "進行中の外出支援を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    !outingCurrentUser ||
+    !outingCurrentUser.employeeId
+  ) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  const transport =
+    getOutingInputValue_(
+      "nextTransport"
+    );
+
+  const vehicleName =
+    getOutingInputValue_(
+      "nextVehicleName"
+    );
+
+  const supportDetail =
+    getOutingInputValue_(
+      "nextSupportDetail"
+    );
+
+  const currentUserIsDriver =
+    document
+      .getElementById(
+        "nextCurrentUserIsDriver"
+      )
+      .checked;
+
+  const isPaidTransport =
+    document
+      .getElementById(
+        "nextPaidTransport"
+      )
+      .checked;
+
+  if (!transport) {
+    alert(
+      "次の移動手段を選択してください。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      activeOuting.currentPlace +
+      "から次の場所へ出発します。\n\n" +
+      "移動手段：" +
+      transport +
+      "\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "nextDepartureButton"
+    );
+
+  try {
+    if (button) {
+      button.disabled = true;
+
+      button.textContent =
+        "出発処理中…";
+    }
+
+    showOutingMessage_(
+      "次の場所への出発を登録しています。",
+      "loading"
+    );
+
+    const result =
+      await callOutingApi_(
+        "outing-next-departure",
+        {
+          data: {
+            outingResultId:
+              activeOuting.outingResultId,
+
+            previousRouteId:
+              activeOuting.routeId,
+
+            departurePlaceType:
+              "経由地",
+
+            departurePlace:
+              activeOuting.currentPlace,
+
+            departurePlaceNote:
+              "",
+
+            transport:
+              transport,
+
+            isDriving:
+              currentUserIsDriver,
+
+            driverId:
+              currentUserIsDriver
+                ? outingCurrentUser.employeeId
+                : "",
+
+            driverName:
+              currentUserIsDriver
+                ? outingCurrentUser.employeeName
+                : "",
+
+            driverChanged:
+              false,
+
+            previousDriverId:
+              "",
+
+            vehicleName:
+              vehicleName,
+
+            isPaidTransport:
+              isPaidTransport,
+
+            supportDetail:
+              supportDetail,
+
+            operatorId:
+              outingCurrentUser.employeeId,
+
+            operatorName:
+              outingCurrentUser.employeeName,
+
+            operationId:
+              createBrowserOutingOperationId_()
+          }
+        }
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result && result.message
+          ? result.message
+          : "次の出発を登録できませんでした"
+      );
+    }
+
+    activeOuting.routeId =
+      result.routeId;
+
+    activeOuting.routeNumber =
+      result.routeNumber;
+
+    activeOuting.currentPlace =
+      result.departurePlace ||
+      activeOuting.currentPlace;
+
+    activeOuting.movementStatus =
+      "移動中";
+
+    delete activeOuting.arrivalType;
+
+    localStorage.setItem(
+      "staffPortalActiveOuting",
+      JSON.stringify(
+        activeOuting
+      )
+    );
+
+    setOutingText_(
+      "startedRouteId",
+      result.routeId
+    );
+
+    document
+      .getElementById(
+        "outingWaitingArea"
+      )
+      .classList.add(
+        "hidden"
+      );
+
+    document
+      .getElementById(
+        "outingArrivalArea"
+      )
+      .classList.remove(
+        "hidden"
+      );
+
+    clearNextDepartureInputs_();
+    clearArrivalInputs_();
+
+    showOutingMessage_(
+      result.message ||
+      "次の場所へ出発しました。",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "次の場所への出発エラー",
+      error
+    );
+
+    showOutingMessage_(
+      "次の場所への出発登録に失敗しました。" +
+      error.message,
+      "error"
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+
+      button.textContent =
+        "次の場所へ出発";
+    }
+  }
+}
+
+
+/**
+ * 次の出発入力欄を初期化します。
+ */
+function clearNextDepartureInputs_() {
+  const ids = [
+    "nextTransport",
+    "nextVehicleName",
+    "nextSupportDetail"
+  ];
+
+  ids.forEach(
+    function(id) {
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+        element.value = "";
+      }
+    }
+  );
+
+  const driver =
+    document.getElementById(
+      "nextCurrentUserIsDriver"
+    );
+
+  const paid =
+    document.getElementById(
+      "nextPaidTransport"
+    );
+
+  if (driver) {
+    driver.checked = false;
+  }
+
+  if (paid) {
+    paid.checked = false;
+  }
+}
+
+
+/**
+ * 到着入力欄を初期化します。
+ */
+function clearArrivalInputs_() {
+  const ids = [
+    "arrivalPlace",
+    "arrivalPlaceNote",
+    "arrivalDistanceKm",
+    "arrivalOdometerKm"
+  ];
+
+  ids.forEach(
+    function(id) {
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+        element.value = "";
+      }
+    }
+  );
+}
