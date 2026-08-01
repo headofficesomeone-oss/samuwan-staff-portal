@@ -61,7 +61,22 @@ document.addEventListener(
       );
     }
 
-    await loadOutingClientList_();
+	const savedActiveOuting =
+	  getActiveOutingFromBrowser_();
+
+	if (
+	  savedActiveOuting &&
+	  savedActiveOuting.outingResultId &&
+	  savedActiveOuting.routeId
+	) {
+	  showSavedActiveOuting_(
+	    savedActiveOuting
+	  );
+
+	} else {
+	  await loadOutingClientList_();
+	}
+    
   }
 );
 
@@ -661,3 +676,333 @@ function showOutingMessage_(
     );
   }
 }
+
+
+/**
+ * 現在の行程を経由地到着として登録します。
+ */
+async function arriveAtOutingViaPoint_() {
+  const activeOuting =
+    getActiveOutingFromBrowser_();
+
+  if (
+    !activeOuting ||
+    !activeOuting.outingResultId ||
+    !activeOuting.routeId
+  ) {
+    alert(
+      "進行中の外出支援を確認できません。"
+    );
+
+    return;
+  }
+
+  if (
+    !outingCurrentUser ||
+    !outingCurrentUser.employeeId
+  ) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  const arrivalPlaceType =
+    getOutingInputValue_(
+      "arrivalPlaceType"
+    );
+
+  const arrivalPlace =
+    getOutingInputValue_(
+      "arrivalPlace"
+    );
+
+  const arrivalPlaceNote =
+    getOutingInputValue_(
+      "arrivalPlaceNote"
+    );
+
+  const distanceText =
+    getOutingInputValue_(
+      "arrivalDistanceKm"
+    );
+
+  const odometerText =
+    getOutingInputValue_(
+      "arrivalOdometerKm"
+    );
+
+  if (!arrivalPlace) {
+    alert(
+      "到着場所を入力してください。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      activeOuting.userName +
+      "さんの移動について、\n\n" +
+      arrivalPlace +
+      "への到着を登録します。\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "viaArrivalButton"
+    );
+
+  const operationId =
+    createBrowserOutingOperationId_();
+
+  try {
+    if (button) {
+      button.disabled = true;
+
+      button.textContent =
+        "到着処理中…";
+    }
+
+    showOutingMessage_(
+      "経由地への到着を登録しています。",
+      "loading"
+    );
+
+    const result =
+      await callOutingApi_(
+        "outing-arrive",
+        {
+          data: {
+            outingResultId:
+              activeOuting.outingResultId,
+
+            routeId:
+              activeOuting.routeId,
+
+            arrivalType:
+              "経由地",
+
+            arrivalPlaceType:
+              arrivalPlaceType,
+
+            arrivalPlace:
+              arrivalPlace,
+
+            arrivalPlaceNote:
+              arrivalPlaceNote,
+
+            distanceKm:
+              distanceText === ""
+                ? ""
+                : Number(distanceText),
+
+            odometerArrivalKm:
+              odometerText === ""
+                ? ""
+                : Number(odometerText),
+
+            endReport:
+              "",
+
+            operatorId:
+              outingCurrentUser.employeeId,
+
+            operatorName:
+              outingCurrentUser.employeeName,
+
+            operationId:
+              operationId
+          }
+        }
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result && result.message
+          ? result.message
+          : "到着を登録できませんでした"
+      );
+    }
+
+    activeOuting.currentPlace =
+      result.arrivalPlace ||
+      arrivalPlace;
+
+    activeOuting.movementStatus =
+      "待機中";
+
+    activeOuting.arrivalType =
+      "経由地";
+
+    localStorage.setItem(
+      "staffPortalActiveOuting",
+      JSON.stringify(
+        activeOuting
+      )
+    );
+
+    setOutingText_(
+      "waitingCurrentPlace",
+      result.arrivalPlace ||
+      arrivalPlace
+    );
+
+    setOutingText_(
+      "waitingMovementMinutes",
+      String(
+        result.movementMinutes ?? 0
+      ) + "分"
+    );
+
+    document
+      .getElementById(
+        "outingArrivalArea"
+      )
+      .classList.add(
+        "hidden"
+      );
+
+    document
+      .getElementById(
+        "outingWaitingArea"
+      )
+      .classList.remove(
+        "hidden"
+      );
+
+    showOutingMessage_(
+      result.message ||
+      "経由地への到着を登録しました。",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "経由地到着エラー",
+      error
+    );
+
+    showOutingMessage_(
+      "経由地への到着登録に失敗しました。" +
+      error.message,
+      "error"
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+
+      button.textContent =
+        "経由地に到着";
+    }
+  }
+}
+
+
+/**
+ * 端末に保存した進行中の
+ * 外出支援情報を取得します。
+ */
+function getActiveOutingFromBrowser_() {
+  const saved =
+    localStorage.getItem(
+      "staffPortalActiveOuting"
+    );
+
+  if (!saved) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(
+      saved
+    );
+
+  } catch (error) {
+    console.error(
+      "進行中外出支援の読込エラー",
+      error
+    );
+
+    localStorage.removeItem(
+      "staffPortalActiveOuting"
+    );
+
+    return null;
+  }
+}
+
+/**
+ * 保存済みの進行中情報を画面へ復元します。
+ */
+function showSavedActiveOuting_(
+  activeOuting
+) {
+  setOutingText_(
+    "startedOutingId",
+    activeOuting.outingResultId
+  );
+
+  setOutingText_(
+    "startedRouteId",
+    activeOuting.routeId
+  );
+
+  document
+    .getElementById(
+      "outingStartArea"
+    )
+    .classList.add(
+      "hidden"
+    );
+
+  document
+    .getElementById(
+      "outingStartedArea"
+    )
+    .classList.remove(
+      "hidden"
+    );
+
+  if (
+    activeOuting.movementStatus ===
+    "待機中"
+  ) {
+    setOutingText_(
+      "waitingCurrentPlace",
+      activeOuting.currentPlace
+    );
+
+    setOutingText_(
+      "waitingMovementMinutes",
+      "登録済み"
+    );
+
+    document
+      .getElementById(
+        "outingArrivalArea"
+      )
+      .classList.add(
+        "hidden"
+      );
+
+    document
+      .getElementById(
+        "outingWaitingArea"
+      )
+      .classList.remove(
+        "hidden"
+      );
+  }
+}
+

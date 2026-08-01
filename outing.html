@@ -15,12 +15,12 @@
 
   <link
     rel="stylesheet"
-    href="./index.css"
+    href="./index.css?v=20260801-1""
   >
 
   <link
     rel="stylesheet"
-    href="./outing.css"
+    href="./outing.css?v=20260801-1""
   >
 </head>
 
@@ -353,6 +353,183 @@
           「自宅等に到着」を登録します。
         </p>
 
+				<div
+				  id="outingArrivalArea"
+				  class="outing-operation-area"
+				>
+
+				  <h3>
+				    到着場所を登録
+				  </h3>
+
+				  <div class="form-group">
+				    <label for="arrivalPlaceType">
+				      到着場所区分
+				    </label>
+
+				    <select id="arrivalPlaceType">
+				      <option value="病院">
+				        病院
+				      </option>
+
+				      <option value="店舗">
+				        店舗
+				      </option>
+
+				      <option value="公共施設">
+				        公共施設
+				      </option>
+
+				      <option value="駅・停留所">
+				        駅・停留所
+				      </option>
+
+				      <option value="その他">
+				        その他
+				      </option>
+				    </select>
+				  </div>
+
+
+				  <div class="form-group">
+				    <label for="arrivalPlace">
+				      到着場所
+				      <span class="required">
+				        必須
+				      </span>
+				    </label>
+
+				    <input
+				      type="text"
+				      id="arrivalPlace"
+				      placeholder="例：〇〇病院"
+				    >
+				  </div>
+
+
+				  <div class="form-group">
+				    <label for="arrivalPlaceNote">
+				      場所の補足
+				    </label>
+
+				    <input
+				      type="text"
+				      id="arrivalPlaceNote"
+				      placeholder="例：正面玄関"
+				    >
+				  </div>
+
+
+				  <div class="form-group">
+				    <label for="arrivalDistanceKm">
+				      この区間の走行距離
+				    </label>
+
+				    <div class="number-unit-row">
+				      <input
+				        type="number"
+				        id="arrivalDistanceKm"
+				        min="0"
+				        step="0.1"
+				        inputmode="decimal"
+				        placeholder="0.0"
+				      >
+
+				      <span>
+				        km
+				      </span>
+				    </div>
+				  </div>
+
+
+				  <div class="form-group">
+				    <label for="arrivalOdometerKm">
+				      到着時メーター
+				    </label>
+
+				    <div class="number-unit-row">
+				      <input
+				        type="number"
+				        id="arrivalOdometerKm"
+				        min="0"
+				        step="0.1"
+				        inputmode="decimal"
+				        placeholder="任意"
+				      >
+
+				      <span>
+				        km
+				      </span>
+				    </div>
+				  </div>
+
+
+				  <button
+				    type="button"
+				    id="viaArrivalButton"
+				    class="via-arrival-button"
+				    onclick="arriveAtOutingViaPoint_()"
+				  >
+				    経由地に到着
+				  </button>
+
+				</div>
+
+				<div
+				  id="outingWaitingArea"
+				  class="outing-operation-area hidden"
+				>
+
+				  <div class="waiting-icon">
+				    📍
+				  </div>
+
+				  <h3>
+				    経由地へ到着しました
+				  </h3>
+
+				  <div class="started-information">
+
+				    <div>
+				      <span>
+				        現在場所
+				      </span>
+
+				      <strong id="waitingCurrentPlace">
+				        ―
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        現在の状態
+				      </span>
+
+				      <strong>
+				        待機中
+				      </strong>
+				    </div>
+
+				    <div>
+				      <span>
+				        移動時間
+				      </span>
+
+				      <strong id="waitingMovementMinutes">
+				        ―
+				      </strong>
+				    </div>
+
+				  </div>
+
+				  <p>
+				    次に移動するときは、
+				    「次の場所へ出発」を登録します。
+				  </p>
+
+				</div>
+
+
       </section>
 
 
@@ -370,7 +547,7 @@
 
 
 <script src="./common.js?v=20260801-2"></script>
-<script src="./outing.js?v=20260801-2"></script>
+<script src="./outing.js?v=20260801-3"></script>
 
 </body>
 </html>
