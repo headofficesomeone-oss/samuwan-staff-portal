@@ -393,3 +393,32 @@ body {
   font-size: 30px;
 }
 
+.next-departure-form {
+  margin-top: 24px;
+  padding-top: 22px;
+
+  border-top:
+    1px solid #dce6df;
+}
+
+.next-departure-button {
+  width: 100%;
+  min-height: 62px;
+
+  border: none;
+  border-radius: 12px;
+
+  color: #ffffff;
+  background: #e58b32;
+
+  font-size: 19px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.next-departure-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+

@@ -527,6 +527,92 @@
 				    「次の場所へ出発」を登録します。
 				  </p>
 
+					<div class="next-departure-form">
+
+					  <div class="form-group">
+					    <label for="nextTransport">
+					      次の移動手段
+					      <span class="required">必須</span>
+					    </label>
+
+					    <select id="nextTransport">
+					      <option value="">
+					        選択してください
+					      </option>
+
+					      <option value="徒歩">徒歩</option>
+					      <option value="社用車">社用車</option>
+					      <option value="自家用車">自家用車</option>
+					      <option value="有償運送">有償運送</option>
+					      <option value="電車">電車</option>
+					      <option value="バス">バス</option>
+					      <option value="タクシー">タクシー</option>
+					      <option value="その他">その他</option>
+					    </select>
+					  </div>
+
+
+					  <label class="check-card">
+					    <input
+					      type="checkbox"
+					      id="nextCurrentUserIsDriver"
+					    >
+
+					    <span>
+					      入力者本人が運転します
+					    </span>
+					  </label>
+
+
+					  <label class="check-card">
+					    <input
+					      type="checkbox"
+					      id="nextPaidTransport"
+					    >
+
+					    <span>
+					      有償運送の対象です
+					    </span>
+					  </label>
+
+
+					  <div class="form-group">
+					    <label for="nextVehicleName">
+					      使用車両
+					    </label>
+
+					    <input
+					      type="text"
+					      id="nextVehicleName"
+					      placeholder="社用車名・車両番号など"
+					    >
+					  </div>
+
+
+					  <div class="form-group">
+					    <label for="nextSupportDetail">
+					      移動中の介助内容
+					    </label>
+
+					    <textarea
+					      id="nextSupportDetail"
+					      rows="3"
+					      placeholder="必要な介助や注意事項"
+					    ></textarea>
+					  </div>
+
+
+					  <button
+					    type="button"
+					    id="nextDepartureButton"
+					    class="next-departure-button"
+					    onclick="departNextOutingRoute_()"
+					  >
+					    次の場所へ出発
+					  </button>
+
+					</div>
+
 				</div>
 
 
@@ -547,7 +633,8 @@
 
 
 <script src="./common.js?v=20260801-2"></script>
-<script src="./outing.js?v=20260801-3"></script>
+<script src="./outing.js?v=20260801-4"></script>
 
 </body>
 </html>
+
