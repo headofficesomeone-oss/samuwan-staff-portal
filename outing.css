@@ -1,0 +1,319 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4faf6;
+  color: #22303c;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.outing-page {
+  width: 100%;
+  max-width: 760px;
+
+  margin: 0 auto;
+  padding: 24px 14px 40px;
+}
+
+.outing-card {
+  padding: 28px;
+
+  border-radius: 22px;
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 36px
+    rgba(34, 48, 60, 0.1);
+}
+
+.outing-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  padding-bottom: 22px;
+
+  border-bottom:
+    1px solid #e2e9e5;
+}
+
+.outing-heading-icon {
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: #eaf7ef;
+
+  font-size: 29px;
+}
+
+.outing-heading h1 {
+  margin: 0 0 6px;
+  font-size: 25px;
+}
+
+.outing-heading p {
+  margin: 0;
+  color: #66746c;
+}
+
+.outing-section {
+  margin-top: 26px;
+}
+
+.outing-section h2 {
+  margin: 0 0 8px;
+  font-size: 21px;
+}
+
+.section-description {
+  margin: 0 0 22px;
+
+  color: #68756e;
+  line-height: 1.7;
+}
+
+.form-group {
+  margin-bottom: 19px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.required {
+  margin-left: 6px;
+  color: #c94b45;
+  font-size: 12px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+
+  border:
+    1px solid #ccd7d0;
+
+  border-radius: 10px;
+
+  padding: 13px 14px;
+
+  color: #22303c;
+  background: #ffffff;
+
+  font: inherit;
+}
+
+.form-group select,
+.form-group input {
+  min-height: 50px;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.check-card {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-bottom: 13px;
+  padding: 13px 15px;
+
+  border:
+    1px solid #d8e4dc;
+
+  border-radius: 12px;
+
+  background: #f8fbf9;
+
+  font-weight: 700;
+}
+
+.check-card input {
+  width: 21px;
+  height: 21px;
+}
+
+.start-confirmation-box {
+  margin: 22px 0 15px;
+  padding: 15px;
+
+  border-radius: 12px;
+
+  color: #3e6950;
+  background: #edf8f1;
+
+  line-height: 1.6;
+}
+
+.outing-start-button {
+  width: 100%;
+  min-height: 64px;
+
+  border: none;
+  border-radius: 13px;
+
+  color: #ffffff;
+  background: #2fa85a;
+
+  font-size: 20px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.outing-start-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.outing-back-button {
+  width: 100%;
+  min-height: 54px;
+
+  margin-top: 18px;
+
+  border:
+    1px solid #ccd7d0;
+
+  border-radius: 12px;
+
+  color: #55616a;
+  background: #ffffff;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.outing-message {
+  margin-top: 20px;
+  padding: 14px 16px;
+
+  border-radius: 11px;
+
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.outing-message.loading {
+  color: #496457;
+  background: #eef6f1;
+}
+
+.outing-message.success {
+  color: #2f7d4b;
+  background: #e7f7ed;
+}
+
+.outing-message.error {
+  color: #b6433f;
+  background: #fff0ef;
+}
+
+.started-icon {
+  width: 76px;
+  height: 76px;
+
+  display: grid;
+  place-items: center;
+
+  margin: 0 auto 18px;
+
+  border-radius: 50%;
+
+  color: #ffffff;
+  background: #2fa85a;
+
+  font-size: 42px;
+  font-weight: 800;
+}
+
+#outingStartedArea {
+  text-align: center;
+}
+
+.started-information {
+  display: grid;
+  gap: 10px;
+
+  margin: 22px 0;
+}
+
+.started-information div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+
+  padding: 14px 15px;
+
+  border-radius: 10px;
+
+  background: #f4f8f5;
+}
+
+.started-information span {
+  color: #6f7b74;
+}
+
+@media (max-width: 640px) {
+  .outing-page {
+    padding:
+      12px 10px 28px;
+  }
+
+  .outing-card {
+    padding:
+      21px 15px;
+
+    border-radius: 17px;
+  }
+
+  .outing-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .outing-heading-icon {
+    width: 46px;
+    height: 46px;
+
+    font-size: 23px;
+  }
+
+  .outing-heading h1 {
+    font-size: 21px;
+  }
+
+  .started-information div {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -365,6 +365,9 @@ function goShiftRequest() {
   location.href = "./irai.html";
 }
 
+function goOutingRoute() {
+  location.href = "./outing.html";
+}
 
 function logoutPortal() {
   clearPortalUser();

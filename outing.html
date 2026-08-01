@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    外出支援・移動行程
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./index.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./outing.css"
+  >
+</head>
+
+<body>
+
+  <main class="outing-page">
+
+    <section class="outing-card">
+
+      <div class="outing-heading">
+        <div class="outing-heading-icon">
+          🚗
+        </div>
+
+        <div>
+          <h1>
+            外出支援・移動行程
+          </h1>
+
+          <p id="outingUserName">
+            職員情報を確認しています
+          </p>
+        </div>
+      </div>
+
+
+      <div
+        id="outingMessage"
+        class="outing-message hidden"
+      ></div>
+
+
+      <section
+        id="outingStartArea"
+        class="outing-section"
+      >
+
+        <h2>
+          外出支援を開始
+        </h2>
+
+        <p class="section-description">
+          利用者と移動内容を確認して、
+          出発時に開始ボタンを押してください。
+        </p>
+
+
+        <form id="outingStartForm">
+
+          <div class="form-group">
+            <label for="outingClient">
+              利用者
+              <span class="required">
+                必須
+              </span>
+            </label>
+
+            <select
+              id="outingClient"
+              required
+            >
+              <option value="">
+                利用者一覧を読み込んでいます
+              </option>
+            </select>
+          </div>
+
+
+          <div class="form-group">
+            <label for="serviceType">
+              サービス区分
+              <span class="required">
+                必須
+              </span>
+            </label>
+
+            <select
+              id="serviceType"
+              required
+            >
+              <option value="">
+                選択してください
+              </option>
+
+              <option value="同行援護">
+                同行援護
+              </option>
+
+              <option value="移動支援">
+                移動支援
+              </option>
+
+              <option value="居宅介護">
+                居宅介護
+              </option>
+
+              <option value="自費">
+                自費
+              </option>
+
+              <option value="その他">
+                その他
+              </option>
+            </select>
+          </div>
+
+
+          <div class="form-group">
+            <label for="serviceContent">
+              支援内容
+            </label>
+
+            <select id="serviceContent">
+              <option value="">
+                選択してください
+              </option>
+
+              <option value="通院">
+                通院
+              </option>
+
+              <option value="買物">
+                買物
+              </option>
+
+              <option value="余暇">
+                余暇
+              </option>
+
+              <option value="行政手続">
+                行政手続
+              </option>
+
+              <option value="その他">
+                その他
+              </option>
+            </select>
+          </div>
+
+
+          <div class="form-group">
+            <label for="startPlace">
+              出発場所
+              <span class="required">
+                必須
+              </span>
+            </label>
+
+            <input
+              type="text"
+              id="startPlace"
+              value="自宅"
+              required
+            >
+          </div>
+
+
+          <div class="form-group">
+            <label for="transport">
+              移動手段
+              <span class="required">
+                必須
+              </span>
+            </label>
+
+            <select
+              id="transport"
+              required
+            >
+              <option value="">
+                選択してください
+              </option>
+
+              <option value="徒歩">
+                徒歩
+              </option>
+
+              <option value="社用車">
+                社用車
+              </option>
+
+              <option value="自家用車">
+                自家用車
+              </option>
+
+              <option value="有償運送">
+                有償運送
+              </option>
+
+              <option value="電車">
+                電車
+              </option>
+
+              <option value="バス">
+                バス
+              </option>
+
+              <option value="タクシー">
+                タクシー
+              </option>
+
+              <option value="その他">
+                その他
+              </option>
+            </select>
+          </div>
+
+
+          <label class="check-card">
+            <input
+              type="checkbox"
+              id="currentUserIsDriver"
+            >
+
+            <span>
+              入力者本人が運転します
+            </span>
+          </label>
+
+
+          <label class="check-card">
+            <input
+              type="checkbox"
+              id="paidTransport"
+            >
+
+            <span>
+              有償運送の対象です
+            </span>
+          </label>
+
+
+          <div class="form-group">
+            <label for="vehicleName">
+              使用車両
+            </label>
+
+            <input
+              type="text"
+              id="vehicleName"
+              placeholder="社用車名・車両番号など"
+            >
+          </div>
+
+
+          <div class="form-group">
+            <label for="supportDetail">
+              移動中の介助内容
+            </label>
+
+            <textarea
+              id="supportDetail"
+              rows="3"
+              placeholder="必要な介助や注意事項"
+            ></textarea>
+          </div>
+
+
+          <div class="start-confirmation-box">
+            <strong>
+              開始ボタンを押した時刻が、
+              最初の出発時刻になります。
+            </strong>
+          </div>
+
+
+          <button
+            type="submit"
+            id="outingStartButton"
+            class="outing-start-button"
+          >
+            自宅等を出発
+          </button>
+
+        </form>
+
+      </section>
+
+
+      <section
+        id="outingStartedArea"
+        class="outing-section hidden"
+      >
+
+        <div class="started-icon">
+          ✓
+        </div>
+
+        <h2>
+          外出支援を開始しました
+        </h2>
+
+        <div class="started-information">
+
+          <div>
+            <span>
+              外出支援実績ID
+            </span>
+
+            <strong id="startedOutingId">
+              ―
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              行程ID
+            </span>
+
+            <strong id="startedRouteId">
+              ―
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              現在の状態
+            </span>
+
+            <strong>
+              移動中
+            </strong>
+          </div>
+
+        </div>
+
+        <p>
+          次は、目的地へ到着した際に
+          「経由地に到着」または
+          「自宅等に到着」を登録します。
+        </p>
+
+      </section>
+
+
+      <button
+        type="button"
+        class="outing-back-button"
+        onclick="location.href='./index.html'"
+      >
+        職員ポータルへ戻る
+      </button>
+
+    </section>
+
+  </main>
+
+
+  <script src="./common.js"></script>
+  <script src="./outing.js"></script>
+
+</body>
+</html>
