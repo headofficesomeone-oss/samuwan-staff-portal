@@ -1,0 +1,731 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #22303c;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f3fbf7 0%,
+      #ffffff 100%
+    );
+
+  min-height: 100vh;
+}
+
+
+/* ================================
+   ヘッダー
+================================ */
+
+.maintenance-header {
+  min-height: 72px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 12px 22px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 2px 14px
+    rgba(0, 0, 0, 0.06);
+
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.maintenance-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.maintenance-logo-mark {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  color: #ffffff;
+  background: #2fa85a;
+
+  font-size: 22px;
+}
+
+.maintenance-company {
+  color: #2fa85a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.maintenance-page-name {
+  margin-top: 2px;
+
+  color: #22303c;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+
+/* ================================
+   ページ
+================================ */
+
+.maintenance-page {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 34px auto;
+
+  padding: 0 16px 40px;
+}
+
+.maintenance-card {
+  padding: 34px;
+
+  background: #ffffff;
+
+  border-radius: 24px;
+
+  box-shadow:
+    0 18px 40px
+    rgba(34, 48, 60, 0.1);
+}
+
+
+/* ================================
+   タイトル
+================================ */
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+
+  padding-bottom: 28px;
+
+  border-bottom:
+    1px solid #e4e9ec;
+}
+
+.heading-icon {
+  width: 64px;
+  height: 64px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  color: #2fa85a;
+  background: #eaf7ef;
+
+  font-size: 30px;
+}
+
+.page-heading h1 {
+  margin: 2px 0 8px;
+
+  font-size: 26px;
+}
+
+.page-heading p {
+  margin: 0;
+
+  color: #68757e;
+
+  line-height: 1.7;
+}
+
+
+/* ================================
+   メッセージ
+================================ */
+
+.message-box {
+  margin-top: 24px;
+  padding: 14px 16px;
+
+  border-radius: 10px;
+
+  font-weight: 700;
+
+  line-height: 1.6;
+}
+
+.message-box.hidden {
+  display: none;
+}
+
+.message-box.loading {
+  color: #496457;
+  background: #f0f7f3;
+
+  border:
+    1px solid #cfe1d6;
+}
+
+.message-box.success {
+  color: #2f7d4b;
+  background: #eaf7ef;
+
+  border:
+    1px solid #a7dfbb;
+}
+
+.message-box.error {
+  color: #b6433f;
+  background: #fff1f0;
+
+  border:
+    1px solid #f0a5a2;
+}
+
+
+/* ================================
+   環境表示
+================================ */
+
+.environment-box {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+
+  margin-top: 26px;
+}
+
+.environment-item {
+  min-height: 82px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 16px 18px;
+
+  border:
+    1px solid #dce7e0;
+
+  border-radius: 14px;
+
+  background: #f7fbf8;
+}
+
+.environment-label {
+  margin-bottom: 6px;
+
+  color: #748078;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.environment-item strong {
+  color: #2f7d4b;
+
+  font-size: 18px;
+}
+
+
+/* ================================
+   件数表示
+================================ */
+
+.status-section {
+  margin-top: 34px;
+}
+
+.status-section h2 {
+  margin: 0 0 18px;
+
+  font-size: 21px;
+}
+
+.status-card {
+  padding: 22px;
+
+  border:
+    1px solid #dce7e0;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 22px
+    rgba(34, 48, 60, 0.06);
+}
+
+.status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.status-card h3 {
+  margin: 0 0 5px;
+
+  font-size: 19px;
+}
+
+.status-card p {
+  margin: 0;
+
+  color: #7b8790;
+
+  font-size: 13px;
+}
+
+.total-count {
+  flex-shrink: 0;
+
+  color: #2fa85a;
+
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.count-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+.count-item {
+  padding: 16px 12px;
+
+  text-align: center;
+
+  border-radius: 12px;
+
+  background: #f4f8f5;
+}
+
+.count-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #728078;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.count-item strong {
+  font-size: 22px;
+}
+
+
+/* ================================
+   基本シフト・支援依頼
+================================ */
+
+.simple-status-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+
+  margin-top: 16px;
+}
+
+.simple-status-card {
+  display: grid;
+
+  grid-template-columns:
+    48px 1fr auto;
+
+  align-items: center;
+
+  column-gap: 14px;
+}
+
+.simple-status-icon {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #edf7f1;
+
+  font-size: 24px;
+}
+
+.simple-status-text {
+  min-width: 0;
+}
+
+.simple-count {
+  color: #2fa85a;
+
+  font-size: 25px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+/* ================================
+   ボタン
+================================ */
+
+.main-button {
+  width: 100%;
+  min-height: 62px;
+
+  margin-top: 28px;
+
+  border: none;
+  border-radius: 12px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #35b967,
+      #2fa85a
+    );
+
+  font-size: 20px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.main-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.back-button {
+  width: 100%;
+  min-height: 54px;
+
+  margin-top: 14px;
+
+  border:
+    1px solid #cfd8df;
+
+  border-radius: 12px;
+
+  color: #55616a;
+  background: #ffffff;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* ================================
+   スマートフォン
+================================ */
+
+@media (max-width: 640px) {
+
+  .backup-section {
+    padding: 19px 15px;
+  }
+
+  .backup-heading {
+    flex-direction: column;
+  }
+
+  .safe-badge {
+    align-self: flex-start;
+  }
+
+  .last-backup-area {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  
+  .maintenance-header {
+    min-height: 64px;
+
+    padding:
+      10px 14px;
+  }
+
+  .maintenance-logo-mark {
+    width: 36px;
+    height: 36px;
+
+    font-size: 20px;
+  }
+
+  .maintenance-company {
+    font-size: 12px;
+  }
+
+  .maintenance-page-name {
+    font-size: 15px;
+  }
+
+  .maintenance-page {
+    margin:
+      20px auto;
+
+    padding:
+      0 12px 30px;
+  }
+
+  .maintenance-card {
+    padding:
+      22px 16px;
+
+    border-radius: 18px;
+  }
+
+  .page-heading {
+    gap: 13px;
+
+    padding-bottom: 22px;
+  }
+
+  .heading-icon {
+    width: 48px;
+    height: 48px;
+
+    font-size: 23px;
+  }
+
+  .page-heading h1 {
+    font-size: 21px;
+  }
+
+  .page-heading p {
+    font-size: 14px;
+  }
+
+  .environment-box {
+    grid-template-columns:
+      1fr;
+  }
+
+  .count-grid {
+    grid-template-columns:
+      repeat(3, 1fr);
+
+    gap: 8px;
+  }
+
+  .count-item {
+    padding:
+      14px 6px;
+  }
+
+  .count-item strong {
+    font-size: 18px;
+  }
+
+  .simple-status-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .simple-status-card {
+    grid-template-columns:
+      44px 1fr auto;
+
+    padding:
+      18px 15px;
+  }
+
+  .simple-status-icon {
+    width: 44px;
+    height: 44px;
+
+    font-size: 21px;
+  }
+
+  .simple-count {
+    font-size: 22px;
+  }
+}
+
+/* ================================
+   バックアップ
+================================ */
+
+.backup-section {
+  margin-top: 32px;
+  padding: 24px;
+
+  border:
+    1px solid #cfe2d6;
+
+  border-radius: 18px;
+
+  background: #f8fcf9;
+}
+
+.backup-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
+.backup-heading h2 {
+  margin: 0 0 7px;
+
+  font-size: 21px;
+}
+
+.backup-heading p {
+  margin: 0;
+
+  color: #6f7c74;
+
+  line-height: 1.6;
+}
+
+.safe-badge {
+  flex-shrink: 0;
+
+  padding: 6px 10px;
+
+  border:
+    1px solid #8dcba5;
+
+  border-radius: 999px;
+
+  color: #2f7d4b;
+  background: #eaf7ef;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.last-backup-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 8px 14px;
+
+  margin-top: 20px;
+  padding: 14px 16px;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+}
+
+.last-backup-label {
+  color: #748078;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.backup-folder-link {
+  color: #2f7d4b;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  text-decoration: none;
+}
+
+.backup-folder-link:hover {
+  text-decoration: underline;
+}
+
+.confirmation-label {
+  display: block;
+
+  margin-top: 20px;
+  margin-bottom: 8px;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.confirmation-input {
+  width: 100%;
+  height: 52px;
+
+  padding: 0 14px;
+
+  border:
+    1px solid #cfd8df;
+
+  border-radius: 10px;
+
+  font-size: 16px;
+}
+
+.confirmation-input:focus {
+  outline: none;
+
+  border-color: #2fa85a;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(47, 168, 90, 0.14);
+}
+
+.backup-button {
+  width: 100%;
+  min-height: 56px;
+
+  margin-top: 14px;
+
+  border:
+    1px solid #2fa85a;
+
+  border-radius: 12px;
+
+  color: #2fa85a;
+  background: #ffffff;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.backup-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+

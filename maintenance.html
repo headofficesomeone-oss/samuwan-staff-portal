@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    初期セットアップ・メンテナンス
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./maintenance.css"
+  >
+</head>
+
+<body>
+
+  <header class="maintenance-header">
+    <div class="maintenance-logo">
+      <span class="maintenance-logo-mark">
+        ⚙
+      </span>
+
+      <div>
+        <div class="maintenance-company">
+          職員ポータル
+        </div>
+
+        <div class="maintenance-page-name">
+          初期セットアップ・メンテナンス
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+  <main class="maintenance-page">
+
+    <section class="maintenance-card">
+
+      <div class="page-heading">
+        <div class="heading-icon">
+          ⚙
+        </div>
+
+        <div>
+          <h1>
+            初期セットアップ・メンテナンス
+          </h1>
+
+          <p>
+            現在のデータ件数を確認します。
+            この画面ではデータの削除や変更は行いません。
+          </p>
+        </div>
+      </div>
+
+
+      <div
+        id="messageBox"
+        class="message-box hidden"
+      ></div>
+
+
+      <section class="environment-box">
+        <div class="environment-item">
+          <span class="environment-label">
+            現在の環境
+          </span>
+
+          <strong id="environmentName">
+            確認中
+          </strong>
+        </div>
+
+        <div class="environment-item">
+          <span class="environment-label">
+            最終確認日時
+          </span>
+
+          <strong id="checkedAt">
+            ―
+          </strong>
+        </div>
+      </section>
+
+
+      <section class="status-section">
+
+        <h2>
+          データ状況
+        </h2>
+
+
+        <div class="status-card shift-k-card">
+          <div class="status-card-header">
+            <div>
+              <h3>規定値</h3>
+
+              <p>
+                SHIFT_Kの登録状況
+              </p>
+            </div>
+
+            <div
+              id="shiftKTotal"
+              class="total-count"
+            >
+              ―
+            </div>
+          </div>
+
+
+          <div class="count-grid">
+
+            <div class="count-item">
+              <span class="count-label">
+                有効
+              </span>
+
+              <strong id="shiftKActive">
+                ―
+              </strong>
+            </div>
+
+
+            <div class="count-item">
+              <span class="count-label">
+                無効
+              </span>
+
+              <strong id="shiftKInactive">
+                ―
+              </strong>
+            </div>
+
+
+            <div class="count-item">
+              <span class="count-label">
+                履歴
+              </span>
+
+              <strong id="shiftKHistory">
+                ―
+              </strong>
+            </div>
+
+          </div>
+        </div>
+
+
+        <div class="simple-status-grid">
+
+          <div class="status-card simple-status-card">
+            <div class="simple-status-icon">
+              📅
+            </div>
+
+            <div class="simple-status-text">
+              <h3>
+                基本シフト
+              </h3>
+
+              <p>
+                SHIFT_WEEK
+              </p>
+            </div>
+
+            <strong
+              id="shiftWeekTotal"
+              class="simple-count"
+            >
+              ―
+            </strong>
+          </div>
+
+
+          <div class="status-card simple-status-card">
+            <div class="simple-status-icon">
+              📝
+            </div>
+
+            <div class="simple-status-text">
+              <h3>
+                支援依頼
+              </h3>
+
+              <p>
+                依頼情報
+              </p>
+            </div>
+
+            <strong
+              id="requestTotal"
+              class="simple-count"
+            >
+              ―
+            </strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="backup-section">
+
+        <div class="backup-heading">
+          <div>
+            <h2>
+              初期化前バックアップ
+            </h2>
+
+            <p>
+              規定値・基本シフト・支援依頼を含む
+              スプレッドシートを複製します。
+            </p>
+          </div>
+
+          <span class="safe-badge">
+            データ削除なし
+          </span>
+        </div>
+
+
+        <div
+          id="lastBackupArea"
+          class="last-backup-area"
+        >
+          <span class="last-backup-label">
+            最後のバックアップ
+          </span>
+
+          <strong id="lastBackupText">
+            まだ確認していません
+          </strong>
+
+          <a
+            id="backupFolderLink"
+            class="backup-folder-link hidden"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            バックアップフォルダを開く
+          </a>
+        </div>
+
+
+        <label
+          for="backupConfirmation"
+          class="confirmation-label"
+        >
+          確認のため
+          「バックアップを作成」
+          と入力してください
+        </label>
+
+        <input
+          type="text"
+          id="backupConfirmation"
+          class="confirmation-input"
+          autocomplete="off"
+          placeholder="バックアップを作成"
+        >
+
+
+        <button
+          type="button"
+          id="backupButton"
+          class="backup-button"
+        >
+          バックアップを作成
+        </button>
+
+      </section>
+
+
+
+      <button
+        type="button"
+        id="refreshButton"
+        class="main-button"
+      >
+        最新状態を取得
+      </button>
+
+      <button
+        type="button"
+        class="back-button"
+        onclick="location.href='./index.html'"
+      >
+        職員ポータルへ戻る
+      </button>
+
+    </section>
+
+  </main>
+
+
+  <script src="./maintenance.js"></script>
+
+</body>
+</html>
