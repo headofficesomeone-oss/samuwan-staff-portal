@@ -1693,16 +1693,12 @@ async function departNextOutingRoute_() {
             isDriving:
               currentUserIsDriver,
 
-            driverId:
-              currentUserIsDriver
-                ? outingCurrentUser.employeeId
-                : "",
+						driverId:
+						  driverId,
 
-            driverName:
-              currentUserIsDriver
-                ? outingCurrentUser.employeeName
-                : "",
-
+						driverName:
+						  driverName,
+  
             driverChanged:
               false,
 
