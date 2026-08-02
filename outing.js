@@ -250,33 +250,51 @@ async function handleOutingStart_(
       "supportDetail"
     );
 
-  const currentUserIsDriver =
-    document
-      .getElementById(
-        "currentUserIsDriver"
-      )
-      .checked;
+	const currentUserIsDriver =
+	  document
+	    .getElementById(
+	      "currentUserIsDriver"
+	    )
+	    .checked;
 
-  const isPaidTransport =
-    document
-      .getElementById(
-        "paidTransport"
-      )
-      .checked;
+	const enteredDriverName =
+	  getOutingInputValue_(
+	    "driverName"
+	  );
 
-  if (
-    !userId ||
-    !serviceType ||
-    !startPlace ||
-    !transport
-  ) {
-    alert(
-      "利用者、サービス区分、" +
-      "出発場所、移動手段を確認してください。"
-    );
+	driverId:
+	  driverId,
 
-    return;
-  }
+	driverName:
+	  driverName,
+  
+	const isPaidTransport =
+	  transport === "有償運送";
+
+	if (
+	  !userId ||
+	  !serviceType ||
+	  !startPlace ||
+	  !transport
+	) {
+	  alert(
+	    "利用者、サービス区分、" +
+	    "出発場所、移動手段を確認してください。"
+	  );
+
+	  return;
+	}
+
+	if (
+	  transport === "有償運送" &&
+	  !driverName
+	) {
+	  alert(
+	    "有償運送の場合は、運転手名を確認してください。"
+	  );
+
+	  return;
+	}
 
   const confirmed =
     confirm(
@@ -363,16 +381,12 @@ async function handleOutingStart_(
         isDriving:
           currentUserIsDriver,
 
-        driverId:
-          currentUserIsDriver
-            ? outingCurrentUser.employeeId
-            : "",
+				driverId:
+				  driverId,
 
-        driverName:
-          currentUserIsDriver
-            ? outingCurrentUser.employeeName
-            : "",
-
+				driverName:
+				  driverName,
+  
         vehicleName:
           vehicleName,
 
@@ -1577,19 +1591,30 @@ async function departNextOutingRoute_() {
       "nextSupportDetail"
     );
 
-  const currentUserIsDriver =
-    document
-      .getElementById(
-        "nextCurrentUserIsDriver"
-      )
-      .checked;
+	const currentUserIsDriver =
+	  document
+	    .getElementById(
+	      "nextCurrentUserIsDriver"
+	    )
+	    .checked;
 
-  const isPaidTransport =
-    document
-      .getElementById(
-        "nextPaidTransport"
-      )
-      .checked;
+	const enteredDriverName =
+	  getOutingInputValue_(
+	    "nextDriverName"
+	  );
+
+	const driverName =
+	  currentUserIsDriver
+	    ? outingCurrentUser.employeeName
+	    : enteredDriverName;
+
+	const driverId =
+	  currentUserIsDriver
+	    ? outingCurrentUser.employeeId
+	    : "";
+
+	const isPaidTransport =
+	  transport === "有償運送";
 
   if (!transport) {
     alert(
@@ -1598,6 +1623,17 @@ async function departNextOutingRoute_() {
 
     return;
   }
+
+	if (
+	  transport === "有償運送" &&
+	  !driverName
+	) {
+	  alert(
+	    "有償運送の場合は、運転手名を確認してください。"
+	  );
+
+	  return;
+	}
 
   const confirmed =
     confirm(
@@ -1801,11 +1837,12 @@ async function departNextOutingRoute_() {
  * 次の出発入力欄を初期化します。
  */
 function clearNextDepartureInputs_() {
-  const ids = [
-    "nextTransport",
-    "nextVehicleName",
-    "nextSupportDetail"
-  ];
+	const ids = [
+	  "nextTransport",
+	  "nextDriverName",
+	  "nextVehicleName",
+	  "nextSupportDetail"
+	];
 
   ids.forEach(
     function(id) {
@@ -1823,18 +1860,12 @@ function clearNextDepartureInputs_() {
       "nextCurrentUserIsDriver"
     );
 
-  const paid =
-    document.getElementById(
-      "nextPaidTransport"
-    );
-
   if (driver) {
     driver.checked = false;
   }
 
-  if (paid) {
-    paid.checked = false;
-  }
+	updateNextOutingDriverNameInput_();
+
 }
 
 
@@ -2421,4 +2452,140 @@ async function cancelLastDepartureAndFinish_() {
     }
   }
 }
+
+/**
+ * 最初の出発画面で、
+ * 本人運転チェックと運転手名欄を連動します。
+ */
+function updateOutingDriverNameInput_() {
+  const driverCheckbox =
+    document.getElementById(
+      "currentUserIsDriver"
+    );
+
+  const driverNameInput =
+    document.getElementById(
+      "driverName"
+    );
+
+  const help =
+    document.getElementById(
+      "driverNameHelp"
+    );
+
+  if (
+    !driverCheckbox ||
+    !driverNameInput
+  ) {
+    return;
+  }
+
+  if (driverCheckbox.checked) {
+    driverNameInput.value =
+      outingCurrentUser &&
+      outingCurrentUser.employeeName
+        ? outingCurrentUser.employeeName
+        : "";
+
+    driverNameInput.disabled = true;
+
+    if (help) {
+      help.textContent =
+        "入力者本人を運転手として登録します";
+    }
+
+  } else {
+    /*
+     * 本人運転のチェックを外したときは、
+     * 自動入力された本人名だけを消します。
+     */
+    const currentEmployeeName =
+      outingCurrentUser &&
+      outingCurrentUser.employeeName
+        ? outingCurrentUser.employeeName
+        : "";
+
+    if (
+      driverNameInput.disabled ||
+      driverNameInput.value ===
+        currentEmployeeName
+    ) {
+      driverNameInput.value = "";
+    }
+
+    driverNameInput.disabled = false;
+
+    if (help) {
+      help.textContent =
+        "入力者本人が運転しない場合に入力してください";
+    }
+  }
+}
+
+
+/**
+ * 次の出発画面で、
+ * 本人運転チェックと運転手名欄を連動します。
+ */
+function updateNextOutingDriverNameInput_() {
+  const driverCheckbox =
+    document.getElementById(
+      "nextCurrentUserIsDriver"
+    );
+
+  const driverNameInput =
+    document.getElementById(
+      "nextDriverName"
+    );
+
+  const help =
+    document.getElementById(
+      "nextDriverNameHelp"
+    );
+
+  if (
+    !driverCheckbox ||
+    !driverNameInput
+  ) {
+    return;
+  }
+
+  if (driverCheckbox.checked) {
+    driverNameInput.value =
+      outingCurrentUser &&
+      outingCurrentUser.employeeName
+        ? outingCurrentUser.employeeName
+        : "";
+
+    driverNameInput.disabled = true;
+
+    if (help) {
+      help.textContent =
+        "入力者本人を運転手として登録します";
+    }
+
+  } else {
+    const currentEmployeeName =
+      outingCurrentUser &&
+      outingCurrentUser.employeeName
+        ? outingCurrentUser.employeeName
+        : "";
+
+    if (
+      driverNameInput.disabled ||
+      driverNameInput.value ===
+        currentEmployeeName
+    ) {
+      driverNameInput.value = "";
+    }
+
+    driverNameInput.disabled = false;
+
+    if (help) {
+      help.textContent =
+        "入力者本人が運転しない場合に入力してください";
+    }
+  }
+}
+
 

@@ -233,6 +233,7 @@
             <input
               type="checkbox"
               id="currentUserIsDriver"
+						  onchange="updateOutingDriverNameInput_()"              
             >
 
             <span>
@@ -241,16 +242,24 @@
           </label>
 
 
-          <label class="check-card">
-            <input
-              type="checkbox"
-              id="paidTransport"
-            >
+					<div class="form-field">
 
-            <span>
-              有償運送の対象です
-            </span>
-          </label>
+					  <label for="driverName">
+					    運転手名
+					  </label>
+
+					  <input
+					    type="text"
+					    id="driverName"
+					    placeholder="運転手名を入力してください"
+					    autocomplete="off"
+					  >
+
+					  <small id="driverNameHelp">
+					    入力者本人が運転しない場合に入力してください
+					  </small>
+
+					</div>
 
 
           <div class="form-group">
@@ -659,6 +668,7 @@
 					    <input
 					      type="checkbox"
 					      id="nextCurrentUserIsDriver"
+					      onchange="updateNextOutingDriverNameInput_()"
 					    >
 
 					    <span>
@@ -667,16 +677,24 @@
 					  </label>
 
 
-					  <label class="check-card">
-					    <input
-					      type="checkbox"
-					      id="nextPaidTransport"
-					    >
+						<div class="form-field">
 
-					    <span>
-					      有償運送の対象です
-					    </span>
-					  </label>
+						  <label for="nextDriverName">
+						    運転手名
+						  </label>
+
+						  <input
+						    type="text"
+						    id="nextDriverName"
+						    placeholder="運転手名を入力してください"
+						    autocomplete="off"
+						  >
+
+						  <small id="nextDriverNameHelp">
+						    入力者本人が運転しない場合に入力してください
+						  </small>
+
+						</div>
 
 
 					  <div class="form-group">
@@ -870,8 +888,9 @@
 
 
 <script src="./common.js?v=20260801-2"></script>
-<script src="./outing.js?v=20260802-3"></script>
+<script src="./outing.js?v=20260802-4"></script>
 
 </body>
 </html>
+
 
