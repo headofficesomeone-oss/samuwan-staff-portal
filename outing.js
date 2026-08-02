@@ -262,15 +262,19 @@ async function handleOutingStart_(
 	    "driverName"
 	  );
 
-	driverId:
-	  driverId,
+	const driverName =
+	  currentUserIsDriver
+	    ? outingCurrentUser.employeeName
+	    : enteredDriverName;
 
-	driverName:
-	  driverName,
-  
+	const driverId =
+	  currentUserIsDriver
+	    ? outingCurrentUser.employeeId
+	    : "";
+
 	const isPaidTransport =
 	  transport === "有償運送";
-
+	  
 	if (
 	  !userId ||
 	  !serviceType ||
