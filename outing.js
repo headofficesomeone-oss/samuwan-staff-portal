@@ -474,6 +474,10 @@ async function handleOutingStart_(
       result.routeId
     );
 
+		updateOutingCurrentStatus_(
+		  activeOuting
+		);
+
     document
       .getElementById(
         "outingStartArea"
@@ -1478,6 +1482,10 @@ function showSavedActiveOuting_(
     activeOuting.routeId
   );
 
+	updateOutingCurrentStatus_(
+	  activeOuting
+	);
+
   document
     .getElementById(
       "outingStartArea"
@@ -1753,6 +1761,10 @@ async function departNextOutingRoute_() {
 
     activeOuting.movementStatus =
       "移動中";
+
+		updateOutingCurrentStatus_(
+		  activeOuting
+		);
 
     delete activeOuting.arrivalType;
 
@@ -2184,6 +2196,10 @@ async function undoOutingFinishFromSummary_() {
         "経由地"
     };
 
+		updateOutingCurrentStatus_(
+		  activeOuting
+		);
+
     localStorage.setItem(
       "staffPortalActiveOuting",
       JSON.stringify(
@@ -2586,6 +2602,60 @@ function updateNextOutingDriverNameInput_() {
         "入力者本人が運転しない場合に入力してください";
     }
   }
+}
+
+/**
+ * 外出支援の現在状態を
+ * 1行または2行の案内として表示します。
+ */
+function updateOutingCurrentStatus_(
+  activeOuting
+) {
+  const statusText =
+    document.getElementById(
+      "outingCurrentStatusText"
+    );
+
+  if (
+    !statusText ||
+    !activeOuting
+  ) {
+    return;
+  }
+
+  if (
+    activeOuting.movementStatus ===
+    "待機中"
+  ) {
+    const currentPlace =
+      String(
+        activeOuting.currentPlace || ""
+      ).trim();
+
+    statusText.textContent =
+      currentPlace
+        ? (
+            "現在、" +
+            currentPlace +
+            "で待機中です"
+          )
+        : "現在、到着地点で待機中です";
+
+    return;
+  }
+
+  if (
+    activeOuting.movementStatus ===
+    "移動中"
+  ) {
+    statusText.textContent =
+      "現在、目的地へ移動中です";
+
+    return;
+  }
+
+  statusText.textContent =
+    "現在、外出支援を実施中です";
 }
 
 

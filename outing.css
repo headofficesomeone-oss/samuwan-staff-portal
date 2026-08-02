@@ -724,3 +724,41 @@ body {
   cursor: wait;
 }
 
+.outing-current-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  margin: 22px 0;
+  padding: 17px 20px;
+
+  border-radius: 12px;
+
+  background: #f4f8f5;
+
+  color: #17283a;
+
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.outing-current-ids {
+  white-space: nowrap;
+
+  color: #1d344b;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .outing-current-status {
+    flex-direction: column;
+    gap: 4px;
+
+    padding: 15px 12px;
+
+    text-align: center;
+  }
+}
+

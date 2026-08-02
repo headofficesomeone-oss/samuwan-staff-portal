@@ -20,7 +20,7 @@
 
   <link
     rel="stylesheet"
-    href="./outing.css?v=20260802-1"
+    href="./outing.css?v=20260802-2"
   >
 </head>
 
@@ -322,39 +322,17 @@
           外出支援を開始しました
         </h2>
 
-        <div class="started-information">
+				<div class="outing-current-status">
 
-          <div>
-            <span>
-              外出支援実績ID
-            </span>
+				  <span class="outing-current-ids">
+				    <span id="startedOutingId">―</span>-<span id="startedRouteId">―</span>
+				  </span>
 
-            <strong id="startedOutingId">
-              ―
-            </strong>
-          </div>
+				  <span id="outingCurrentStatusText">
+				    現在、目的地へ移動中です
+				  </span>
 
-          <div>
-            <span>
-              行程ID
-            </span>
-
-            <strong id="startedRouteId">
-              ―
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              現在の状態
-            </span>
-
-            <strong>
-              移動中
-            </strong>
-          </div>
-
-        </div>
+				</div>
 
         <p>
           次は、目的地へ到着した際に
@@ -888,7 +866,7 @@
 
 
 <script src="./common.js?v=20260801-2"></script>
-<script src="./outing.js?v=20260802-6"></script>
+<script src="./outing.js?v=20260802-7"></script>
 
 </body>
 </html>
