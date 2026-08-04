@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css?v=20260801-2">
+  <link rel="stylesheet" href="index.css?v=20260805-1">
 </head>
 <body>
 
@@ -235,6 +235,75 @@
 
 				</div>
 
+				<!-- 事務所操作 -->
+				<div class="office-action-box">
+
+				  <div class="office-action-heading">
+				    <div>
+				      <div class="office-action-title">
+				        🏢 事務所操作
+				      </div>
+
+				      <div class="office-action-description">
+				        事務所の開閉や到着を記録します
+				      </div>
+				    </div>
+				  </div>
+
+				  <div class="office-action-grid">
+
+				    <button
+				      id="officeOpenButton"
+				      class="office-action-button office-open-button"
+				      type="button"
+				      onclick="sendOfficeAction('シャッターを開けました')"
+				    >
+				      <div class="office-action-icon">
+				        🔓
+				      </div>
+
+				      <div class="office-action-label">
+				        シャッターを<br>
+				        開けました
+				      </div>
+				    </button>
+
+				    <button
+				      id="officeArrivalButton"
+				      class="office-action-button office-arrival-button"
+				      type="button"
+				      onclick="sendOfficeAction('事務所に来ました')"
+				    >
+				      <div class="office-action-icon">
+				        👤
+				      </div>
+
+				      <div class="office-action-label">
+				        事務所に<br>
+				        来ました
+				      </div>
+				    </button>
+
+				    <button
+				      id="officeCloseButton"
+				      class="office-action-button office-close-button"
+				      type="button"
+				      onclick="sendOfficeAction('シャッターを閉めました')"
+				    >
+				      <div class="office-action-icon">
+				        🔒
+				      </div>
+
+				      <div class="office-action-label">
+				        シャッターを<br>
+				        閉めました
+				      </div>
+				    </button>
+
+				  </div>
+
+				</div>
+
         <div class="menu-grid">
           <button class="menu-card" onclick="goShiftRequest()">
             <div class="menu-icon">📅</div>
@@ -355,6 +424,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260801-3"></script>
-<script src="./portal.js?v=20260801-3"></script>
+<script src="./portal.js?v=20260805-1"></script>
 </body>
 </html>

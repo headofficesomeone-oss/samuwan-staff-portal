@@ -1306,6 +1306,7 @@ async function sendStaffAction(
 }
 
 
+
 function createStaffActionSendId(
   employeeId,
   shiftId,
@@ -1330,6 +1331,172 @@ function setStaffActionButtonsDisabled(
     "moveButton",
     "enterButton",
     "finishButton"
+  ].forEach(id => {
+    const button =
+      document.getElementById(id);
+
+    if (button) {
+      button.disabled = disabled;
+    }
+  });
+}
+
+/**
+ * 事務所操作を記録します。
+ *
+ * actionType
+ *   シャッターを開けました
+ *   事務所に来ました
+ *   シャッターを閉めました
+ */
+async function sendOfficeAction(
+  actionType
+) {
+  if (!currentUser) {
+    alert(
+      "職員情報を確認できません。"
+    );
+
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      "「" +
+      actionType +
+      "」を記録しますか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  setOfficeActionButtonsDisabled(
+    true
+  );
+
+  try {
+    const deviceTime =
+      new Date().toISOString();
+
+    const sendId =
+      createOfficeActionSendId(
+        currentUser.employeeId,
+        actionType
+      );
+
+    const result =
+      await postGas({
+        action:
+          "recordOfficeAction",
+
+        employeeId:
+          currentUser.employeeId,
+
+        employeeName:
+          currentUser.employeeName,
+
+        actionType:
+          actionType,
+
+        deviceTime:
+          deviceTime,
+
+        sendId:
+          sendId,
+
+        registrationMethod:
+          "職員ポータル",
+
+        note:
+          ""
+      });
+
+    if (!result.success) {
+      throw new Error(
+        result.message ||
+        "事務所操作を登録できませんでした。"
+      );
+    }
+
+    if (result.duplicate) {
+      alert(
+        result.message ||
+        "この操作はすでに登録されています。"
+      );
+
+      return;
+    }
+
+    if (result.warning) {
+      alert(
+        "操作履歴を要確認として記録しました。\n\n" +
+        (
+          result.message ||
+          "現在の事務所状態を確認してください。"
+        )
+      );
+
+      return;
+    }
+
+    alert(
+      result.message ||
+      actionType +
+      "を記録しました。"
+    );
+
+  } catch (error) {
+    console.error(
+      "事務所操作登録エラー",
+      error
+    );
+
+    alert(
+      "事務所操作の登録に失敗しました。\n" +
+      error.message
+    );
+
+  } finally {
+    setOfficeActionButtonsDisabled(
+      false
+    );
+  }
+}
+
+
+/**
+ * 事務所操作の送信IDを作成します。
+ *
+ * ボタンを押すたびに異なるIDを作ります。
+ */
+function createOfficeActionSendId(
+  employeeId,
+  actionType
+) {
+  return [
+    "OFFICE",
+    employeeId,
+    actionType,
+    Date.now(),
+    Math.random()
+      .toString(36)
+      .substring(2, 10)
+  ].join("-");
+}
+
+
+/**
+ * 事務所操作ボタンを
+ * 一括で有効・無効にします。
+ */
+function setOfficeActionButtonsDisabled(
+  disabled
+) {
+  [
+    "officeOpenButton",
+    "officeArrivalButton",
+    "officeCloseButton"
   ].forEach(id => {
     const button =
       document.getElementById(id);
