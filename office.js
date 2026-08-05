@@ -31,7 +31,7 @@ function initializeOfficePage() {
     "officeUserName"
   ).textContent =
     officeUser.employeeName +
-    " さん";
+    "";
 }
 
 
