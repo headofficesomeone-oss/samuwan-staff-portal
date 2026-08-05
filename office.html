@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>事務所開閉</title>
+
+  <link
+    rel="stylesheet"
+    href="./office.css?v=20260805-1"
+  >
+</head>
+
+<body>
+
+  <main class="office-page">
+
+    <section class="office-card">
+
+      <div class="office-header">
+        <div class="office-header-icon">
+          🏢
+        </div>
+
+        <div>
+          <h1>事務所開閉</h1>
+
+          <p id="officeUserName">
+            職員情報を確認しています
+          </p>
+        </div>
+      </div>
+
+
+      <!-- 本人情報がない場合 -->
+      <div
+        id="officeAuthError"
+        class="office-message office-error hidden"
+      >
+        <strong>
+          職員情報を確認できません
+        </strong>
+
+        <p>
+          先に職員ポータルを開いて、
+          本人登録を行ってください。
+        </p>
+
+        <a
+          class="office-portal-link"
+          href="./index.html"
+        >
+          職員ポータルを開く
+        </a>
+      </div>
+
+
+      <!-- 操作ボタン -->
+      <div
+        id="officeActionArea"
+        class="office-action-area hidden"
+      >
+
+        <p class="office-description">
+          実際にシャッターを操作してから、
+          該当するボタンを押してください。
+        </p>
+
+
+        <button
+          id="simpleOfficeOpenButton"
+          class="office-main-button open-button"
+          type="button"
+          onclick="
+            sendSimpleOfficeAction(
+              'シャッターを開けました'
+            )
+          "
+        >
+          <span class="button-icon">
+            🔓
+          </span>
+
+          <span class="button-text">
+            シャッターを<br>
+            開けました
+          </span>
+        </button>
+
+
+        <button
+          id="simpleOfficeCloseButton"
+          class="office-main-button close-button"
+          type="button"
+          onclick="
+            sendSimpleOfficeAction(
+              'シャッターを閉めました'
+            )
+          "
+        >
+          <span class="button-icon">
+            🔒
+          </span>
+
+          <span class="button-text">
+            シャッターを<br>
+            閉めました
+          </span>
+        </button>
+
+      </div>
+
+
+      <!-- 処理中 -->
+      <div
+        id="officeSendingArea"
+        class="office-message office-sending hidden"
+      >
+        <div class="office-spinner"></div>
+
+        <p>
+          登録しています
+        </p>
+      </div>
+
+
+      <!-- 結果表示 -->
+      <div
+        id="officeResultArea"
+        class="office-message hidden"
+      ></div>
+
+
+      <a
+        class="office-back-link"
+        href="./index.html"
+      >
+        職員ポータルへ戻る
+      </a>
+
+    </section>
+
+  </main>
+
+
+  <!--
+    既存ポータルと同じ共通処理を使用します。
+    getSavedPortalUser() と postGas() は
+    common.jsにある前提です。
+  -->
+  <script src="./common.js?v=20260801-3"></script>
+
+  <script src="./office.js?v=20260805-1"></script>
+
+</body>
+</html>

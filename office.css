@@ -1,0 +1,338 @@
+/* ================================
+   事務所開閉 簡易画面
+================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    Meiryo,
+    sans-serif;
+
+  background: #f3f6f4;
+  color: #22303c;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+/* ================================
+   画面全体
+================================ */
+
+.office-page {
+  min-height: 100vh;
+  padding: 24px 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.office-card {
+  width: 100%;
+  max-width: 460px;
+
+  padding: 24px;
+
+  border: 1px solid #dce6df;
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 38px
+    rgba(34, 48, 60, 0.1);
+}
+
+
+/* ================================
+   見出し
+================================ */
+
+.office-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin-bottom: 22px;
+}
+
+.office-header-icon {
+  width: 54px;
+  height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #edf7f0;
+
+  font-size: 28px;
+}
+
+.office-header h1 {
+  margin: 0;
+
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.office-header p {
+  margin: 5px 0 0;
+
+  color: #6f7c84;
+
+  font-size: 14px;
+}
+
+
+/* ================================
+   操作エリア
+================================ */
+
+.office-action-area {
+  display: grid;
+  gap: 16px;
+}
+
+.office-description {
+  margin: 0 0 4px;
+
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  background: #f7faf8;
+
+  color: #56636b;
+
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.office-main-button {
+  width: 100%;
+  min-height: 128px;
+
+  padding: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  border: 2px solid transparent;
+  border-radius: 20px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 20px
+    rgba(34, 48, 60, 0.08);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.office-main-button:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 11px 25px
+    rgba(34, 48, 60, 0.12);
+}
+
+.office-main-button:active {
+  transform: translateY(0);
+}
+
+.office-main-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.open-button {
+  border-color: #9ed3af;
+  background: #eef9f1;
+  color: #155f34;
+}
+
+.close-button {
+  border-color: #e4abab;
+  background: #fff1f1;
+  color: #8a2525;
+}
+
+.button-icon {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.button-text {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: left;
+}
+
+
+/* ================================
+   メッセージ
+================================ */
+
+.office-message {
+  margin-top: 18px;
+  padding: 16px;
+
+  border-radius: 14px;
+
+  font-size: 15px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.office-message p {
+  margin: 8px 0 0;
+}
+
+.office-success {
+  border: 1px solid #a9d7b6;
+  background: #eef9f1;
+  color: #155f34;
+}
+
+.office-error {
+  border: 1px solid #e4b4b4;
+  background: #fff1f1;
+  color: #8a2525;
+}
+
+.office-sending {
+  border: 1px solid #cfd8de;
+  background: #f6f8f9;
+  color: #4f5e67;
+}
+
+
+/* ================================
+   読み込み表示
+================================ */
+
+.office-spinner {
+  width: 30px;
+  height: 30px;
+
+  margin: 0 auto 10px;
+
+  border: 4px solid #dce4e8;
+  border-top-color: #4d8060;
+  border-radius: 50%;
+
+  animation:
+    office-spin 0.8s linear infinite;
+}
+
+@keyframes office-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ================================
+   リンク
+================================ */
+
+.office-portal-link,
+.office-back-link {
+  display: block;
+
+  width: 100%;
+
+  text-align: center;
+  text-decoration: none;
+}
+
+.office-portal-link {
+  margin-top: 14px;
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  background: #376d4a;
+  color: #ffffff;
+
+  font-weight: 700;
+}
+
+.office-back-link {
+  margin-top: 22px;
+
+  color: #5f6e76;
+
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+
+/* ================================
+   スマホ表示
+================================ */
+
+@media (max-width: 520px) {
+  .office-page {
+    padding: 14px 12px;
+    align-items: flex-start;
+  }
+
+  .office-card {
+    margin-top: 10px;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .office-header h1 {
+    font-size: 21px;
+  }
+
+  .office-main-button {
+    min-height: 118px;
+    padding: 16px 12px;
+  }
+
+  .button-icon {
+    font-size: 34px;
+  }
+
+  .button-text {
+    font-size: 20px;
+  }
+}
