@@ -162,35 +162,91 @@ async function renderPdfInto(containerId, base64) {
   const loadingTask = pdfjsLib.getDocument({ data: bytes });
   const pdf = await loadingTask.promise;
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+  for (
+    let pageNumber = 1;
+    pageNumber <= pdf.numPages;
+    pageNumber++
+  ) {
     if (generation !== pdfRenderGeneration) return;
 
     const page = await pdf.getPage(pageNumber);
-    const baseViewport = page.getViewport({ scale: 1 });
+
+    const baseViewport =
+      page.getViewport({ scale: 1 });
 
     const availableWidth = Math.max(
       280,
       (container.clientWidth || window.innerWidth) - 8
     );
 
-    const scale = availableWidth / baseViewport.width;
-    const viewport = page.getViewport({ scale: scale });
+    // 画面上での表示倍率
+    const displayScale =
+      availableWidth / baseViewport.width;
 
-    const canvas = document.createElement("canvas");
-    canvas.className = "pdf-page-canvas";
-    canvas.width = Math.ceil(viewport.width);
-    canvas.height = Math.ceil(viewport.height);
+    const displayViewport =
+      page.getViewport({
+        scale: displayScale
+      });
+
+    /*
+     * スマホの高密度ディスプレイ対策
+     *
+     * devicePixelRatio が 3 や 4 の端末でも、
+     * 重くなりすぎないよう最大2.5倍に制限
+     */
+    const outputScale = Math.min(
+      window.devicePixelRatio || 1,
+      2.5
+    );
+
+    const renderViewport =
+      page.getViewport({
+        scale:
+          displayScale *
+          outputScale
+      });
+
+    const canvas =
+      document.createElement("canvas");
+
+    canvas.className =
+      "pdf-page-canvas";
+
+    /*
+     * 実際の描画解像度は高くする
+     */
+    canvas.width =
+      Math.ceil(renderViewport.width);
+
+    canvas.height =
+      Math.ceil(renderViewport.height);
+
+    /*
+     * 画面上の大きさは今まで通り
+     */
+    canvas.style.width =
+      Math.ceil(displayViewport.width) +
+      "px";
+
+    canvas.style.height =
+      Math.ceil(displayViewport.height) +
+      "px";
 
     container.appendChild(canvas);
 
-    const context = canvas.getContext("2d", { alpha: false });
+    const context =
+      canvas.getContext(
+        "2d",
+        { alpha: false }
+      );
 
     await page.render({
       canvasContext: context,
-      viewport: viewport
+      viewport: renderViewport
     }).promise;
   }
 }
+
 
 function clearShiftPdf() {
   currentPdfBase64 = "";
