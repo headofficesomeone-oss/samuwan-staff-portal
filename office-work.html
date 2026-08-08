@@ -51,7 +51,17 @@
 
       <div id="officeWorkMessage"></div>
 
+      <div class="office-work-mode-grid">
+        <button id="officeWorkNewModeButton" type="button"
+          class="office-work-mode-button active"
+          onclick="showOfficeWorkNewMode()">新規登録</button>
+        <button id="officeWorkListModeButton" type="button"
+          class="office-work-mode-button"
+          onclick="showOfficeWorkListMode()">自分の登録一覧</button>
+      </div>
+
       <form id="officeWorkForm">
+        <input id="officeWorkEditId" type="hidden" value="">
 
         <div class="form-group">
           <label for="workDate">
@@ -187,15 +197,29 @@
           登録する
         </button>
 
-        <button
-          type="button"
-          class="back-button"
-          onclick="goBackPortal()"
-        >
+        <button id="officeWorkCancelEditButton" type="button"
+          class="back-button hidden" onclick="cancelOfficeWorkEdit()">
+          編集をやめる
+        </button>
+
+        <button type="button" class="back-button" onclick="goBackPortal()">
           職員ポータルへ戻る
         </button>
 
       </form>
+
+      <section id="officeWorkListArea" class="office-work-list-area hidden">
+        <div class="office-work-list-heading">
+          <div>
+            <h2>自分の登録一覧</h2>
+            <p>今月と前月の登録を確認・修正・取消できます。</p>
+          </div>
+          <button type="button" class="sub-button" onclick="loadOfficeWorkList()">
+            再読み込み
+          </button>
+        </div>
+        <div id="officeWorkListContent">一覧を読み込んでいます…</div>
+      </section>
 
     </section>
   </main>

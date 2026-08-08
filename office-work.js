@@ -403,9 +403,13 @@ async function submitOfficeWork(
   setOfficeWorkSubmitting(true);
 
   try {
+    const editId =
+      document.getElementById("officeWorkEditId")?.value || "";
+
     const result =
       await postGas({
-        action: "saveOfficeWork",
+        action: editId ? "updateOfficeWork" : "saveOfficeWork",
+        officeWorkId: editId,
 
         employeeId:
           officeWorkUser.employeeId,
@@ -453,10 +457,14 @@ async function submitOfficeWork(
 
     alert(
       result.message ||
-      "事務作業を登録しました。"
+      (editId ? "事務作業を更新しました。" : "事務作業を登録しました。")
     );
 
     resetOfficeWorkForm();
+
+    if (editId) {
+      showOfficeWorkListMode();
+    }
 
   } catch (error) {
     console.error(
@@ -503,6 +511,14 @@ function resetOfficeWorkForm() {
     area.textContent =
       "作業時間：—";
   }
+
+  const editId = document.getElementById("officeWorkEditId");
+  if (editId) editId.value = "";
+
+  const submitButton = document.getElementById("officeWorkSubmitButton");
+  if (submitButton) submitButton.textContent = "登録する";
+
+  document.getElementById("officeWorkCancelEditButton")?.classList.add("hidden");
 
   setOfficeWorkMessage(
     "登録しました。続けて入力できます。",
@@ -577,4 +593,169 @@ function setOfficeWorkMessage(
 
 function goBackPortal() {
   location.href = "./index.html";
+}
+
+function showOfficeWorkNewMode() {
+  document.getElementById("officeWorkForm")?.classList.remove("hidden");
+  document.getElementById("officeWorkListArea")?.classList.add("hidden");
+  document.getElementById("officeWorkNewModeButton")?.classList.add("active");
+  document.getElementById("officeWorkListModeButton")?.classList.remove("active");
+}
+
+async function showOfficeWorkListMode() {
+  document.getElementById("officeWorkForm")?.classList.add("hidden");
+  document.getElementById("officeWorkListArea")?.classList.remove("hidden");
+  document.getElementById("officeWorkNewModeButton")?.classList.remove("active");
+  document.getElementById("officeWorkListModeButton")?.classList.add("active");
+  await loadOfficeWorkList();
+}
+
+async function loadOfficeWorkList() {
+  if (!officeWorkUser) return;
+  const area = document.getElementById("officeWorkListContent");
+  if (!area) return;
+
+  area.innerHTML = '<div class="office-work-list-loading">一覧を読み込んでいます…</div>';
+
+  try {
+    const result = await postGas({
+      action: "getOfficeWorkList",
+      employeeId: officeWorkUser.employeeId,
+      employeeName: officeWorkUser.employeeName
+    });
+
+    if (!result.success) throw new Error(result.message || "一覧を取得できませんでした。");
+    renderOfficeWorkList(result.records || []);
+  } catch (error) {
+    area.innerHTML = '<div class="message-box error"></div>';
+    area.firstElementChild.textContent = "一覧の取得に失敗しました：" + error.message;
+  }
+}
+
+function renderOfficeWorkList(records) {
+  const area = document.getElementById("officeWorkListContent");
+  if (!area) return;
+  area.innerHTML = "";
+
+  if (!Array.isArray(records) || records.length === 0) {
+    area.innerHTML = '<div class="office-work-list-empty">登録された事務作業はありません。</div>';
+    return;
+  }
+
+  records.forEach(record => {
+    const cancelled = String(record.status || "") === "取消";
+    const card = document.createElement("div");
+    card.className = "office-work-list-card" + (cancelled ? " cancelled" : "");
+
+    const top = document.createElement("div");
+    top.className = "office-work-list-top";
+
+    const date = document.createElement("div");
+    date.className = "office-work-list-date";
+    date.textContent = (record.workDate || "") + "　" + (record.startTime || "") + "～" + (record.endTime || "");
+
+    const status = document.createElement("div");
+    status.className = "office-work-list-status" + (cancelled ? " cancelled" : "");
+    status.textContent = record.status || "登録";
+
+    top.appendChild(date);
+    top.appendChild(status);
+
+    const category = document.createElement("div");
+    category.className = "office-work-list-category";
+    category.textContent = record.workCategory || "";
+
+    const content = document.createElement("div");
+    content.className = "office-work-list-content";
+    content.textContent = record.workContent || "";
+
+    const meta = document.createElement("div");
+    meta.className = "office-work-list-meta";
+    const parts = [];
+    if (record.workMinutes !== "") parts.push("作業時間 " + record.workMinutes + "分");
+    if (record.relatedClientName) parts.push("利用者 " + record.relatedClientName);
+    if (record.place) parts.push("場所 " + record.place);
+    if (record.note) parts.push("備考 " + record.note);
+    meta.textContent = parts.join("／");
+
+    card.appendChild(top);
+    card.appendChild(category);
+    card.appendChild(content);
+    card.appendChild(meta);
+
+    if (!cancelled) {
+      const actions = document.createElement("div");
+      actions.className = "office-work-list-actions";
+
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "office-work-list-edit";
+      edit.textContent = "修正";
+      edit.onclick = () => startOfficeWorkEdit(record);
+
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "office-work-list-cancel";
+      cancel.textContent = "取消";
+      cancel.onclick = () => cancelOfficeWorkRecord(record);
+
+      actions.appendChild(edit);
+      actions.appendChild(cancel);
+      card.appendChild(actions);
+    }
+
+    area.appendChild(card);
+  });
+}
+
+function startOfficeWorkEdit(record) {
+  showOfficeWorkNewMode();
+  document.getElementById("officeWorkEditId").value = record.officeWorkId || "";
+  document.getElementById("workDate").value = record.workDate || "";
+  document.getElementById("startTime").value = record.startTime || "";
+  document.getElementById("endTime").value = record.endTime || "";
+  document.getElementById("workCategory").value = record.workCategory || "";
+  document.getElementById("workContent").value = record.workContent || "";
+  document.getElementById("relatedClient").value = record.relatedClientId || "";
+  document.getElementById("workPlace").value = record.place || "";
+  document.getElementById("officeWorkNote").value = record.note || "";
+  document.getElementById("officeWorkSubmitButton").textContent = "修正内容を保存";
+  document.getElementById("officeWorkCancelEditButton")?.classList.remove("hidden");
+  updateOfficeWorkMinutes();
+  setOfficeWorkMessage("登録済みの事務作業を修正しています。", "success");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelOfficeWorkEdit() {
+  resetOfficeWorkForm();
+  setOfficeWorkMessage("", "success");
+}
+
+async function cancelOfficeWorkRecord(record) {
+  if (!officeWorkUser) return;
+
+  const confirmed = confirm(
+    (record.workDate || "") + " " +
+    (record.startTime || "") + "～" +
+    (record.endTime || "") + "\n" +
+    (record.workCategory || "") +
+    "\n\nこの事務作業を取消しますか？"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const result = await postGas({
+      action: "cancelOfficeWork",
+      officeWorkId: record.officeWorkId,
+      employeeId: officeWorkUser.employeeId,
+      employeeName: officeWorkUser.employeeName
+    });
+
+    if (!result.success) throw new Error(result.message || "取消できませんでした。");
+    alert(result.message || "事務作業を取消しました。");
+    await loadOfficeWorkList();
+  } catch (error) {
+    alert("取消に失敗しました：" + error.message);
+  }
 }
