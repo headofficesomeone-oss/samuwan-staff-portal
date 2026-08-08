@@ -1,7 +1,8 @@
 let officeUser = null;
 let shiftWeeks = { prev: null, current: null, next: null };
 let activeShiftKey = "current";
-let currentPdfObjectUrl = "";
+let currentPdfBase64 = "";
+let pdfRenderGeneration = 0;
 
 const SHIFT_LABELS = {
   prev: "前週",
@@ -18,6 +19,16 @@ async function initializeOfficePage() {
     document.getElementById("officeAuthError").classList.remove("hidden");
     return;
   }
+
+  if (typeof pdfjsLib === "undefined") {
+    document.getElementById("shiftArea").classList.remove("hidden");
+    showShiftLoading(false);
+    showShiftEmpty("PDF表示ライブラリを読み込めませんでした。通信状態を確認してください。");
+    return;
+  }
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
   document.getElementById("officeUserName").textContent = officeUser.employeeName;
   document.getElementById("openOfficeModalButton").classList.remove("hidden");
@@ -90,7 +101,8 @@ async function selectShiftTab(key) {
     return;
   }
 
-  document.getElementById("shiftTitle").textContent = SHIFT_LABELS[key] + "のシフト（" + info.baseDateDisplay + "～）";
+  document.getElementById("shiftTitle").textContent =
+    SHIFT_LABELS[key] + "のシフト（" + info.baseDateDisplay + "～）";
   document.getElementById("shiftUpdated").textContent = "更新：" + info.updatedDisplay;
 
   showShiftEmpty("");
@@ -108,7 +120,7 @@ async function selectShiftTab(key) {
       throw new Error(result && result.message ? result.message : "PDFを取得できませんでした。");
     }
 
-    setShiftPdfFromBase64(result.base64, result.mimeType || "application/pdf");
+    await setShiftPdfFromBase64(result.base64);
     showShiftLoading(false);
 
   } catch (error) {
@@ -118,11 +130,18 @@ async function selectShiftTab(key) {
   }
 }
 
-function setShiftPdfFromBase64(base64, mimeType) {
-  if (currentPdfObjectUrl) {
-    URL.revokeObjectURL(currentPdfObjectUrl);
+async function setShiftPdfFromBase64(base64) {
+  currentPdfBase64 = base64 || "";
+
+  if (!currentPdfBase64) {
+    throw new Error("PDFデータが空です。");
   }
 
+  document.getElementById("shiftPdfTapArea").classList.remove("hidden");
+  await renderPdfInto("shiftPdfViewer", currentPdfBase64);
+}
+
+function base64ToUint8Array(base64) {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
 
@@ -130,21 +149,56 @@ function setShiftPdfFromBase64(base64, mimeType) {
     bytes[i] = binary.charCodeAt(i);
   }
 
-  const blob = new Blob([bytes], { type: mimeType });
-  currentPdfObjectUrl = URL.createObjectURL(blob);
+  return bytes;
+}
 
-  document.getElementById("shiftPdfFrame").src = currentPdfObjectUrl + "#toolbar=0&navpanes=0";
-  document.getElementById("shiftPdfTapArea").classList.remove("hidden");
+async function renderPdfInto(containerId, base64) {
+  const container = document.getElementById(containerId);
+  const generation = ++pdfRenderGeneration;
+
+  container.innerHTML = "";
+
+  const bytes = base64ToUint8Array(base64);
+  const loadingTask = pdfjsLib.getDocument({ data: bytes });
+  const pdf = await loadingTask.promise;
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    if (generation !== pdfRenderGeneration) return;
+
+    const page = await pdf.getPage(pageNumber);
+    const baseViewport = page.getViewport({ scale: 1 });
+
+    const availableWidth = Math.max(
+      280,
+      (container.clientWidth || window.innerWidth) - 8
+    );
+
+    const scale = availableWidth / baseViewport.width;
+    const viewport = page.getViewport({ scale: scale });
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "pdf-page-canvas";
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    container.appendChild(canvas);
+
+    const context = canvas.getContext("2d", { alpha: false });
+
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise;
+  }
 }
 
 function clearShiftPdf() {
-  document.getElementById("shiftPdfFrame").src = "about:blank";
-  document.getElementById("shiftPdfTapArea").classList.add("hidden");
+  currentPdfBase64 = "";
+  pdfRenderGeneration++;
 
-  if (currentPdfObjectUrl) {
-    URL.revokeObjectURL(currentPdfObjectUrl);
-    currentPdfObjectUrl = "";
-  }
+  document.getElementById("shiftPdfViewer").innerHTML = "";
+  document.getElementById("shiftFullViewer").innerHTML = "";
+  document.getElementById("shiftPdfTapArea").classList.add("hidden");
 }
 
 function showShiftLoading(visible) {
@@ -160,17 +214,24 @@ function showShiftEmpty(message) {
   area.classList.toggle("hidden", !message);
 }
 
-function openShiftFullscreen() {
-  if (!currentPdfObjectUrl) return;
+async function openShiftFullscreen() {
+  if (!currentPdfBase64) return;
 
-  document.getElementById("shiftFullFrame").src = currentPdfObjectUrl;
   document.getElementById("shiftFullscreen").classList.remove("hidden");
   document.body.classList.add("modal-open");
+
+  try {
+    await renderPdfInto("shiftFullViewer", currentPdfBase64);
+  } catch (error) {
+    document.getElementById("shiftFullViewer").textContent =
+      error.message || "PDFを全画面表示できませんでした。";
+  }
 }
 
 function closeShiftFullscreen() {
+  pdfRenderGeneration++;
   document.getElementById("shiftFullscreen").classList.add("hidden");
-  document.getElementById("shiftFullFrame").src = "about:blank";
+  document.getElementById("shiftFullViewer").innerHTML = "";
   document.body.classList.remove("modal-open");
 }
 

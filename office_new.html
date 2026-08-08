@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>シフト表</title>
-  <link rel="stylesheet" href="./office_new.css?v=20260808-1">
+  <link rel="stylesheet" href="./office_new.css?v=20260808-3">
 </head>
 <body>
   <main class="shift-page">
@@ -43,10 +43,10 @@
 
       <div id="shiftEmpty" class="shift-empty hidden">この週のシフトPDFはありません。</div>
 
-      <button id="shiftPdfTapArea" class="shift-pdf-wrap hidden" type="button" onclick="openShiftFullscreen()" aria-label="シフトPDFを全画面表示">
-        <iframe id="shiftPdfFrame" title="シフトPDF" loading="lazy"></iframe>
+      <div id="shiftPdfTapArea" class="shift-pdf-wrap hidden" onclick="openShiftFullscreen()" role="button" tabindex="0" aria-label="シフトPDFを全画面表示">
+        <div id="shiftPdfViewer" class="pdf-viewer"></div>
         <span class="shift-full-hint">タップで全画面表示</span>
-      </button>
+      </div>
     </section>
   </main>
 
@@ -83,10 +83,11 @@
 
   <div id="shiftFullscreen" class="pdf-fullscreen hidden" role="dialog" aria-modal="true" aria-label="シフトPDF全画面表示">
     <button class="pdf-full-close" type="button" onclick="closeShiftFullscreen()">×</button>
-    <iframe id="shiftFullFrame" title="シフトPDF全画面"></iframe>
+    <div id="shiftFullViewer" class="pdf-viewer pdf-viewer-full"></div>
   </div>
 
   <script src="./common.js?v=20260801-3"></script>
-  <script src="./office_new.js?v=20260808-1"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="./office_new.js?v=20260808-3"></script>
 </body>
 </html>
