@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>事務作業登録</title>
+  <link rel="stylesheet" href="index.css?v=20260808-officework-1">
+  <link rel="stylesheet" href="office-work.css?v=20260808-1">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="logo">
+      <div class="logo-mark">✿</div>
+      <div>
+        訪問ケア<br>
+        ぷーどる
+      </div>
+    </div>
+
+    <div class="page-title">事務作業</div>
+
+    <button
+      class="help-button"
+      type="button"
+      onclick="goBackPortal()"
+    >
+      戻る
+    </button>
+  </header>
+
+  <main class="page">
+    <section class="card">
+
+      <div class="section-title">
+        <div class="icon-circle">🗂️</div>
+        <div>
+          <h1>事務作業を登録します</h1>
+          <p>
+            実際に行った事務作業の時間と内容を入力してください。
+          </p>
+        </div>
+      </div>
+
+      <div class="office-work-user-box">
+        <div class="office-work-user-label">登録者</div>
+        <div id="officeWorkUserName" class="office-work-user-name">
+          職員情報を確認しています…
+        </div>
+      </div>
+
+      <div id="officeWorkMessage"></div>
+
+      <form id="officeWorkForm">
+
+        <div class="form-group">
+          <label for="workDate">
+            勤務日
+            <span class="required">必須</span>
+          </label>
+          <input
+            id="workDate"
+            type="date"
+            required
+          >
+        </div>
+
+        <div class="office-work-time-grid">
+          <div class="form-group">
+            <label for="startTime">
+              開始時刻
+              <span class="required">必須</span>
+            </label>
+            <input
+              id="startTime"
+              type="time"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="endTime">
+              終了時刻
+              <span class="required">必須</span>
+            </label>
+            <input
+              id="endTime"
+              type="time"
+              required
+            >
+          </div>
+        </div>
+
+        <div
+          id="calculatedMinutes"
+          class="office-work-minutes"
+        >
+          作業時間：—
+        </div>
+
+        <div class="form-group">
+          <label for="workCategory">
+            作業区分
+            <span class="required">必須</span>
+          </label>
+
+          <select
+            id="workCategory"
+            required
+          >
+            <option value="">選択してください</option>
+            <option value="書類作成">書類作成</option>
+            <option value="記録整理">記録整理</option>
+            <option value="請求事務">請求事務</option>
+            <option value="シフト関係">シフト関係</option>
+            <option value="電話・連絡">電話・連絡</option>
+            <option value="会議準備">会議準備</option>
+            <option value="研修準備">研修準備</option>
+            <option value="車両関係">車両関係</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="workContent">
+            作業内容
+            <span class="required">必須</span>
+          </label>
+
+          <textarea
+            id="workContent"
+            rows="4"
+            maxlength="500"
+            placeholder="行った作業を簡潔に入力してください"
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="relatedClient">
+            関連利用者
+            <span class="optional-label">任意</span>
+          </label>
+
+          <select id="relatedClient">
+            <option value="">関連利用者なし</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="workPlace">
+            場所
+            <span class="required">必須</span>
+          </label>
+
+          <select
+            id="workPlace"
+            required
+          >
+            <option value="">選択してください</option>
+            <option value="事務所">事務所</option>
+            <option value="自宅">自宅</option>
+            <option value="外出先">外出先</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="officeWorkNote">
+            備考
+            <span class="optional-label">任意</span>
+          </label>
+
+          <textarea
+            id="officeWorkNote"
+            rows="3"
+            maxlength="500"
+            placeholder="補足があれば入力してください"
+          ></textarea>
+        </div>
+
+        <button
+          id="officeWorkSubmitButton"
+          type="submit"
+          class="main-button"
+        >
+          登録する
+        </button>
+
+        <button
+          type="button"
+          class="back-button"
+          onclick="goBackPortal()"
+        >
+          職員ポータルへ戻る
+        </button>
+
+      </form>
+
+    </section>
+  </main>
+
+  <script src="./common.js?v=20260801-3"></script>
+  <script src="./office-work.js?v=20260808-1"></script>
+</body>
+</html>

@@ -389,6 +389,21 @@ function goOutingRoute() {
   location.href = "./outing.html";
 }
 
+function goOfficeWork() {
+  if (!currentUser) {
+    alert("職員情報を確認できません。");
+    return;
+  }
+
+  const params = new URLSearchParams();
+  params.set("employeeId", currentUser.employeeId || "");
+  params.set("employeeName", currentUser.employeeName || "");
+
+  location.href =
+    "./office-work.html?" +
+    params.toString();
+}
+
 function logoutPortal() {
   clearPortalUser();
   currentUser = null;
