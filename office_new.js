@@ -138,7 +138,7 @@ async function setShiftPdfFromBase64(base64) {
   }
 
   document.getElementById("shiftPdfTapArea").classList.remove("hidden");
-  await renderPdfInto("shiftPdfViewer", currentPdfBase64);
+  await renderPdfInto("shiftPdfViewer", currentPdfBase64, 2.5);
 }
 
 function base64ToUint8Array(base64) {
@@ -152,7 +152,7 @@ function base64ToUint8Array(base64) {
   return bytes;
 }
 
-async function renderPdfInto(containerId, base64) {
+async function renderPdfInto(containerId, base64, qualityScale = 2.5) {
   const container = document.getElementById(containerId);
   const generation = ++pdfRenderGeneration;
 
@@ -162,17 +162,11 @@ async function renderPdfInto(containerId, base64) {
   const loadingTask = pdfjsLib.getDocument({ data: bytes });
   const pdf = await loadingTask.promise;
 
-  for (
-    let pageNumber = 1;
-    pageNumber <= pdf.numPages;
-    pageNumber++
-  ) {
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     if (generation !== pdfRenderGeneration) return;
 
     const page = await pdf.getPage(pageNumber);
-
-    const baseViewport =
-      page.getViewport({ scale: 1 });
+    const baseViewport = page.getViewport({ scale: 1 });
 
     const availableWidth = Math.max(
       280,
@@ -180,65 +174,34 @@ async function renderPdfInto(containerId, base64) {
     );
 
     // 画面上での表示倍率
-    const displayScale =
-      availableWidth / baseViewport.width;
+    const displayScale = availableWidth / baseViewport.width;
+    const displayViewport = page.getViewport({ scale: displayScale });
 
-    const displayViewport =
-      page.getViewport({
-        scale: displayScale
-      });
-
-    /*
-     * スマホの高密度ディスプレイ対策
-     *
-     * devicePixelRatio が 3 や 4 の端末でも、
-     * 重くなりすぎないよう最大2.5倍に制限
-     */
+    // 実際の描画解像度を上げて文字・罫線を鮮明にする
+    // 通常表示は最大2.5倍、全画面は呼び出し側で最大3倍を指定
     const outputScale = Math.min(
       window.devicePixelRatio || 1,
-      2.5
+      qualityScale
     );
 
-    const renderViewport =
-      page.getViewport({
-        scale:
-          displayScale *
-          outputScale
-      });
+    const renderViewport = page.getViewport({
+      scale: displayScale * outputScale
+    });
 
-    const canvas =
-      document.createElement("canvas");
+    const canvas = document.createElement("canvas");
+    canvas.className = "pdf-page-canvas";
 
-    canvas.className =
-      "pdf-page-canvas";
+    // Canvas内部は高解像度で描画
+    canvas.width = Math.ceil(renderViewport.width);
+    canvas.height = Math.ceil(renderViewport.height);
 
-    /*
-     * 実際の描画解像度は高くする
-     */
-    canvas.width =
-      Math.ceil(renderViewport.width);
-
-    canvas.height =
-      Math.ceil(renderViewport.height);
-
-    /*
-     * 画面上の大きさは今まで通り
-     */
-    canvas.style.width =
-      Math.ceil(displayViewport.width) +
-      "px";
-
-    canvas.style.height =
-      Math.ceil(displayViewport.height) +
-      "px";
+    // 画面上の表示サイズは従来と同じ
+    canvas.style.width = Math.ceil(displayViewport.width) + "px";
+    canvas.style.height = Math.ceil(displayViewport.height) + "px";
 
     container.appendChild(canvas);
 
-    const context =
-      canvas.getContext(
-        "2d",
-        { alpha: false }
-      );
+    const context = canvas.getContext("2d", { alpha: false });
 
     await page.render({
       canvasContext: context,
@@ -246,7 +209,6 @@ async function renderPdfInto(containerId, base64) {
     }).promise;
   }
 }
-
 
 function clearShiftPdf() {
   currentPdfBase64 = "";
@@ -277,7 +239,7 @@ async function openShiftFullscreen() {
   document.body.classList.add("modal-open");
 
   try {
-    await renderPdfInto("shiftFullViewer", currentPdfBase64);
+    await renderPdfInto("shiftFullViewer", currentPdfBase64, 3);
   } catch (error) {
     document.getElementById("shiftFullViewer").textContent =
       error.message || "PDFを全画面表示できませんでした。";
