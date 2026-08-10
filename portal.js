@@ -813,11 +813,39 @@ function setTodayShiftOptions(shifts) {
       '本日の担当シフトはありません' +
       '</option>';
 
-    setStaffActionButtonsByState(
-      ""
-    );
+    setStaffActionButtonsByState("");
+
+    const actionGrid =
+      document.getElementById("portalActionButtons");
+
+    const tempButton =
+      document.getElementById("temporaryChangeButton");
+
+    if (actionGrid) {
+      actionGrid.classList.add("hidden");
+    }
+
+    if (tempButton) {
+      tempButton.classList.add("hidden");
+    }
+
+    updateSupportMainDisplay_(null);
 
     return;
+  }
+
+  const actionGrid =
+    document.getElementById("portalActionButtons");
+
+  const tempButton =
+    document.getElementById("temporaryChangeButton");
+
+  if (actionGrid) {
+    actionGrid.classList.remove("hidden");
+  }
+
+  if (tempButton) {
+    tempButton.classList.remove("hidden");
   }
 
   shifts.forEach(shift => {
@@ -1062,9 +1090,27 @@ function updateSupportMainDisplay_(shift) {
   const meta = document.getElementById("supportMainMeta");
   const statePill = document.getElementById("supportHeaderState");
   if (!shift) {
-    if (title) title.textContent = todayStaffShifts.length ? "支援を選択してください" : "本日の支援予定はありません";
-    if (meta) meta.textContent = "";
-    if (statePill) statePill.textContent = "待機中";
+    if (title) {
+      title.textContent =
+        todayStaffShifts.length
+          ? "支援を選択してください"
+          : "本日の支援予定はありません";
+    }
+
+    if (meta) {
+      meta.textContent =
+        todayStaffShifts.length
+          ? ""
+          : "現在、操作する支援はありません。";
+    }
+
+    if (statePill) {
+      statePill.textContent =
+        todayStaffShifts.length
+          ? "待機中"
+          : "予定なし";
+    }
+
     return;
   }
   if (title) title.textContent = shift.service + "｜" + shift.clientName;

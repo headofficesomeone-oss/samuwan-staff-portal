@@ -223,45 +223,11 @@
           <div id="cancelFlash" class="portal-cancel-flash hidden"></div>
 
           <div class="support-sub-actions">
-            <button class="portal-sub-action" type="button" onclick="openTemporaryChangeNotice()">⚙ 今回だけ一時変更</button>
-            <button class="portal-sub-action" type="button" onclick="openPortalHistory()">🕘 記録履歴</button>
+            <button id="temporaryChangeButton" class="portal-sub-action" type="button" onclick="openTemporaryChangeNotice()">⚙ 今回だけ一時変更</button>
+            <button id="portalHistoryButton" class="portal-sub-action" type="button" onclick="openPortalHistory()">🕘 記録履歴</button>
           </div>
         </section>
 
-<div class="quick-menu-title">指示を見る</div>
-					</button>
-
-				  <button
-				    id="moveButton"
-				    class="quick-menu-card"
-				    type="button"
-				    onclick="sendStaffAction('向かいます')"
-				  >
-				    <div class="quick-menu-icon">🚶</div>
-				    <div class="quick-menu-title">向かいます</div>
-				  </button>
-
-				  <button
-				    id="enterButton"
-				    class="quick-menu-card"
-				    type="button"
-				    onclick="sendStaffAction('入りました')"
-				  >
-				    <div class="quick-menu-icon">🏠</div>
-				    <div class="quick-menu-title">入りました</div>
-				  </button>
-
-				  <button
-				    id="finishButton"
-				    class="quick-menu-card"
-				    type="button"
-				    onclick="sendStaffAction('終わりました')"
-				  >
-				    <div class="quick-menu-icon">✅</div>
-				    <div class="quick-menu-title">終わりました</div>
-				  </button>
-
-				</div>
 
 				<!-- 事務所操作 -->
 				<div class="office-action-box">

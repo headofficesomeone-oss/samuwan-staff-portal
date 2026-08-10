@@ -455,3 +455,6 @@ body.modal-open {
   .support-action-grid{grid-template-columns:repeat(2,1fr)}
   .support-action-button{min-height:76px}
 }
+
+.support-action-grid.hidden{display:none !important}
+.portal-sub-action.hidden{display:none !important}
