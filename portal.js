@@ -1526,6 +1526,87 @@ function closeInstructionModal() {
 const PORTAL_HISTORY_KEY = "staffPortalLocalActionHistoryV1";
 let portalHistoryMode = "all";
 
+
+let todayShiftRefreshTimer = null;
+let todayShiftRefreshRunning = false;
+let portalActionProcessing = false;
+
+function startTodayShiftAutoRefresh_() {
+  if (todayShiftRefreshTimer) {
+    return;
+  }
+
+  /*
+   * 支援が0件でも1件以上でも、30秒ごとに再取得します。
+   * 登録処理中は更新を止め、操作中の表示を崩さないようにします。
+   */
+  todayShiftRefreshTimer =
+    setInterval(
+      async () => {
+        if (
+          document.hidden ||
+          todayShiftRefreshRunning ||
+          portalActionProcessing
+        ) {
+          return;
+        }
+
+        todayShiftRefreshRunning = true;
+
+        try {
+          await loadTodayStaffShifts(true);
+        } catch (error) {
+          console.warn(
+            "支援一覧の自動更新に失敗しました",
+            error
+          );
+        } finally {
+          todayShiftRefreshRunning = false;
+        }
+      },
+      30000
+    );
+}
+
+function refreshTodayShiftsOnReturn_() {
+  if (
+    document.visibilityState === "visible" &&
+    !portalActionProcessing
+  ) {
+    loadTodayStaffShifts(true)
+      .catch(
+        error =>
+          console.warn(
+            "画面復帰時の支援一覧更新に失敗しました",
+            error
+          )
+      );
+  }
+}
+
+document.addEventListener(
+  "visibilitychange",
+  refreshTodayShiftsOnReturn_
+);
+
+window.addEventListener(
+  "focus",
+  () => {
+    if (portalActionProcessing) {
+      return;
+    }
+
+    loadTodayStaffShifts(true)
+      .catch(
+        error =>
+          console.warn(
+            "画面復帰時の支援一覧更新に失敗しました",
+            error
+          )
+      );
+  }
+);
+
 function isOutingService_(service) {
   const s = String(service || "");
   return ["同行援護","移動支援","通院介助","通院等介助","有償運送"].some(v => s.includes(v));
@@ -2275,6 +2356,12 @@ async function continueToNextSupport() {
 
   if (!confirmed) return;
 
+  setGuideImmediatelyForAction_(
+    "引き続き支援",
+    currentShift,
+    nextShift
+  );
+
   setStaffActionButtonsDisabled(true);
   setTodayShiftProcessing_(true);
 
@@ -2674,6 +2761,11 @@ async function sendStaffAction(
     }
   }
 
+  setGuideImmediatelyForAction_(
+    actionType,
+    shift
+  );
+
   setStaffActionButtonsDisabled(
     true
   );
@@ -2858,6 +2950,65 @@ function createStaffActionSendId(
 
 
 
+
+function setGuideImmediatelyForAction_(
+  actionType,
+  shift,
+  nextShift = null
+) {
+  if (!shift) return;
+
+  if (actionType === "向かいます") {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんへ向かっています"
+    );
+    return;
+  }
+
+  if (
+    actionType === "入りました" ||
+    actionType === "支援開始"
+  ) {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんを支援中です"
+    );
+    return;
+  }
+
+  if (actionType === "引き続き支援") {
+    const target =
+      nextShift || shift;
+
+    setSupportGuideText_(
+      target.clientName +
+      "さんを支援中です"
+    );
+    return;
+  }
+
+  if (actionType === "終わりました") {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんの支援終了を処理しています"
+    );
+    return;
+  }
+
+  if (actionType === "キャンセル") {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんのキャンセルを処理しています"
+    );
+    return;
+  }
+
+  setSupportGuideText_(
+    "ただいま処理中です"
+  );
+}
+
 function setTodayShiftProcessing_(
   processing
 ) {
@@ -2866,30 +3017,18 @@ function setTodayShiftProcessing_(
       "todayShiftSelect"
     );
 
+  portalActionProcessing =
+    !!processing;
+
   if (!select) return;
 
   if (processing) {
+    /*
+     * 処理中も現在選択中の支援名はプルダウンに残します。
+     */
     select.disabled = true;
 
-    updateSupportGuideByState_(
-      getSelectedTodayShift(),
-      todayStaffShifts.filter(
-        s =>
-          !["終了","キャンセル"].includes(
-            String(
-              s.currentState ||
-              "未開始"
-            ).trim()
-          )
-      ).length,
-      true
-    );
-
   } else {
-    /*
-     * プルダウンの内容は保持したまま、
-     * 最新一覧再取得時に正しい状態へ更新します。
-     */
     const shift =
       getSelectedTodayShift();
 
@@ -3511,3 +3650,11 @@ function hideAddedShiftNotice() {
     "hidden"
   );
 }
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    startTodayShiftAutoRefresh_();
+  }
+);
