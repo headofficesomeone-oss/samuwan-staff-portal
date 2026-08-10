@@ -1346,10 +1346,9 @@ function renderPortalHistory_() {
     return;
   }
 
-  // 従業員履歴は、1つの支援を1行にまとめます。
   if (portalHistoryMode === "staff") {
-    const rows = [];
-    const map = new Map();
+    const blocks = [];
+    const blockByShiftId = new Map();
     const cancels = [];
 
     all.forEach(e => {
@@ -1358,60 +1357,115 @@ function renderPortalHistory_() {
         return;
       }
 
-      if (!["入りました","支援開始","終わりました","支援終了"].includes(e.eventType)) {
+      if (
+        ["入りました","支援開始","終わりました","支援終了"].includes(e.eventType)
+      ) {
+        const key =
+          e.shiftId ||
+          [
+            e.clientName || "",
+            e.service || "",
+            e.scheduledStart || "",
+            e.scheduledEnd || ""
+          ].join("|");
+
+        let block = blockByShiftId.get(key);
+
+        if (!block) {
+          block = {
+            clientName: e.clientName || "",
+            startActual: "",
+            endActual: "",
+            services: [{
+              shiftId: e.shiftId || "",
+              clientName: e.clientName || "",
+              service: e.service || "",
+              scheduledStart: e.scheduledStart || "",
+              scheduledEnd: e.scheduledEnd || ""
+            }]
+          };
+
+          blocks.push(block);
+          blockByShiftId.set(key, block);
+
+          if (e.shiftId) {
+            blockByShiftId.set(e.shiftId, block);
+          }
+        }
+
+        const actual = formatActualTime_(e.actualAt);
+
+        if (e.eventType === "入りました" || e.eventType === "支援開始") {
+          if (!block.startActual) block.startActual = actual;
+        }
+
+        if (e.eventType === "終わりました" || e.eventType === "支援終了") {
+          block.endActual = actual;
+        }
+
         return;
       }
 
-      const key =
-        e.shiftId ||
-        [
-          e.clientName || "",
-          e.service || "",
-          e.scheduledStart || "",
-          e.scheduledEnd || ""
-        ].join("|");
+      if (e.eventType === "引き続き支援") {
+        let block = null;
 
-      if (!map.has(key)) {
-        const row = {
+        if (e.fromShiftId) {
+          block = blockByShiftId.get(e.fromShiftId) || null;
+        }
+
+        if (!block) {
+          for (let i = blocks.length - 1; i >= 0; i--) {
+            if (blocks[i].clientName === e.clientName) {
+              block = blocks[i];
+              break;
+            }
+          }
+        }
+
+        if (!block) {
+          block = {
+            clientName: e.clientName || "",
+            startActual: formatActualTime_(e.actualAt),
+            endActual: "",
+            services: []
+          };
+          blocks.push(block);
+        }
+
+        const nextService = {
+          shiftId: e.shiftId || "",
           clientName: e.clientName || "",
           service: e.service || "",
           scheduledStart: e.scheduledStart || "",
-          scheduledEnd: e.scheduledEnd || "",
-          startActual: "",
-          endActual: ""
+          scheduledEnd: e.scheduledEnd || ""
         };
 
-        map.set(key, row);
-        rows.push(row);
-      }
+        const exists = block.services.some(s =>
+          (
+            s.shiftId &&
+            nextService.shiftId &&
+            s.shiftId === nextService.shiftId
+          ) ||
+          (
+            s.service === nextService.service &&
+            s.scheduledStart === nextService.scheduledStart &&
+            s.scheduledEnd === nextService.scheduledEnd
+          )
+        );
 
-      const row = map.get(key);
-      const actual = formatActualTime_(e.actualAt);
+        if (!exists) block.services.push(nextService);
 
-      if (
-        e.eventType === "入りました" ||
-        e.eventType === "支援開始"
-      ) {
-        if (!row.startActual) {
-          row.startActual = actual;
+        if (e.shiftId) {
+          blockByShiftId.set(e.shiftId, block);
         }
-      }
-
-      if (
-        e.eventType === "終わりました" ||
-        e.eventType === "支援終了"
-      ) {
-        row.endActual = actual;
       }
     });
 
-    let html = '<div class="portal-history-group">';
+    let html = "";
 
     cancels.forEach(e => {
       const scheduledRange =
-        [e.scheduledStart, e.scheduledEnd]
-          .filter(Boolean)
-          .join("～");
+        [e.scheduledStart, e.scheduledEnd].filter(Boolean).join("～");
 
       html +=
         '<div class="portal-history-cancel">' +
@@ -1419,88 +1473,71 @@ function renderPortalHistory_() {
         escapePortalText_(e.clientName) +
         '｜' +
         escapePortalText_(e.service) +
-        (scheduledRange
-          ? '　' + escapePortalText_(scheduledRange)
-          : '') +
+        (scheduledRange ? '　' + escapePortalText_(scheduledRange) : '') +
         '</div>';
     });
 
-    rows.forEach(row => {
+    blocks.forEach(block => {
+      if (!block.startActual && !block.endActual) return;
+
       let title = "";
 
-      if (row.startActual) {
-        title +=
-          "支援開始（" +
-          escapePortalText_(row.startActual) +
-          "）";
+      if (block.startActual) {
+        title += "支援開始（" + escapePortalText_(block.startActual) + "）";
       }
 
-      if (row.endActual) {
+      if (block.endActual) {
         title +=
           (title ? "　" : "") +
           "支援終了（" +
-          escapePortalText_(row.endActual) +
+          escapePortalText_(block.endActual) +
           "）";
       }
 
-      if (!title) return;
-
-      const scheduledRange =
-        [row.scheduledStart, row.scheduledEnd]
-          .filter(Boolean)
-          .join("～");
-
       html +=
+        '<div class="portal-history-group">' +
         '<div class="portal-history-item">' +
-        '<strong>' +
-        title +
-        '</strong>' +
-        '<small>' +
-        escapePortalText_(
-          row.clientName +
-          "｜" +
-          row.service +
-          (scheduledRange
-            ? "　予定 " + scheduledRange
-            : "")
-        ) +
-        '</small>' +
-        '</div>';
+        '<strong>' + title + '</strong>';
+
+      block.services.forEach(serviceRow => {
+        const scheduledRange =
+          [serviceRow.scheduledStart, serviceRow.scheduledEnd]
+            .filter(Boolean)
+            .join("～");
+
+        html +=
+          '<small>' +
+          escapePortalText_(
+            (serviceRow.clientName || block.clientName) +
+            "｜" +
+            (serviceRow.service || "") +
+            (scheduledRange ? "　予定 " + scheduledRange : "")
+          ) +
+          '</small>';
+      });
+
+      html += '</div></div>';
     });
 
-    html += '</div>';
-
-    view.innerHTML = html;
+    view.innerHTML =
+      html ||
+      '<div class="portal-history-empty">従業員履歴はまだありません。</div>';
     return;
   }
 
-  // 全行程 / 利用者履歴
   let events = all.slice();
 
   if (portalHistoryMode === "client") {
-    events =
-      events.filter(
-        e =>
-          e.eventType !== "向かいます"
-      );
+    events = events.filter(e => e.eventType !== "向かいます");
   }
 
-  const routeTypes = [
-    "出発",
-    "到着",
-    "帰宅",
-    "移動手段変更"
-  ];
-
-  let html =
-    '<div class="portal-history-group">';
+  const routeTypes = ["出発","到着","帰宅","移動手段変更"];
+  let html = '<div class="portal-history-group">';
 
   events.forEach(e => {
     if (e.eventType === "キャンセル") {
       const scheduledRange =
-        [e.scheduledStart, e.scheduledEnd]
-          .filter(Boolean)
-          .join("～");
+        [e.scheduledStart, e.scheduledEnd].filter(Boolean).join("～");
 
       html +=
         '<div class="portal-history-cancel">' +
@@ -1508,52 +1545,55 @@ function renderPortalHistory_() {
         escapePortalText_(e.clientName) +
         '｜' +
         escapePortalText_(e.service) +
-        (scheduledRange
-          ? '　' + escapePortalText_(scheduledRange)
-          : '') +
+        (scheduledRange ? '　' + escapePortalText_(scheduledRange) : '') +
         '</div>';
-
       return;
     }
 
-    const time =
-      formatActualTime_(e.actualAt);
+    const time = formatActualTime_(e.actualAt);
+    const routeClass = routeTypes.includes(e.eventType) ? " route" : "";
 
-    const routeClass =
-      routeTypes.includes(e.eventType)
-        ? " route"
-        : "";
+    let detailText = "";
 
-    let plannedText = "";
+    if (e.eventType === "向かいます") {
+      detailText =
+        (e.clientName || "") +
+        "｜" +
+        (e.service || "") +
+        (e.scheduledStart ? "　" + e.scheduledStart + " 開始予定" : "");
 
-    if (e.eventType === "引き続き支援") {
-      plannedText =
+    } else if (e.eventType === "入りました" || e.eventType === "支援開始") {
+      detailText =
+        (e.clientName || "") +
+        "｜" +
+        (e.service || "") +
+        (e.scheduledStart ? "　" + e.scheduledStart : "");
+
+    } else if (e.eventType === "引き続き支援") {
+      detailText =
+        (e.clientName || "") +
+        "｜" +
         (e.fromService || "") +
         " → " +
+        (e.service || "");
+
+    } else if (e.eventType === "終わりました" || e.eventType === "支援終了") {
+      detailText =
+        (e.clientName || "") +
+        "｜" +
         (e.service || "") +
-        (e.scheduledStart
-          ? "　" + e.scheduledStart
-          : "");
-    } else if (e.eventType === "向かいます") {
-      plannedText =
-        e.scheduledStart
-          ? e.scheduledStart + " 開始予定"
-          : "";
-    } else if (
-      e.eventType === "入りました" ||
-      e.eventType === "支援開始"
-    ) {
-      plannedText =
-        e.scheduledStart || "";
-    } else if (
-      e.eventType === "終わりました" ||
-      e.eventType === "支援終了"
-    ) {
-      plannedText =
-        e.scheduledEnd || "";
+        (e.scheduledEnd ? "　" + e.scheduledEnd : "");
+
     } else {
-      // 外出行程などは予定時刻を無理に付けない
-      plannedText = "";
+      detailText =
+        [
+          e.clientName || "",
+          e.service || "",
+          e.place || "",
+          e.transport || ""
+        ]
+          .filter(Boolean)
+          .join("｜");
     }
 
     html +=
@@ -1561,40 +1601,15 @@ function renderPortalHistory_() {
       routeClass +
       '">' +
       '<strong>' +
-      escapePortalText_(
-        time +
-        "　" +
-        e.eventType
-      ) +
+      escapePortalText_(time + "　" + e.eventType) +
       '</strong>' +
       '<small>' +
-      escapePortalText_(
-        e.eventType === "引き続き支援"
-          ? (
-              (e.fromService || "") +
-              " → " +
-              (e.service || "") +
-              (e.scheduledStart
-                ? "　" + e.scheduledStart
-                : "") +
-              "｜" +
-              (e.clientName || "")
-            )
-          : (
-              e.clientName +
-              "｜" +
-              e.service +
-              (plannedText
-                ? "　" + plannedText
-                : "")
-            )
-      ) +
+      escapePortalText_(detailText) +
       '</small>' +
       '</div>';
   });
 
   html += '</div>';
-
   view.innerHTML = html;
 }
 
