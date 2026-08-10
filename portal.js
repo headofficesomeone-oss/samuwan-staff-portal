@@ -802,31 +802,109 @@ function setTodayShiftOptions(shifts) {
     return;
   }
 
+  const allShifts =
+    Array.isArray(shifts)
+      ? shifts
+      : [];
+
+  const selectableShifts =
+    allShifts.filter(
+      shift => {
+        const state =
+          String(
+            shift.currentState ||
+            "未開始"
+          ).trim();
+
+        return ![
+          "終了",
+          "キャンセル"
+        ].includes(state);
+      }
+    );
+
+  const finishedShifts =
+    allShifts.filter(
+      shift => {
+        const state =
+          String(
+            shift.currentState ||
+            ""
+          ).trim();
+
+        return [
+          "終了",
+          "キャンセル"
+        ].includes(state);
+      }
+    );
+
   select.innerHTML =
     '<option value="">' +
     '支援を選択してください' +
     '</option>';
 
-  if (shifts.length === 0) {
-    select.innerHTML =
-      '<option value="">' +
-      '本日の担当シフトはありません' +
-      '</option>';
+  selectableShifts.forEach(
+    shift => {
+      const option =
+        document.createElement(
+          "option"
+        );
 
+      option.value =
+        shift.shiftId;
+
+      const state =
+        shift.currentState ||
+        "未開始";
+
+      option.textContent =
+        shift.startTime +
+        "～" +
+        shift.endTime +
+        "　" +
+        shift.clientName +
+        "　" +
+        shift.service +
+        "　【" +
+        state +
+        "】";
+
+      select.appendChild(
+        option
+      );
+    }
+  );
+
+  renderFinishedSupportList_(
+    finishedShifts
+  );
+
+  if (
+    selectableShifts.length === 0
+  ) {
     setStaffActionButtonsByState("");
 
     const actionGrid =
-      document.getElementById("portalActionButtons");
+      document.getElementById(
+        "portalActionButtons"
+      );
 
     const tempButton =
-      document.getElementById("temporaryChangeButton");
+      document.getElementById(
+        "temporaryChangeButton"
+      );
 
     if (actionGrid) {
-      actionGrid.classList.add("hidden");
+      actionGrid.classList.add(
+        "hidden"
+      );
     }
 
     if (tempButton) {
-      tempButton.classList.add("hidden");
+      tempButton.classList.add(
+        "hidden"
+      );
     }
 
     updateSupportMainDisplay_(null);
@@ -836,61 +914,130 @@ function setTodayShiftOptions(shifts) {
   }
 
   const actionGrid =
-    document.getElementById("portalActionButtons");
-
-  const tempButton =
-    document.getElementById("temporaryChangeButton");
+    document.getElementById(
+      "portalActionButtons"
+    );
 
   if (actionGrid) {
-    actionGrid.classList.remove("hidden");
+    actionGrid.classList.remove(
+      "hidden"
+    );
   }
 
-  if (tempButton) {
-    tempButton.classList.remove("hidden");
+  select.onchange =
+    handleTodayShiftChange;
+
+  const activeShift =
+    lockTodayShiftSelectorIfActive_(
+      selectableShifts
+    );
+
+  if (activeShift) {
+    return;
   }
 
-  shifts.forEach(shift => {
-    const option =
-      document.createElement(
-        "option"
-      );
+  select.value = "";
+  handleTodayShiftChange();
+}
 
-    option.value =
-      shift.shiftId;
+function renderFinishedSupportList_(
+  finishedShifts
+) {
+  const list =
+    document.getElementById(
+      "finishedSupportList"
+    );
 
-    const currentState =
-      shift.currentState ||
-      "未開始";
+  const toggle =
+    document.getElementById(
+      "finishedSupportToggle"
+    );
 
-    option.textContent =
-      shift.startTime +
-      "～" +
-      shift.endTime +
-      "　" +
-      shift.clientName +
-      "　" +
-      shift.service +
-      "　【" +
-      currentState +
-      "】";
+  if (!list || !toggle) {
+    return;
+  }
 
-    select.appendChild(option);
-  });
+  const shifts =
+    Array.isArray(
+      finishedShifts
+    )
+      ? finishedShifts
+      : [];
 
-  select.addEventListener(
-    "change",
-    handleTodayShiftChange
-  );
+  toggle.textContent =
+    "終了者一覧" +
+    (
+      shifts.length
+        ? "（" +
+          shifts.length +
+          "）"
+        : ""
+    );
 
-  setStaffActionButtonsByState(
-    ""
+  if (!shifts.length) {
+    list.innerHTML =
+      '<div class="finished-support-empty">終了した支援はありません。</div>';
+    return;
+  }
+
+  list.innerHTML =
+    shifts.map(
+      shift => {
+        const state =
+          String(
+            shift.currentState ||
+            "終了"
+          ).trim();
+
+        return (
+          '<div class="finished-support-item">' +
+            '<div class="finished-support-main">' +
+              escapePortalText_(
+                shift.clientName ||
+                ""
+              ) +
+            '</div>' +
+            '<div class="finished-support-sub">' +
+              escapePortalText_(
+                (shift.service || "") +
+                "　" +
+                (shift.startTime || "") +
+                "～" +
+                (shift.endTime || "")
+              ) +
+              '<span class="finished-support-state ' +
+                (
+                  state === "キャンセル"
+                    ? "cancelled"
+                    : ""
+                ) +
+              '">' +
+                escapePortalText_(
+                  state
+                ) +
+              '</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+    ).join("");
+}
+
+function toggleFinishedSupportList() {
+  const list =
+    document.getElementById(
+      "finishedSupportList"
+    );
+
+  if (!list) {
+    return;
+  }
+
+  list.classList.toggle(
+    "hidden"
   );
 }
 
-
-/**
- * 操作対象シフトが選択されたときの表示です。
- */
 function handleTodayShiftChange() {
   const shift =
     getSelectedTodayShift();
@@ -1093,23 +1240,17 @@ function updateSupportMainDisplay_(shift) {
   if (!shift) {
     if (title) {
       title.textContent =
-        todayStaffShifts.length
-          ? "支援を選択してください"
-          : "本日の支援予定はありません";
+        "支援を選択してください";
     }
 
     if (meta) {
       meta.textContent =
-        todayStaffShifts.length
-          ? ""
-          : "現在、操作する支援はありません。";
+        "";
     }
 
     if (statePill) {
       statePill.textContent =
-        todayStaffShifts.length
-          ? "待機中"
-          : "予定なし";
+        "待機中";
     }
 
     return;

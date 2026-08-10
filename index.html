@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css?v=20260810-1">
+  <link rel="stylesheet" href="index.css?v=20260810-supportlayout-1">
 </head>
 <body>
 
@@ -166,67 +166,72 @@
           </div>
         </div>
 
+        
         <section class="support-control-panel">
-          <div class="support-control-head">
-            <div>
-              <div class="support-kicker">本日の支援</div>
-              <h2 id="supportMainTitle">支援予定を確認しています</h2>
-              <p id="supportMainMeta" class="support-main-meta"></p>
-            </div>
-            <div class="support-head-actions">
-              <button id="undoButton" class="portal-mini-button" type="button" onclick="undoLastPortalAction()" disabled>
-                ↶ 元に戻す
-              </button>
-              <span id="supportHeaderState" class="support-state-pill">待機中</span>
-            </div>
-          </div>
+          <div class="support-simple-title">支援を選択してください</div>
 
-          <div id="addedShiftNotice" class="added-shift-notice hidden"></div>
-
-          <div class="support-selector-row">
+          <div class="support-selector-status-row">
             <select id="todayShiftSelect" aria-label="操作する支援">
-              <option value="">本日の担当シフトを読み込んでいます…</option>
+              <option value="">支援を選択してください</option>
             </select>
-            <button id="instructionButton" class="portal-mini-button" type="button" onclick="openInstructionModal()" disabled>
-              📌 指示
-            </button>
+            <span id="supportHeaderState" class="support-state-pill">待機中</span>
           </div>
 
           <div id="selectedShiftStatus" class="selected-shift-status"></div>
+
           <div id="pcOperationNotice" class="pc-operation-notice hidden">
-            この操作はスマートフォン専用です。PCでは「向かいます」「キャンセル」「行動記録」「入りました」「終わりました」などの支援操作はできません。
+            この操作はスマートフォン専用です。PCでは支援操作はできません。
           </div>
 
-          <div class="support-action-grid" id="portalActionButtons">
-            <button id="moveButton" class="support-action-button action-go" type="button" onclick="sendStaffAction('向かいます')">
+          <div class="support-utility-row">
+            <button id="instructionButton" class="portal-mini-button" type="button"
+              onclick="openInstructionModal()" disabled>📌 指示</button>
+
+            <button id="portalHistoryButton" class="portal-mini-button" type="button"
+              onclick="openPortalHistory()">🕘 記録履歴</button>
+
+            <button id="undoButton" class="portal-mini-button" type="button"
+              onclick="undoLastPortalAction()" disabled>↶ 元に戻す</button>
+          </div>
+
+          <div id="portalActionButtons" class="support-action-grid hidden">
+            <button id="moveButton" class="support-action-button action-go hidden" type="button"
+              onclick="sendStaffAction('向かいます')">
               <span>🚶</span><strong>向かいます</strong>
             </button>
 
-            <button id="preCancelButton" class="support-action-button action-cancel hidden" type="button" onclick="sendPortalCancel(true)">
+            <button id="preCancelButton" class="support-action-button action-cancel hidden" type="button"
+              onclick="sendPortalCancel(true)">
               <span>✖</span><strong>事前キャンセル</strong>
             </button>
 
-            <button id="enterButton" class="support-action-button action-enter hidden" type="button" onclick="sendStaffAction('入りました')">
+            <button id="enterButton" class="support-action-button action-enter hidden" type="button"
+              onclick="sendStaffAction('入りました')">
               <span>📍</span><strong>入りました</strong>
             </button>
 
-            <button id="cancelButton" class="support-action-button action-cancel hidden" type="button" onclick="sendPortalCancel(false)">
+            <button id="cancelButton" class="support-action-button action-cancel hidden" type="button"
+              onclick="sendPortalCancel(false)">
               <span>✖</span><strong>キャンセル</strong>
             </button>
 
-            <button id="actionRecordButton" class="support-action-button action-record hidden" type="button" onclick="openSelectedOutingActionRecord()">
+            <button id="actionRecordButton" class="support-action-button action-record hidden" type="button"
+              onclick="openSelectedOutingActionRecord()">
               <span>📷</span><strong>行動記録</strong>
             </button>
 
-            <button id="homeReturnButton" class="support-action-button action-home hidden" type="button" onclick="openSelectedOutingHome()">
+            <button id="homeReturnButton" class="support-action-button action-home hidden" type="button"
+              onclick="openSelectedOutingHome()">
               <span>🏠</span><strong>帰宅</strong>
             </button>
 
-            <button id="continueButton" class="support-action-button action-record hidden" type="button" onclick="continueToNextSupport()">
+            <button id="continueButton" class="support-action-button action-record hidden" type="button"
+              onclick="continueToNextSupport()">
               <span>↪</span><strong>引き続き支援</strong>
             </button>
 
-            <button id="finishButton" class="support-action-button action-finish hidden" type="button" onclick="sendStaffAction('終わりました')">
+            <button id="finishButton" class="support-action-button action-finish hidden" type="button"
+              onclick="sendStaffAction('終わりました')">
               <span>■</span><strong>終わりました</strong>
             </button>
           </div>
@@ -234,10 +239,17 @@
           <div id="cancelFlash" class="portal-cancel-flash hidden"></div>
 
           <div class="support-sub-actions">
-            <button id="temporaryChangeButton" class="portal-sub-action" type="button" onclick="openTemporaryChangeNotice()">⚙ 今回だけ一時変更</button>
-            <button id="portalHistoryButton" class="portal-sub-action" type="button" onclick="openPortalHistory()">🕘 記録履歴</button>
+            <button id="temporaryChangeButton" class="portal-sub-action hidden" type="button"
+              onclick="openTemporaryChangeNotice()">⚙ 今回だけ一時変更</button>
+          </div>
+
+          <div class="finished-support-wrap">
+            <button id="finishedSupportToggle" class="finished-support-toggle" type="button"
+              onclick="toggleFinishedSupportList()">終了者一覧</button>
+            <div id="finishedSupportList" class="finished-support-list hidden"></div>
           </div>
         </section>
+
 
 
 				<!-- 事務所操作 -->
@@ -461,6 +473,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260801-3"></script>
-<script src="./portal.js?v=20260810-lockshift-1"></script>
+<script src="./portal.js?v=20260810-supportlayout-1"></script>
 </body>
 </html>
