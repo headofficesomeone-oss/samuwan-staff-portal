@@ -652,3 +652,7 @@ body.modal-open {
 .support-bottom-row .finished-support-toggle{
   width:100%;
 }
+
+.support-title-row .support-simple-title{
+  font-size:16px;
+}

@@ -1972,6 +1972,7 @@ async function continueToNextSupport() {
   if (!confirmed) return;
 
   setStaffActionButtonsDisabled(true);
+  setTodayShiftProcessing_(true);
 
   try {
     const deviceTime =
@@ -2090,6 +2091,8 @@ async function continueToNextSupport() {
     );
 
   } finally {
+    setTodayShiftProcessing_(false);
+
     const selectedShift =
       getSelectedTodayShift();
 
@@ -2348,6 +2351,10 @@ async function sendStaffAction(
     true
   );
 
+  setTodayShiftProcessing_(
+    true
+  );
+
   try {
     const deviceTime =
       new Date().toISOString();
@@ -2481,6 +2488,35 @@ function createStaffActionSendId(
   ].join("-");
 }
 
+
+
+function setTodayShiftProcessing_(processing) {
+  const select =
+    document.getElementById(
+      "todayShiftSelect"
+    );
+
+  if (!select) return;
+
+  if (processing) {
+    select.dataset.previousValue =
+      select.value || "";
+
+    select.innerHTML =
+      '<option value="">' +
+      'ただいま処理中です' +
+      '</option>';
+
+    select.disabled = true;
+
+  } else {
+    /*
+     * 最新状態は各処理後の loadTodayStaffShifts() が
+     * 再描画するため、ここでは解除だけ行います。
+     */
+    select.disabled = false;
+  }
+}
 
 function setStaffActionButtonsDisabled(
   disabled
