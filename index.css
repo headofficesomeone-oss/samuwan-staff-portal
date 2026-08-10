@@ -656,3 +656,40 @@ body.modal-open {
 .support-title-row .support-simple-title{
   font-size:16px;
 }
+
+
+/* ===== v13 状態表示・終了者モーダル ===== */
+.support-utility-status-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+  margin-top:12px;
+}
+.support-utility-status-row .support-utility-row-two{
+  margin-top:0;
+}
+.support-state-side{
+  min-width:64px;
+  text-align:center;
+  justify-content:center;
+  align-self:stretch;
+  display:flex;
+  align-items:center;
+}
+.finished-support-modal-card{
+  max-width:560px;
+}
+.finished-support-list.modal-list{
+  margin-top:0;
+}
+@media(max-width:520px){
+  .support-utility-status-row{
+    grid-template-columns:minmax(0,1fr) auto;
+  }
+  .support-state-side{
+    min-width:58px;
+    font-size:11px;
+    padding:7px 8px;
+  }
+}

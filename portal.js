@@ -792,6 +792,208 @@ function escapeHtmlForOption_(
 /**
  * 本日のシフトを選択欄へ表示します。
  */
+
+const ACTIVE_SUPPORT_CHAIN_KEY =
+  "staffPortalActiveSupportChainV1";
+
+function setSupportGuideText_(
+  text
+) {
+  const el =
+    document.getElementById(
+      "supportGuideText"
+    );
+
+  if (el) {
+    el.textContent =
+      text || "";
+  }
+}
+
+function getSavedSupportChain_() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        ACTIVE_SUPPORT_CHAIN_KEY
+      ) || "null"
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveSupportChain_(
+  shift
+) {
+  if (!shift) return;
+
+  localStorage.setItem(
+    ACTIVE_SUPPORT_CHAIN_KEY,
+    JSON.stringify({
+      clientName:
+        shift.clientName || "",
+
+      shiftId:
+        shift.shiftId || "",
+
+      startedAt:
+        new Date()
+          .toISOString()
+    })
+  );
+}
+
+function clearSupportChain_() {
+  localStorage.removeItem(
+    ACTIVE_SUPPORT_CHAIN_KEY
+  );
+}
+
+function isSameClientChain_(
+  shift,
+  chain
+) {
+  if (!shift || !chain) {
+    return false;
+  }
+
+  return (
+    String(
+      shift.clientName || ""
+    ).trim() ===
+    String(
+      chain.clientName || ""
+    ).trim()
+  );
+}
+
+function findChainShift_(
+  shifts
+) {
+  if (!Array.isArray(shifts)) {
+    return null;
+  }
+
+  const chain =
+    getSavedSupportChain_();
+
+  /*
+   * まず現在「移動中 / 支援中」の支援を優先します。
+   */
+  const active =
+    shifts.find(
+      shift =>
+        ["移動中","支援中"].includes(
+          String(
+            shift.currentState || ""
+          ).trim()
+        )
+    );
+
+  if (active) {
+    saveSupportChain_(
+      active
+    );
+    return active;
+  }
+
+  if (!chain) {
+    return null;
+  }
+
+  /*
+   * 同一利用者の一連の支援が続いている間は、
+   * 未開始の次支援もプルダウンに表示し続けます。
+   */
+  const sameClientSelectable =
+    shifts.find(
+      shift => {
+        const state =
+          String(
+            shift.currentState ||
+            "未開始"
+          ).trim();
+
+        return (
+          isSameClientChain_(
+            shift,
+            chain
+          ) &&
+          ![
+            "終了",
+            "キャンセル"
+          ].includes(
+            state
+          )
+        );
+      }
+    );
+
+  if (sameClientSelectable) {
+    return sameClientSelectable;
+  }
+
+  /*
+   * 同一利用者の選択可能な支援がなくなれば、
+   * 一連の支援は終了したと判断します。
+   */
+  clearSupportChain_();
+  return null;
+}
+
+function updateSupportGuideByState_(
+  shift,
+  selectableCount,
+  processing = false
+) {
+  if (processing) {
+    setSupportGuideText_(
+      "ただいま処理中です"
+    );
+    return;
+  }
+
+  if (!shift) {
+    if (selectableCount > 0) {
+      setSupportGuideText_(
+        "支援を選択してください"
+      );
+    } else {
+      setSupportGuideText_(
+        "本日の支援は終了しています"
+      );
+    }
+    return;
+  }
+
+  const state =
+    String(
+      shift.currentState ||
+      "未開始"
+    ).trim();
+
+  if (state === "移動中") {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんへ向かっています"
+    );
+    return;
+  }
+
+  if (state === "支援中") {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんを支援中です"
+    );
+    return;
+  }
+
+  setSupportGuideText_(
+    shift.clientName +
+    "さんの支援を選択中です"
+  );
+}
+
 function setTodayShiftOptions(shifts) {
   const select =
     document.getElementById(
@@ -839,14 +1041,47 @@ function setTodayShiftOptions(shifts) {
       }
     );
 
-  select.innerHTML =
-    '<option value="">' +
-    (
-      selectableShifts.length > 0
-        ? '支援を選択してください'
-        : '選択できる支援はありません'
-    ) +
-    '</option>';
+  /*
+   * 向かいます後～同一利用者の一連の支援が終わるまで、
+   * 現在の利用者の支援をプルダウンに保持します。
+   */
+  const chainShift =
+    findChainShift_(
+      selectableShifts
+    );
+
+  select.innerHTML = "";
+
+  if (
+    selectableShifts.length === 0
+  ) {
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value = "";
+    option.textContent =
+      "選択できる支援はありません";
+
+    select.appendChild(
+      option
+    );
+
+  } else if (!chainShift) {
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value = "";
+    option.textContent =
+      "支援を選択してください";
+
+    select.appendChild(
+      option
+    );
+  }
 
   selectableShifts.forEach(
     shift => {
@@ -887,7 +1122,11 @@ function setTodayShiftOptions(shifts) {
   if (
     selectableShifts.length === 0
   ) {
-    setStaffActionButtonsByState("");
+    clearSupportChain_();
+
+    setStaffActionButtonsByState(
+      ""
+    );
 
     const actionGrid =
       document.getElementById(
@@ -911,8 +1150,18 @@ function setTodayShiftOptions(shifts) {
       );
     }
 
-    updateSupportMainDisplay_(null);
-    applyPcOperationGuard_(null);
+    updateSupportMainDisplay_(
+      null
+    );
+
+    updateSupportGuideByState_(
+      null,
+      0
+    );
+
+    applyPcOperationGuard_(
+      null
+    );
 
     return;
   }
@@ -931,16 +1180,35 @@ function setTodayShiftOptions(shifts) {
   select.onchange =
     handleTodayShiftChange;
 
-  const activeShift =
-    lockTodayShiftSelectorIfActive_(
-      selectableShifts
+  if (chainShift) {
+    select.value =
+      chainShift.shiftId;
+
+    select.disabled =
+      ["移動中","支援中"].includes(
+        String(
+          chainShift.currentState ||
+          ""
+        ).trim()
+      );
+
+    updateSupportGuideByState_(
+      chainShift,
+      selectableShifts.length
     );
 
-  if (activeShift) {
+    handleTodayShiftChange();
     return;
   }
 
+  select.disabled = false;
   select.value = "";
+
+  updateSupportGuideByState_(
+    null,
+    selectableShifts.length
+  );
+
   handleTodayShiftChange();
 }
 
@@ -980,7 +1248,7 @@ function renderFinishedSupportList_(
 
   if (!shifts.length) {
     list.innerHTML =
-      '<div class="finished-support-empty">終了した支援はありません。</div>';
+      '<div class="finished-support-empty">本日の終了・キャンセル済み支援はありません。</div>';
     return;
   }
 
@@ -1027,18 +1295,37 @@ function renderFinishedSupportList_(
     ).join("");
 }
 
-function toggleFinishedSupportList() {
-  const list =
+function openFinishedSupportModal() {
+  const modal =
     document.getElementById(
-      "finishedSupportList"
+      "finishedSupportModal"
     );
 
-  if (!list) {
-    return;
-  }
+  if (!modal) return;
 
-  list.classList.toggle(
+  modal.classList.remove(
     "hidden"
+  );
+
+  document.body.classList.add(
+    "modal-open"
+  );
+}
+
+function closeFinishedSupportModal() {
+  const modal =
+    document.getElementById(
+      "finishedSupportModal"
+    );
+
+  if (!modal) return;
+
+  modal.classList.add(
+    "hidden"
+  );
+
+  document.body.classList.remove(
+    "modal-open"
   );
 }
 
@@ -1087,6 +1374,19 @@ function handleTodayShiftChange() {
   const currentState =
     shift.currentState ||
     "未開始";
+
+  updateSupportGuideByState_(
+    shift,
+    todayStaffShifts.filter(
+      s =>
+        !["終了","キャンセル"].includes(
+          String(
+            s.currentState ||
+            "未開始"
+          ).trim()
+        )
+    ).length
+  );
 
   updateSupportMainDisplay_(shift);
 
@@ -2068,6 +2368,10 @@ async function continueToNextSupport() {
       }
     );
 
+    saveSupportChain_(
+      nextShift
+    );
+
     setTodayShiftProcessing_(false);
 
     await loadTodayStaffShifts(true);
@@ -2445,6 +2749,39 @@ async function sendStaffAction(
       { localLabel: options.localLabel || "" }
     );
 
+    /*
+     * 「向かいます」から同一利用者の一連支援を保持します。
+     */
+    if (actionType === "向かいます") {
+      saveSupportChain_(
+        shift
+      );
+    }
+
+    if (actionType === "キャンセル") {
+      const remainingSameClient =
+        todayStaffShifts.some(
+          s =>
+            s.shiftId !== shift.shiftId &&
+            String(
+              s.clientName || ""
+            ).trim() ===
+            String(
+              shift.clientName || ""
+            ).trim() &&
+            !["終了","キャンセル"].includes(
+              String(
+                s.currentState ||
+                "未開始"
+              ).trim()
+            )
+        );
+
+      if (!remainingSameClient) {
+        clearSupportChain_();
+      }
+    }
+
     if (actionType === "キャンセル") {
       showPortalCancelFlash_(shift.service);
     }
@@ -2521,7 +2858,9 @@ function createStaffActionSendId(
 
 
 
-function setTodayShiftProcessing_(processing) {
+function setTodayShiftProcessing_(
+  processing
+) {
   const select =
     document.getElementById(
       "todayShiftSelect"
@@ -2530,22 +2869,41 @@ function setTodayShiftProcessing_(processing) {
   if (!select) return;
 
   if (processing) {
-    select.dataset.previousValue =
-      select.value || "";
-
-    select.innerHTML =
-      '<option value="">' +
-      'ただいま処理中です' +
-      '</option>';
-
     select.disabled = true;
+
+    updateSupportGuideByState_(
+      getSelectedTodayShift(),
+      todayStaffShifts.filter(
+        s =>
+          !["終了","キャンセル"].includes(
+            String(
+              s.currentState ||
+              "未開始"
+            ).trim()
+          )
+      ).length,
+      true
+    );
 
   } else {
     /*
-     * 最新状態は各処理後の loadTodayStaffShifts() が
-     * 再描画するため、ここでは解除だけ行います。
+     * プルダウンの内容は保持したまま、
+     * 最新一覧再取得時に正しい状態へ更新します。
      */
-    select.disabled = false;
+    const shift =
+      getSelectedTodayShift();
+
+    const active =
+      shift &&
+      ["移動中","支援中"].includes(
+        String(
+          shift.currentState ||
+          ""
+        ).trim()
+      );
+
+    select.disabled =
+      !!active;
   }
 }
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css?v=20260810-processing-1">
+  <link rel="stylesheet" href="index.css?v=20260810-statusmodal-1">
 </head>
 <body>
 
@@ -170,8 +170,7 @@
         
         <section class="support-control-panel">
           <div class="support-title-row">
-            <div class="support-simple-title">支援を選択してください</div>
-            <span id="supportHeaderState" class="support-state-pill">待機中</span>
+            <div id="supportGuideText" class="support-simple-title">支援を選択してください</div>
           </div>
 
           <div class="support-selector-row-single">
@@ -186,12 +185,16 @@
             この操作はスマートフォン専用です。PCでは支援操作はできません。
           </div>
 
-          <div class="support-utility-row-two">
-            <button id="instructionButton" class="portal-mini-button" type="button"
-              onclick="openInstructionModal()" disabled>📌 指示</button>
+          <div class="support-utility-status-row">
+            <div class="support-utility-row-two">
+              <button id="instructionButton" class="portal-mini-button" type="button"
+                onclick="openInstructionModal()" disabled>📌 指示</button>
 
-            <button id="undoButton" class="portal-mini-button" type="button"
-              onclick="undoLastPortalAction()" disabled>↶ 元に戻す</button>
+              <button id="undoButton" class="portal-mini-button" type="button"
+                onclick="undoLastPortalAction()" disabled>↶ 元に戻す</button>
+            </div>
+
+            <span id="supportHeaderState" class="support-state-pill support-state-side">待機中</span>
           </div>
 
           <div id="portalActionButtons" class="support-action-grid hidden">
@@ -245,13 +248,12 @@
 
           <div class="support-bottom-row">
             <button id="finishedSupportToggle" class="finished-support-toggle" type="button"
-              onclick="toggleFinishedSupportList()">終了者一覧</button>
+              onclick="openFinishedSupportModal()">終了者一覧</button>
 
             <button id="portalHistoryButton" class="finished-support-toggle" type="button"
               onclick="openPortalHistory()">🕘 記録履歴</button>
           </div>
 
-          <div id="finishedSupportList" class="finished-support-list hidden"></div>
         </section>
 
 
@@ -455,7 +457,24 @@
 
 
 
-  <div id="portalHistoryModal" class="instruction-modal hidden" role="dialog" aria-modal="true">
+  
+  <div id="finishedSupportModal" class="instruction-modal hidden" role="dialog" aria-modal="true">
+    <div class="instruction-modal-backdrop" onclick="closeFinishedSupportModal()"></div>
+    <div class="instruction-modal-card finished-support-modal-card">
+      <div class="instruction-modal-header">
+        <div>
+          <h2>終了者一覧</h2>
+          <div class="history-helper-name">本日の終了・キャンセル済み支援</div>
+        </div>
+        <button class="instruction-close-button" type="button" onclick="closeFinishedSupportModal()">×</button>
+      </div>
+      <div class="instruction-modal-body">
+        <div id="finishedSupportList" class="finished-support-list modal-list"></div>
+      </div>
+    </div>
+  </div>
+
+<div id="portalHistoryModal" class="instruction-modal hidden" role="dialog" aria-modal="true">
     <div class="instruction-modal-backdrop" onclick="closePortalHistory()"></div>
     <div class="instruction-modal-card portal-history-card">
       <div class="instruction-modal-header">
@@ -478,6 +497,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260801-3"></script>
-<script src="./portal.js?v=20260810-processingfix-1"></script>
+<script src="./portal.js?v=20260810-statusmodal-1"></script>
 </body>
 </html>
