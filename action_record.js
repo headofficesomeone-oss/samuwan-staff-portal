@@ -104,9 +104,33 @@ async function initActionRecord_() {
     active.shiftId !==
       recordContext.shiftId
   ) {
+    /*
+     * 以前の支援のローカル状態が残っている可能性があります。
+     * GAS側でその支援がまだ進行中か確認し、
+     * 終了・キャンセル済み、または本日の支援一覧に存在しない場合は
+     * 古いローカル状態として自動削除します。
+     */
+    const stale =
+      await isStaleActiveOuting_(
+        active
+      );
+
+    if (stale) {
+      localStorage.removeItem(
+        ACTIVE_OUTING_KEY
+      );
+
+      prepareStartScreen_();
+      return;
+    }
+
     alert(
-      "別の支援の移動行程が進行中です。"
+      "別の支援の移動行程が進行中です。\n\n" +
+      (active.userName || "") +
+      "｜" +
+      (active.service || "")
     );
+
     returnToPortal_();
     return;
   }
@@ -1752,6 +1776,81 @@ async function callOutingApi_(
     throw new Error(
       "外出支援APIの応答を読み取れません"
     );
+  }
+}
+
+
+async function isStaleActiveOuting_(
+  active
+) {
+  try {
+    const result =
+      await postGas({
+        action:
+          "getTodayStaffShifts",
+
+        employeeId:
+          recordUser.employeeId,
+
+        employeeName:
+          recordUser.employeeName
+      });
+
+    if (
+      !result ||
+      result.success !== true ||
+      !Array.isArray(
+        result.shifts
+      )
+    ) {
+      return false;
+    }
+
+    const oldShift =
+      result.shifts.find(
+        s =>
+          String(
+            s.shiftId || ""
+          ).trim() ===
+          String(
+            active.shiftId || ""
+          ).trim()
+      );
+
+    /*
+     * 本日の一覧に存在しない場合は、
+     * 前回テストや別日のローカル残骸と判断します。
+     */
+    if (!oldShift) {
+      return true;
+    }
+
+    const state =
+      String(
+        oldShift.currentState || ""
+      ).trim();
+
+    /*
+     * 進行中とみなすのは移動中・支援中のみです。
+     */
+    return ![
+      "移動中",
+      "支援中"
+    ].includes(
+      state
+    );
+
+  } catch (error) {
+    console.warn(
+      "古い移動行程の確認に失敗しました",
+      error
+    );
+
+    /*
+     * 通信に失敗した場合は安全側に倒し、
+     * 自動削除しません。
+     */
+    return false;
   }
 }
 
