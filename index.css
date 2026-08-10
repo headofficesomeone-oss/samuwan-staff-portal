@@ -464,3 +464,9 @@ body.modal-open {
 .support-action-button.hidden{
   display:none !important;
 }
+
+.action-home{
+  border-color:#b9d8ea;
+  color:#1768bb;
+  background:#fbfdff;
+}

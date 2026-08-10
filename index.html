@@ -215,6 +215,14 @@
               <span>📷</span><strong>行動記録</strong>
             </button>
 
+            <button id="homeReturnButton" class="support-action-button action-home hidden" type="button" onclick="openSelectedOutingHome()">
+              <span>🏠</span><strong>帰宅</strong>
+            </button>
+
+            <button id="continueButton" class="support-action-button action-record hidden" type="button" onclick="continueToNextSupport()">
+              <span>↪</span><strong>引き続き支援</strong>
+            </button>
+
             <button id="finishButton" class="support-action-button action-finish hidden" type="button" onclick="sendStaffAction('終わりました')">
               <span>■</span><strong>終わりました</strong>
             </button>
@@ -450,6 +458,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260801-3"></script>
-<script src="./portal.js?v=20260810-1"></script>
+<script src="./portal.js?v=20260810-actionrecord-1"></script>
 </body>
 </html>

@@ -1176,17 +1176,132 @@ function showPortalCancelFlash_(service) {
   setTimeout(() => { el.classList.add("hidden"); el.textContent = ""; }, 2000);
 }
 
-function openSelectedOutingActionRecord() {
-  const shift = getSelectedTodayShift();
-  if (!shift) { alert("支援を選択してください。"); return; }
-  const params = new URLSearchParams();
-  params.set("shiftId", shift.shiftId || "");
-  params.set("clientName", shift.clientName || "");
-  params.set("service", shift.service || "");
-  params.set("scheduledStart", shift.startTime || "");
-  params.set("scheduledEnd", shift.endTime || "");
-  params.set("fromPortal", "1");
-  location.href = "./outing.html?" + params.toString();
+function getActiveOutingForShift_(shift) {
+  if (!shift) return null;
+
+  try {
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          "staffPortalActiveOuting"
+        ) || "null"
+      );
+
+    if (
+      saved &&
+      (
+        !saved.shiftId ||
+        saved.shiftId === shift.shiftId
+      )
+    ) {
+      return saved;
+    }
+
+  } catch (error) {
+    console.warn(
+      "進行中の行動記録を読み取れません",
+      error
+    );
+  }
+
+  return null;
+}
+
+function buildActionRecordUrl_(shift, options = {}) {
+  const params =
+    new URLSearchParams();
+
+  params.set(
+    "shiftId",
+    shift.shiftId || ""
+  );
+
+  params.set(
+    "clientName",
+    shift.clientName || ""
+  );
+
+  params.set(
+    "service",
+    shift.service || ""
+  );
+
+  params.set(
+    "supportDate",
+    shift.supportDate || ""
+  );
+
+  params.set(
+    "scheduledStart",
+    shift.startTime || ""
+  );
+
+  params.set(
+    "scheduledEnd",
+    shift.endTime || ""
+  );
+
+  params.set(
+    "fromPortal",
+    "1"
+  );
+
+  if (options.continuation) {
+    params.set(
+      "continuation",
+      "1"
+    );
+  }
+
+  if (options.mode) {
+    params.set(
+      "mode",
+      options.mode
+    );
+  }
+
+  return (
+    "./action_record.html?" +
+    params.toString()
+  );
+}
+
+function openSelectedOutingActionRecord(
+  options = {}
+) {
+  const shift =
+    getSelectedTodayShift();
+
+  if (!shift) {
+    alert(
+      "支援を選択してください。"
+    );
+    return;
+  }
+
+  location.href =
+    buildActionRecordUrl_(
+      shift,
+      options
+    );
+}
+
+function openSelectedOutingHome() {
+  const shift =
+    getSelectedTodayShift();
+
+  if (!shift) {
+    return;
+  }
+
+  location.href =
+    buildActionRecordUrl_(
+      shift,
+      {
+        mode:
+          "home"
+      }
+    );
 }
 
 function openTemporaryChangeNotice() {
@@ -1411,7 +1526,15 @@ function renderPortalHistory_() {
 
     let plannedText = "";
 
-    if (e.eventType === "向かいます") {
+    if (e.eventType === "引き続き支援") {
+      plannedText =
+        (e.fromService || "") +
+        " → " +
+        (e.service || "") +
+        (e.scheduledStart
+          ? "　" + e.scheduledStart
+          : "");
+    } else if (e.eventType === "向かいます") {
       plannedText =
         e.scheduledStart
           ? e.scheduledStart + " 開始予定"
@@ -1446,12 +1569,25 @@ function renderPortalHistory_() {
       '</strong>' +
       '<small>' +
       escapePortalText_(
-        e.clientName +
-        "｜" +
-        e.service +
-        (plannedText
-          ? "　" + plannedText
-          : "")
+        e.eventType === "引き続き支援"
+          ? (
+              (e.fromService || "") +
+              " → " +
+              (e.service || "") +
+              (e.scheduledStart
+                ? "　" + e.scheduledStart
+                : "") +
+              "｜" +
+              (e.clientName || "")
+            )
+          : (
+              e.clientName +
+              "｜" +
+              e.service +
+              (plannedText
+                ? "　" + plannedText
+                : "")
+            )
       ) +
       '</small>' +
       '</div>';
@@ -1468,16 +1604,223 @@ function escapePortalText_(v) {
   }[m]));
 }
 
+
+function getNextTodayShift_(shift) {
+  if (!shift || !Array.isArray(todayStaffShifts)) return null;
+
+  const currentIndex =
+    todayStaffShifts.findIndex(
+      s => s.shiftId === shift.shiftId
+    );
+
+  if (currentIndex < 0) return null;
+
+  const next =
+    todayStaffShifts[currentIndex + 1] || null;
+
+  if (!next) return null;
+
+  const sameClient =
+    String(next.clientName || "").trim() ===
+    String(shift.clientName || "").trim();
+
+  const touchingTime =
+    String(next.startTime || "").trim() ===
+    String(shift.endTime || "").trim();
+
+  if (!sameClient || !touchingTime) {
+    return null;
+  }
+
+  return next;
+}
+
+function canContinueSupport_(shift) {
+  return !!getNextTodayShift_(shift);
+}
+
+async function continueToNextSupport() {
+  const currentShift =
+    getSelectedTodayShift();
+
+  if (!currentShift) {
+    alert("現在の支援を確認できません。");
+    return;
+  }
+
+  const nextShift =
+    getNextTodayShift_(currentShift);
+
+  if (!nextShift) {
+    alert(
+      "同じ利用者で、終了予定時刻と次の開始予定時刻が一致する支援がありません。"
+    );
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      currentShift.clientName +
+      "\n\n" +
+      currentShift.service +
+      " " +
+      currentShift.startTime +
+      "～" +
+      currentShift.endTime +
+      "\n↓\n" +
+      nextShift.service +
+      " " +
+      nextShift.startTime +
+      "～" +
+      nextShift.endTime +
+      "\n\n引き続き支援へ切り替えますか？"
+    );
+
+  if (!confirmed) return;
+
+  setStaffActionButtonsDisabled(true);
+
+  try {
+    const deviceTime =
+      new Date().toISOString();
+
+    const sendId =
+      createStaffActionSendId(
+        currentUser.employeeId,
+        currentShift.shiftId,
+        "引き続き支援"
+      );
+
+    const result =
+      await postGas({
+        action:
+          "recordStaffContinuation",
+
+        employeeId:
+          currentUser.employeeId,
+
+        employeeName:
+          currentUser.employeeName,
+
+        fromShiftId:
+          currentShift.shiftId,
+
+        fromClientName:
+          currentShift.clientName,
+
+        fromService:
+          currentShift.service,
+
+        fromSupportDate:
+          currentShift.supportDate,
+
+        fromScheduledStart:
+          currentShift.startTime,
+
+        fromScheduledEnd:
+          currentShift.endTime,
+
+        toShiftId:
+          nextShift.shiftId,
+
+        toClientName:
+          nextShift.clientName,
+
+        toService:
+          nextShift.service,
+
+        toSupportDate:
+          nextShift.supportDate,
+
+        toScheduledStart:
+          nextShift.startTime,
+
+        toScheduledEnd:
+          nextShift.endTime,
+
+        deviceTime:
+          deviceTime,
+
+        sendId:
+          sendId,
+
+        registrationMethod:
+          "職員ポータル"
+      });
+
+    if (!result.success) {
+      throw new Error(
+        result.message ||
+        "引き続き支援を登録できませんでした。"
+      );
+    }
+
+    savePortalLocalHistory_(
+      "引き続き支援",
+      nextShift,
+      {
+        fromShiftId:
+          currentShift.shiftId,
+        fromService:
+          currentShift.service,
+        fromScheduledStart:
+          currentShift.startTime,
+        fromScheduledEnd:
+          currentShift.endTime
+      }
+    );
+
+    await loadTodayStaffShifts(true);
+
+    const select =
+      document.getElementById(
+        "todayShiftSelect"
+      );
+
+    if (select) {
+      select.value =
+        nextShift.shiftId;
+
+      handleTodayShiftChange();
+    }
+
+    if (isOutingService_(nextShift.service)) {
+      openSelectedOutingActionRecord({
+        continuation: true
+      });
+    }
+
+  } catch (error) {
+    alert(
+      "引き続き支援の登録に失敗しました：" +
+      error.message
+    );
+
+  } finally {
+    const selectedShift =
+      getSelectedTodayShift();
+
+    setStaffActionButtonsByState(
+      selectedShift
+        ? selectedShift.currentState ||
+          "未開始"
+        : ""
+    );
+  }
+}
+
 function setStaffActionButtonsByState(currentState) {
   const instructionButton = document.getElementById("instructionButton");
   const moveButton = document.getElementById("moveButton");
   const enterButton = document.getElementById("enterButton");
   const finishButton = document.getElementById("finishButton");
+  const continueButton = document.getElementById("continueButton");
   const preCancelButton = document.getElementById("preCancelButton");
   const cancelButton = document.getElementById("cancelButton");
   const actionRecordButton = document.getElementById("actionRecordButton");
+  const homeReturnButton = document.getElementById("homeReturnButton");
 
-  [moveButton,enterButton,finishButton,preCancelButton,cancelButton,actionRecordButton]
+  [moveButton,enterButton,finishButton,continueButton,preCancelButton,cancelButton,actionRecordButton,homeReturnButton]
     .forEach(b => { if (b) { b.disabled = true; b.classList.add("hidden"); } });
 
   const shift = getSelectedTodayShift();
@@ -1507,7 +1850,51 @@ function setStaffActionButtonsByState(currentState) {
       break;
 
     case "支援中":
-      if (finishButton) { finishButton.disabled = false; finishButton.classList.remove("hidden"); }
+      if (outing) {
+        const activeOuting =
+          getActiveOutingForShift_(shift);
+
+        if (activeOuting) {
+          if (actionRecordButton) {
+            actionRecordButton.disabled = false;
+            actionRecordButton.classList.remove("hidden");
+          }
+
+          if (
+            homeReturnButton &&
+            activeOuting.movementStatus ===
+              "移動中"
+          ) {
+            homeReturnButton.disabled = false;
+            homeReturnButton.classList.remove("hidden");
+          }
+
+        } else if (
+          canContinueSupport_(shift)
+        ) {
+          if (continueButton) {
+            continueButton.disabled = false;
+            continueButton.classList.remove("hidden");
+          }
+
+        } else if (finishButton) {
+          finishButton.disabled = false;
+          finishButton.classList.remove("hidden");
+        }
+
+      } else if (
+        canContinueSupport_(shift)
+      ) {
+        if (continueButton) {
+          continueButton.disabled = false;
+          continueButton.classList.remove("hidden");
+        }
+
+      } else if (finishButton) {
+        finishButton.disabled = false;
+        finishButton.classList.remove("hidden");
+      }
+
       break;
 
     case "終了":
@@ -1724,9 +2111,11 @@ function setStaffActionButtonsDisabled(
     "moveButton",
     "enterButton",
     "finishButton",
+    "continueButton",
     "preCancelButton",
     "cancelButton",
-    "actionRecordButton"
+    "actionRecordButton",
+    "homeReturnButton"
   ].forEach(id => {
     const button =
       document.getElementById(id);
