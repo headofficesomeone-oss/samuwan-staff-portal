@@ -590,3 +590,20 @@ body.modal-open {
     font-size:11px;
   }
 }
+
+.portal-client-history-group{
+  border:1px solid #dfe7e2;
+  border-radius:14px;
+  background:#fff;
+  margin-bottom:12px;
+  overflow:hidden;
+}
+.portal-client-history-head{
+  padding:10px 12px;
+  background:#f3f8f5;
+  border-bottom:1px solid #e2e9e5;
+  font-size:14px;
+}
+.portal-client-history-body{
+  padding:8px 12px 10px;
+}
