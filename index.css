@@ -482,3 +482,11 @@ body.modal-open {
   font-weight:800;
   line-height:1.6;
 }
+
+.support-selector-row select:disabled{
+  background:#f1f5f2;
+  color:#3f4f47;
+  opacity:1;
+  cursor:not-allowed;
+  font-weight:800;
+}
