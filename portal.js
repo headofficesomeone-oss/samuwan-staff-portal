@@ -1409,10 +1409,29 @@ function renderPortalHistory_() {
         ? " route"
         : "";
 
-    const scheduledRange =
-      [e.scheduledStart, e.scheduledEnd]
-        .filter(Boolean)
-        .join("～");
+    let plannedText = "";
+
+    if (e.eventType === "向かいます") {
+      plannedText =
+        e.scheduledStart
+          ? e.scheduledStart + " 開始予定"
+          : "";
+    } else if (
+      e.eventType === "入りました" ||
+      e.eventType === "支援開始"
+    ) {
+      plannedText =
+        e.scheduledStart || "";
+    } else if (
+      e.eventType === "終わりました" ||
+      e.eventType === "支援終了"
+    ) {
+      plannedText =
+        e.scheduledEnd || "";
+    } else {
+      // 外出行程などは予定時刻を無理に付けない
+      plannedText = "";
+    }
 
     html +=
       '<div class="portal-history-item' +
@@ -1430,8 +1449,8 @@ function renderPortalHistory_() {
         e.clientName +
         "｜" +
         e.service +
-        (scheduledRange
-          ? "　" + scheduledRange
+        (plannedText
+          ? "　" + plannedText
           : "")
       ) +
       '</small>' +
