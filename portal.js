@@ -830,6 +830,7 @@ function setTodayShiftOptions(shifts) {
     }
 
     updateSupportMainDisplay_(null);
+    applyPcOperationGuard_(null);
 
     return;
   }
@@ -1824,6 +1825,74 @@ async function continueToNextSupport() {
   }
 }
 
+
+function isPortalPc_() {
+  const ua =
+    String(
+      navigator.userAgent || ""
+    );
+
+  const touchDevice =
+    navigator.maxTouchPoints > 1;
+
+  const mobileUa =
+    /Android|iPhone|iPod|Mobile|Windows Phone/i
+      .test(ua);
+
+  const ipadLike =
+    /iPad/i.test(ua) ||
+    (
+      /Macintosh/i.test(ua) &&
+      touchDevice
+    );
+
+  return !mobileUa &&
+    !ipadLike;
+}
+
+function applyPcOperationGuard_(shift) {
+  const pc =
+    isPortalPc_();
+
+  const notice =
+    document.getElementById(
+      "pcOperationNotice"
+    );
+
+  const actionGrid =
+    document.getElementById(
+      "portalActionButtons"
+    );
+
+  const tempButton =
+    document.getElementById(
+      "temporaryChangeButton"
+    );
+
+  if (notice) {
+    notice.classList.toggle(
+      "hidden",
+      !pc
+    );
+  }
+
+  if (actionGrid) {
+    actionGrid.classList.toggle(
+      "hidden",
+      pc || !shift
+    );
+  }
+
+  if (tempButton) {
+    tempButton.classList.toggle(
+      "hidden",
+      pc || !shift
+    );
+  }
+
+  return pc;
+}
+
 function setStaffActionButtonsByState(currentState) {
   const instructionButton = document.getElementById("instructionButton");
   const moveButton = document.getElementById("moveButton");
@@ -1841,13 +1910,30 @@ function setStaffActionButtonsByState(currentState) {
   const shift = getSelectedTodayShift();
   updateSupportMainDisplay_(shift);
 
+  const pc =
+    applyPcOperationGuard_(
+      shift
+    );
+
   if (!shift) {
-    if (instructionButton) instructionButton.disabled = true;
+    if (instructionButton) {
+      instructionButton.disabled = true;
+    }
     return;
   }
 
-  if (instructionButton) instructionButton.disabled = false;
-  const outing = isOutingService_(shift.service);
+  if (instructionButton) {
+    instructionButton.disabled = false;
+  }
+
+  if (pc) {
+    return;
+  }
+
+  const outing =
+    isOutingService_(
+      shift.service
+    );
 
   switch (currentState || "未開始") {
     case "未開始":

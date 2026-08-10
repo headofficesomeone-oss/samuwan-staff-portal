@@ -193,6 +193,9 @@
           </div>
 
           <div id="selectedShiftStatus" class="selected-shift-status"></div>
+          <div id="pcOperationNotice" class="pc-operation-notice hidden">
+            この操作はスマートフォン専用です。PCでは「向かいます」「キャンセル」「行動記録」「入りました」「終わりました」などの支援操作はできません。
+          </div>
 
           <div class="support-action-grid" id="portalActionButtons">
             <button id="moveButton" class="support-action-button action-go" type="button" onclick="sendStaffAction('向かいます')">
@@ -458,6 +461,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260801-3"></script>
-<script src="./portal.js?v=20260810-actionrecord-2"></script>
+<script src="./portal.js?v=20260810-pcguard-1"></script>
 </body>
 </html>

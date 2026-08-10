@@ -470,3 +470,15 @@ body.modal-open {
   color:#1768bb;
   background:#fbfdff;
 }
+
+.pc-operation-notice{
+  margin-top:12px;
+  padding:12px 14px;
+  border:1px solid #f0c9c4;
+  border-radius:12px;
+  background:#fff8f7;
+  color:#b42318;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.6;
+}
