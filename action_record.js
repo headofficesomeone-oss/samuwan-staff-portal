@@ -456,8 +456,22 @@ async function registerInitialDeparture_() {
         "入りました"
       );
 
+      /*
+       * 支援そのものの開始と、移動行程の出発は別記録にします。
+       *
+       * 全行程:
+       *   14:57 支援開始
+       *     14:57 出発
+       *
+       * という形で表示できます。
+       */
       saveLocalHistory_(
-        "支援開始・出発",
+        "支援開始",
+        {}
+      );
+
+      saveLocalHistory_(
+        "出発",
         {
           place:
             place,
@@ -467,6 +481,11 @@ async function registerInitialDeparture_() {
       );
 
     } else {
+      /*
+       * 引き続き支援の場合は、支援開始自体は
+       * 「引き続き支援」で既に記録済みなので、
+       * 移動行程として「出発」だけを追加します。
+       */
       saveLocalHistory_(
         "出発",
         {
@@ -1360,11 +1379,20 @@ async function registerHome_(andEnd) {
       );
     }
 
+    const homeActualAt =
+      new Date()
+        .toISOString();
+
+    /*
+     * 帰宅（移動行程）と支援終了（支援本体）は別記録にします。
+     */
     saveLocalHistory_(
       "帰宅",
       {
         place:
-          "利用者宅"
+          "利用者宅",
+        actualAt:
+          homeActualAt
       }
     );
 
@@ -1377,7 +1405,9 @@ async function registerHome_(andEnd) {
         "支援終了",
         {
           place:
-            "利用者宅"
+            "利用者宅",
+          actualAt:
+            homeActualAt
         }
       );
 
@@ -1892,6 +1922,17 @@ function saveLocalHistory_(
       );
   } catch (error) {}
 
+  const actualAt =
+    extra.actualAt ||
+    new Date()
+      .toISOString();
+
+  const cleanExtra = {
+    ...extra
+  };
+
+  delete cleanExtra.actualAt;
+
   list.push({
     id:
       "PH-" +
@@ -1930,10 +1971,9 @@ function saveLocalHistory_(
       eventType,
 
     actualAt:
-      new Date()
-        .toISOString(),
+      actualAt,
 
-    ...extra
+    ...cleanExtra
   });
 
   localStorage.setItem(
