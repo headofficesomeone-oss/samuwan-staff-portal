@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css?v=20260805-1">
+  <link rel="stylesheet" href="index.css?v=20260810-1">
 </head>
 <body>
 
@@ -166,41 +166,69 @@
           </div>
         </div>
 
-				<div class="today-shift-box">
-				
-				  <div
-				    id="addedShiftNotice"
-				    class="added-shift-notice hidden"
-				  ></div>
-				  
-  				<label for="todayShiftSelect">
-				    操作する支援を選択してください
-				  </label>
+        <section class="support-control-panel">
+          <div class="support-control-head">
+            <div>
+              <div class="support-kicker">本日の支援</div>
+              <h2 id="supportMainTitle">支援予定を確認しています</h2>
+              <p id="supportMainMeta" class="support-main-meta"></p>
+            </div>
+            <div class="support-head-actions">
+              <button id="undoButton" class="portal-mini-button" type="button" onclick="undoLastPortalAction()" disabled>
+                ↶ 元に戻す
+              </button>
+              <span id="supportHeaderState" class="support-state-pill">待機中</span>
+            </div>
+          </div>
 
-				  <select id="todayShiftSelect">
-				    <option value="">
-				      本日の担当シフトを読み込んでいます…
-				    </option>
-				  </select>
+          <div id="addedShiftNotice" class="added-shift-notice hidden"></div>
 
-				  <div
-				    id="selectedShiftStatus"
-				    class="selected-shift-status"
-				  ></div>				  
+          <div class="support-selector-row">
+            <select id="todayShiftSelect" aria-label="操作する支援">
+              <option value="">本日の担当シフトを読み込んでいます…</option>
+            </select>
+            <button id="instructionButton" class="portal-mini-button" type="button" onclick="openInstructionModal()" disabled>
+              📌 指示
+            </button>
+          </div>
 
-				</div>
+          <div id="selectedShiftStatus" class="selected-shift-status"></div>
 
-				<div class="quick-menu-grid">
+          <div class="support-action-grid" id="portalActionButtons">
+            <button id="moveButton" class="support-action-button action-go" type="button" onclick="sendStaffAction('向かいます')">
+              <span>🚶</span><strong>向かいます</strong>
+            </button>
 
-					<button
-					  id="instructionButton"
-					  class="quick-menu-card"
-					  type="button"
-					  onclick="openInstructionModal()"
-					  disabled
-					>
-					  <div class="quick-menu-icon">📌</div>
-					  <div class="quick-menu-title">指示を見る</div>
+            <button id="preCancelButton" class="support-action-button action-cancel hidden" type="button" onclick="sendPortalCancel(true)">
+              <span>✖</span><strong>事前キャンセル</strong>
+            </button>
+
+            <button id="enterButton" class="support-action-button action-enter hidden" type="button" onclick="sendStaffAction('入りました')">
+              <span>📍</span><strong>入りました</strong>
+            </button>
+
+            <button id="cancelButton" class="support-action-button action-cancel hidden" type="button" onclick="sendPortalCancel(false)">
+              <span>✖</span><strong>キャンセル</strong>
+            </button>
+
+            <button id="actionRecordButton" class="support-action-button action-record hidden" type="button" onclick="openSelectedOutingActionRecord()">
+              <span>📷</span><strong>行動記録</strong>
+            </button>
+
+            <button id="finishButton" class="support-action-button action-finish hidden" type="button" onclick="sendStaffAction('終わりました')">
+              <span>■</span><strong>終わりました</strong>
+            </button>
+          </div>
+
+          <div id="cancelFlash" class="portal-cancel-flash hidden"></div>
+
+          <div class="support-sub-actions">
+            <button class="portal-sub-action" type="button" onclick="openTemporaryChangeNotice()">⚙ 今回だけ一時変更</button>
+            <button class="portal-sub-action" type="button" onclick="openPortalHistory()">🕘 記録履歴</button>
+          </div>
+        </section>
+
+<div class="quick-menu-title">指示を見る</div>
 					</button>
 
 				  <button
@@ -432,8 +460,30 @@
 	</div>
 
 
+
+  <div id="portalHistoryModal" class="instruction-modal hidden" role="dialog" aria-modal="true">
+    <div class="instruction-modal-backdrop" onclick="closePortalHistory()"></div>
+    <div class="instruction-modal-card portal-history-card">
+      <div class="instruction-modal-header">
+        <div>
+          <h2>今日の記録履歴</h2>
+          <div id="historyHelperName" class="history-helper-name"></div>
+        </div>
+        <button class="instruction-close-button" type="button" onclick="closePortalHistory()">×</button>
+      </div>
+      <div class="instruction-modal-body">
+        <div class="portal-history-tabs">
+          <button class="active" data-history-mode="all" onclick="setPortalHistoryMode('all')">全行程</button>
+          <button data-history-mode="client" onclick="setPortalHistoryMode('client')">利用者履歴</button>
+          <button data-history-mode="staff" onclick="setPortalHistoryMode('staff')">従業員履歴</button>
+        </div>
+        <div id="portalHistoryView"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260801-3"></script>
-<script src="./portal.js?v=20260808-officework-1"></script>
+<script src="./portal.js?v=20260810-1"></script>
 </body>
 </html>

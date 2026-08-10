@@ -8,6 +8,7 @@ const OUTING_ROUTE_API_URL =
 
 let outingCurrentUser = null;
 let currentOutingSummaryContext = null;
+let portalOutingContext = null;
 
 /*
  * 二重クリック防止のため、
@@ -48,6 +49,8 @@ document.addEventListener(
         outingCurrentUser.employeeName +
         " さん";
     }
+
+    portalOutingContext = getPortalOutingContext_();
 
     const form =
       document.getElementById(
@@ -178,6 +181,48 @@ async function loadOutingClientList_() {
   }
 }
 
+
+
+function getPortalOutingContext_() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("fromPortal") !== "1") return null;
+  return {
+    shiftId: params.get("shiftId") || "",
+    clientName: params.get("clientName") || "",
+    service: params.get("service") || "",
+    scheduledStart: params.get("scheduledStart") || "",
+    scheduledEnd: params.get("scheduledEnd") || ""
+  };
+}
+
+function applyPortalOutingContext_() {
+  if (!portalOutingContext) return;
+
+  const service = document.getElementById("serviceType");
+  if (service) {
+    const value = portalOutingContext.service || "";
+    const options = Array.from(service.options);
+    const match = options.find(o => value.includes(o.value) || o.value.includes(value));
+    if (match) service.value = match.value;
+  }
+
+  const client = document.getElementById("outingClient");
+  if (client && portalOutingContext.clientName) {
+    const options = Array.from(client.options);
+    const match = options.find(o => String(o.textContent || "").trim() === portalOutingContext.clientName.trim());
+    if (match) client.value = match.value;
+  }
+
+  const heading = document.querySelector("#outingStartArea h2");
+  if (heading) heading.textContent = "行動記録を開始";
+
+  const desc = document.querySelector("#outingStartArea .section-description");
+  if (desc) {
+    desc.textContent = portalOutingContext.clientName + "　" +
+      portalOutingContext.service + "　" +
+      portalOutingContext.scheduledStart + "〜" + portalOutingContext.scheduledEnd;
+  }
+}
 
 /**
  * 外出支援開始フォームを送信します。
@@ -350,7 +395,7 @@ async function handleOutingStart_(
           today,
 
         shiftId:
-          "",
+          portalOutingContext?.shiftId || "",
 
         requestId:
           "",

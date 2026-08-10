@@ -908,6 +908,8 @@ function handleTodayShiftChange() {
     shift.currentState ||
     "未開始";
 
+  updateSupportMainDisplay_(shift);
+
   if (statusArea) {
     statusArea.textContent =
       shift.clientName +
@@ -1040,112 +1042,220 @@ function closeInstructionModal() {
   );
 }
 
-function setStaffActionButtonsByState(
-  currentState
-) {
-  const instructionButton =
-    document.getElementById(
-      "instructionButton"
-    );
 
-  const moveButton =
-    document.getElementById(
-      "moveButton"
-    );
+const PORTAL_HISTORY_KEY = "staffPortalLocalActionHistoryV1";
+let portalHistoryMode = "all";
 
-  const enterButton =
-    document.getElementById(
-      "enterButton"
-    );
+function isOutingService_(service) {
+  const s = String(service || "");
+  return ["同行援護","移動支援","通院介助","通院等介助","有償運送"].some(v => s.includes(v));
+}
 
-  const finishButton =
-    document.getElementById(
-      "finishButton"
-    );
+function setButtonVisible_(id, visible) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("hidden", !visible);
+}
 
-  /*
-   * 最初に4つすべて無効にします。
-   */
-  if (instructionButton) {
-    instructionButton.disabled = true;
+function updateSupportMainDisplay_(shift) {
+  const title = document.getElementById("supportMainTitle");
+  const meta = document.getElementById("supportMainMeta");
+  const statePill = document.getElementById("supportHeaderState");
+  if (!shift) {
+    if (title) title.textContent = todayStaffShifts.length ? "支援を選択してください" : "本日の支援予定はありません";
+    if (meta) meta.textContent = "";
+    if (statePill) statePill.textContent = "待機中";
+    return;
+  }
+  if (title) title.textContent = shift.service + "｜" + shift.clientName;
+  if (meta) meta.textContent = shift.startTime + "〜" + shift.endTime;
+  if (statePill) {
+    const st = shift.currentState || "未開始";
+    statePill.textContent = st === "未開始" ? "待機中" : (st === "移動中" ? "移動中" : (st === "支援中" ? "支援中" : "終了"));
+  }
+}
+
+function savePortalLocalHistory_(eventType, shift, extra = {}) {
+  if (!shift || !currentUser) return;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(PORTAL_HISTORY_KEY) || "[]"); } catch(e) {}
+  list.push({
+    id: "PH-" + Date.now() + "-" + Math.random().toString(36).slice(2,7),
+    employeeId: currentUser.employeeId || "",
+    employeeName: currentUser.employeeName || "",
+    supportDate: shift.supportDate || getTodayLocalDateText(),
+    shiftId: shift.shiftId || "",
+    clientName: shift.clientName || "",
+    service: shift.service || "",
+    scheduledStart: shift.startTime || "",
+    scheduledEnd: shift.endTime || "",
+    eventType,
+    actualAt: new Date().toISOString(),
+    ...extra
+  });
+  localStorage.setItem(PORTAL_HISTORY_KEY, JSON.stringify(list.slice(-300)));
+}
+
+function getPortalLocalHistory_() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PORTAL_HISTORY_KEY) || "[]");
+    const today = getTodayLocalDateText();
+    return Array.isArray(list) ? list.filter(x => x.supportDate === today && (!currentUser || x.employeeId === currentUser.employeeId)) : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+function formatActualTime_(iso) {
+  try {
+    return new Intl.DateTimeFormat("ja-JP",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(iso));
+  } catch(e) { return ""; }
+}
+
+function sendPortalCancel(isPre) {
+  const shift = getSelectedTodayShift();
+  if (!shift) { alert("操作する支援を選択してください。"); return; }
+  const label = isPre ? "事前キャンセル" : "キャンセル";
+  const ok = confirm(shift.clientName + "\n" + shift.startTime + "～" + shift.endTime + "\n\n" + label + "しますか？");
+  if (!ok) return;
+  // 現行GASにキャンセル処理があるかは環境依存。recordStaffActionへ同じ形式で送る。
+  sendStaffAction("キャンセル", { skipConfirm:true, localLabel:label });
+}
+
+function showPortalCancelFlash_(service) {
+  const el = document.getElementById("cancelFlash");
+  if (!el) return;
+  el.textContent = String(service || "支援") + "がキャンセルされました";
+  el.classList.remove("hidden");
+  setTimeout(() => { el.classList.add("hidden"); el.textContent = ""; }, 2000);
+}
+
+function openSelectedOutingActionRecord() {
+  const shift = getSelectedTodayShift();
+  if (!shift) { alert("支援を選択してください。"); return; }
+  const params = new URLSearchParams();
+  params.set("shiftId", shift.shiftId || "");
+  params.set("clientName", shift.clientName || "");
+  params.set("service", shift.service || "");
+  params.set("scheduledStart", shift.startTime || "");
+  params.set("scheduledEnd", shift.endTime || "");
+  params.set("fromPortal", "1");
+  location.href = "./outing.html?" + params.toString();
+}
+
+function openTemporaryChangeNotice() {
+  alert("今回だけ一時変更は、GAS側の保存先を追加した後に有効化します。\n画面仕様はデモ版の内容で実装予定です。");
+}
+
+function undoLastPortalAction() {
+  alert("元に戻すにはGAS側で取消対象IDを保持する処理が必要です。\nGAS実装後に有効化します。");
+}
+
+function openPortalHistory() {
+  const modal = document.getElementById("portalHistoryModal");
+  const helper = document.getElementById("historyHelperName");
+  if (helper && currentUser) helper.textContent = currentUser.employeeName;
+  renderPortalHistory_();
+  modal?.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closePortalHistory() {
+  document.getElementById("portalHistoryModal")?.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+}
+
+function setPortalHistoryMode(mode) {
+  portalHistoryMode = mode;
+  document.querySelectorAll("[data-history-mode]").forEach(btn => btn.classList.toggle("active", btn.dataset.historyMode === mode));
+  renderPortalHistory_();
+}
+
+function renderPortalHistory_() {
+  const view = document.getElementById("portalHistoryView");
+  if (!view) return;
+  const all = getPortalLocalHistory_();
+  let events = all.slice();
+
+  if (portalHistoryMode === "client") {
+    events = events.filter(e => e.eventType !== "向かいます");
+  } else if (portalHistoryMode === "staff") {
+    events = events.filter(e => ["入りました","支援開始","引き続き支援","終わりました","支援終了","キャンセル"].includes(e.eventType));
   }
 
-  if (moveButton) {
-    moveButton.disabled = true;
+  if (!events.length) {
+    view.innerHTML = '<div class="portal-history-empty">この端末で記録した履歴はまだありません。</div>';
+    return;
   }
 
-  if (enterButton) {
-    enterButton.disabled = true;
+  const routeTypes = ["出発","到着","帰宅","移動手段変更"];
+  let html = '<div class="portal-history-group">';
+  events.forEach(e => {
+    if (e.eventType === "キャンセル") {
+      html += '<div class="portal-history-cancel">キャンセル　' +
+        escapePortalText_(e.clientName) + '｜' + escapePortalText_(e.service) + '　' + escapePortalText_(e.scheduledStart) + '</div>';
+      return;
+    }
+    const time = formatActualTime_(e.actualAt);
+    const routeClass = routeTypes.includes(e.eventType) ? " route" : "";
+    html += '<div class="portal-history-item' + routeClass + '"><strong>' +
+      escapePortalText_(time + "　" + e.eventType) + '</strong><small>' +
+      escapePortalText_(e.clientName + "｜" + e.service + (e.scheduledStart ? "　" + e.scheduledStart : "")) +
+      '</small></div>';
+  });
+  html += '</div>';
+  view.innerHTML = html;
+}
+
+function escapePortalText_(v) {
+  return String(v == null ? "" : v).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+function setStaffActionButtonsByState(currentState) {
+  const instructionButton = document.getElementById("instructionButton");
+  const moveButton = document.getElementById("moveButton");
+  const enterButton = document.getElementById("enterButton");
+  const finishButton = document.getElementById("finishButton");
+  const preCancelButton = document.getElementById("preCancelButton");
+  const cancelButton = document.getElementById("cancelButton");
+  const actionRecordButton = document.getElementById("actionRecordButton");
+
+  [moveButton,enterButton,finishButton,preCancelButton,cancelButton,actionRecordButton]
+    .forEach(b => { if (b) { b.disabled = true; b.classList.add("hidden"); } });
+
+  const shift = getSelectedTodayShift();
+  updateSupportMainDisplay_(shift);
+
+  if (!shift) {
+    if (instructionButton) instructionButton.disabled = true;
+    return;
   }
 
-  if (finishButton) {
-    finishButton.disabled = true;
-  }
+  if (instructionButton) instructionButton.disabled = false;
+  const outing = isOutingService_(shift.service);
 
-  switch (currentState) {
-    /*
-     * 支援選択直後
-     */
+  switch (currentState || "未開始") {
     case "未開始":
-      if (instructionButton) {
-        instructionButton.disabled = false;
-      }
-
-      if (moveButton) {
-        moveButton.disabled = false;
-      }
-
+      if (moveButton) { moveButton.disabled = false; moveButton.classList.remove("hidden"); }
+      if (preCancelButton) { preCancelButton.disabled = false; preCancelButton.classList.remove("hidden"); }
       break;
 
-    /*
-     * 向かいます押下後
-     */
     case "移動中":
-      if (instructionButton) {
-        instructionButton.disabled = false;
+      if (outing) {
+        if (actionRecordButton) { actionRecordButton.disabled = false; actionRecordButton.classList.remove("hidden"); }
+      } else {
+        if (enterButton) { enterButton.disabled = false; enterButton.classList.remove("hidden"); }
       }
-
-      if (enterButton) {
-        enterButton.disabled = false;
-      }
-
+      if (cancelButton) { cancelButton.disabled = false; cancelButton.classList.remove("hidden"); }
       break;
 
-    /*
-     * 入りました押下後
-     */
     case "支援中":
-      if (instructionButton) {
-        instructionButton.disabled = false;
-      }
-
-      if (finishButton) {
-        finishButton.disabled = false;
-      }
-
+      if (finishButton) { finishButton.disabled = false; finishButton.classList.remove("hidden"); }
       break;
 
-    /*
-     * 終わりました押下後
-     */
     case "終了":
-      /*
-       * すべて無効のままです。
-       */
-      break;
-
-    default:
-      /*
-       * 支援未選択や状態不明の場合も
-       * すべて無効のままです。
-       */
-      if (currentState) {
-        console.warn(
-          "不明な現在状態です",
-          currentState
-        );
-      }
-
       break;
   }
 }
@@ -1173,7 +1283,8 @@ function getSelectedTodayShift() {
 }
 
 async function sendStaffAction(
-  actionType
+  actionType,
+  options = {}
 ) {
   const shift =
     getSelectedTodayShift();
@@ -1194,21 +1305,23 @@ async function sendStaffAction(
     return;
   }
 
-  const confirmed =
-    confirm(
-      shift.clientName +
-      "\n" +
-      shift.startTime +
-      "～" +
-      shift.endTime +
-      "\n\n" +
-      "「" +
-      actionType +
-      "」を記録しますか？"
-    );
+  if (!options.skipConfirm) {
+    const confirmed =
+      confirm(
+        shift.clientName +
+        "\n" +
+        shift.startTime +
+        "～" +
+        shift.endTime +
+        "\n\n" +
+        "「" +
+        actionType +
+        "」を記録しますか？"
+      );
 
-  if (!confirmed) {
-    return;
+    if (!confirmed) {
+      return;
+    }
   }
 
   setStaffActionButtonsDisabled(
@@ -1274,6 +1387,16 @@ async function sendStaffAction(
         result.message ||
         "操作を登録できませんでした。"
       );
+    }
+
+    savePortalLocalHistory_(
+      actionType === "キャンセル" ? "キャンセル" : actionType,
+      shift,
+      { localLabel: options.localLabel || "" }
+    );
+
+    if (actionType === "キャンセル") {
+      showPortalCancelFlash_(shift.service);
     }
 
     const selectedShiftId =
@@ -1345,7 +1468,10 @@ function setStaffActionButtonsDisabled(
   [
     "moveButton",
     "enterButton",
-    "finishButton"
+    "finishButton",
+    "preCancelButton",
+    "cancelButton",
+    "actionRecordButton"
   ].forEach(id => {
     const button =
       document.getElementById(id);
