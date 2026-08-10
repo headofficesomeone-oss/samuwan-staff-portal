@@ -458,3 +458,9 @@ body.modal-open {
 
 .support-action-grid.hidden{display:none !important}
 .portal-sub-action.hidden{display:none !important}
+
+
+/* 支援操作：その時点で使わないボタンは完全に非表示 */
+.support-action-button.hidden{
+  display:none !important;
+}
