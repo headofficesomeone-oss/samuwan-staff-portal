@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css?v=20260810-supportlayout-1">
+  <link rel="stylesheet" href="index.css?v=20260810-layout9-1">
 </head>
 <body>
 
@@ -167,14 +167,17 @@
         </div>
 
         
+        
         <section class="support-control-panel">
-          <div class="support-simple-title">支援を選択してください</div>
+          <div class="support-title-row">
+            <div class="support-simple-title">支援を選択してください</div>
+            <span id="supportHeaderState" class="support-state-pill">待機中</span>
+          </div>
 
-          <div class="support-selector-status-row">
+          <div class="support-selector-row-single">
             <select id="todayShiftSelect" aria-label="操作する支援">
               <option value="">支援を選択してください</option>
             </select>
-            <span id="supportHeaderState" class="support-state-pill">待機中</span>
           </div>
 
           <div id="selectedShiftStatus" class="selected-shift-status"></div>
@@ -183,12 +186,9 @@
             この操作はスマートフォン専用です。PCでは支援操作はできません。
           </div>
 
-          <div class="support-utility-row">
+          <div class="support-utility-row-two">
             <button id="instructionButton" class="portal-mini-button" type="button"
               onclick="openInstructionModal()" disabled>📌 指示</button>
-
-            <button id="portalHistoryButton" class="portal-mini-button" type="button"
-              onclick="openPortalHistory()">🕘 記録履歴</button>
 
             <button id="undoButton" class="portal-mini-button" type="button"
               onclick="undoLastPortalAction()" disabled>↶ 元に戻す</button>
@@ -243,12 +243,17 @@
               onclick="openTemporaryChangeNotice()">⚙ 今回だけ一時変更</button>
           </div>
 
-          <div class="finished-support-wrap">
+          <div class="support-bottom-row">
             <button id="finishedSupportToggle" class="finished-support-toggle" type="button"
               onclick="toggleFinishedSupportList()">終了者一覧</button>
-            <div id="finishedSupportList" class="finished-support-list hidden"></div>
+
+            <button id="portalHistoryButton" class="finished-support-toggle" type="button"
+              onclick="openPortalHistory()">🕘 記録履歴</button>
           </div>
+
+          <div id="finishedSupportList" class="finished-support-list hidden"></div>
         </section>
+
 
 
 
