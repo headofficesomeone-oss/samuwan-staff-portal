@@ -841,7 +841,11 @@ function setTodayShiftOptions(shifts) {
 
   select.innerHTML =
     '<option value="">' +
-    '支援を選択してください' +
+    (
+      selectableShifts.length > 0
+        ? '支援を選択してください'
+        : '選択できる支援はありません'
+    ) +
     '</option>';
 
   selectableShifts.forEach(
@@ -2064,6 +2068,8 @@ async function continueToNextSupport() {
       }
     );
 
+    setTodayShiftProcessing_(false);
+
     await loadTodayStaffShifts(true);
 
     const select =
@@ -2091,7 +2097,24 @@ async function continueToNextSupport() {
     );
 
   } finally {
-    setTodayShiftProcessing_(false);
+    /*
+     * 正常時は loadTodayStaffShifts() の直前で解除済み。
+     * エラー等で処理中表示が残っている場合だけ解除します。
+     */
+    const processingSelect =
+      document.getElementById(
+        "todayShiftSelect"
+      );
+
+    if (
+      processingSelect &&
+      processingSelect.options.length === 1 &&
+      processingSelect.options[0].textContent ===
+        "ただいま処理中です"
+    ) {
+      setTodayShiftProcessing_(false);
+      await loadTodayStaffShifts(true);
+    }
 
     const selectedShift =
       getSelectedTodayShift();
@@ -2428,6 +2451,14 @@ async function sendStaffAction(
 
     const selectedShiftId =
       shift.shiftId;
+
+    /*
+     * 最新状態を読み直す直前まで
+     * 「ただいま処理中です」を維持します。
+     * ここで通常表示へ戻し、その直後に最新状態を取得して
+     * ボタン/アイコンを切り替えます。
+     */
+    setTodayShiftProcessing_(false);
 
 		/*
 		 * 完了メッセージは表示せず、
