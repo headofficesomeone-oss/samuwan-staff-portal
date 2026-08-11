@@ -592,10 +592,17 @@ async function loadTodayStaffShifts(forceRefresh = false) {
   }
 
   /*
-   * 確認が終わるまでは、
-   * 3つの操作ボタンを使用不可にします。
+   * 最新状態の確認中は、現在の支援状態を「未開始」に戻してはいけません。
+   *
+   * setStaffActionButtonsByState("") を呼ぶと、
+   * currentState || "未開始" により「向かいます」が一瞬表示されるため、
+   * ここでは既存のボタン状態をいったん全て操作不可にするだけにします。
+   *
+   * GASから最新状態を取得した後、
+   * setTodayShiftOptions() / handleTodayShiftChange() が
+   * 正しい「入りました」「終わりました」等へ切り替えます。
    */
-  setStaffActionButtonsByState("");
+  setStaffActionButtonsDisabled(true);
 
   if (!currentUser) {
     select.innerHTML =
@@ -775,7 +782,7 @@ async function loadTodayStaffShifts(forceRefresh = false) {
       ) +
       '</option>';
 
-    setStaffActionButtonsByState("");
+    setStaffActionButtonsDisabled(true);
   }
 }
 
@@ -1714,6 +1721,36 @@ function getPortalLocalHistory_() {
   }
 }
 
+
+async function syncLocalPortalHistoryToServer_() {
+  const local =
+    getPortalLocalHistory_();
+
+  if (!local.length) {
+    return;
+  }
+
+  /*
+   * 以前スマホのlocalStorageだけに残っていた
+   * 出発・到着・帰宅・活動もサーバーへ救済します。
+   * 履歴IDでGAS側が重複排除します。
+   */
+  const jobs =
+    local.map(
+      event =>
+        postGas({
+          action:
+            "recordPortalHistoryEvent",
+          event:
+            event
+        })
+    );
+
+  await Promise.allSettled(
+    jobs
+  );
+}
+
 function getPortalHistoryForDisplay_() {
   const server =
     Array.isArray(
@@ -1763,6 +1800,42 @@ function getPortalHistoryForDisplay_() {
         b.actualAt || 0
       )
   );
+}
+
+
+function normalizePortalPlannedTime_(
+  value
+) {
+  if (!value) return "";
+
+  if (
+    /^\d{1,2}:\d{2}$/.test(
+      String(value).trim()
+    )
+  ) {
+    return String(value).trim();
+  }
+
+  const d =
+    new Date(value);
+
+  if (!Number.isNaN(d.getTime())) {
+    return new Intl.DateTimeFormat(
+      "ja-JP",
+      {
+        hour:
+          "2-digit",
+        minute:
+          "2-digit",
+        hour12:
+          false,
+        timeZone:
+          "Asia/Tokyo"
+      }
+    ).format(d);
+  }
+
+  return String(value);
 }
 
 function formatActualTime_(iso) {
@@ -1962,6 +2035,8 @@ async function openPortalHistory() {
   }
 
   try {
+    await syncLocalPortalHistoryToServer_();
+
     const result =
       await postGas({
         action:
@@ -2150,7 +2225,10 @@ function renderPortalHistory_() {
 
     cancels.forEach(e => {
       const scheduledRange =
-        [e.scheduledStart, e.scheduledEnd].filter(Boolean).join("～");
+        [e.scheduledStart, e.scheduledEnd]
+          .filter(Boolean)
+          .map(normalizePortalPlannedTime_)
+          .join("～");
 
       html +=
         '<div class="portal-history-cancel">' +
@@ -2188,6 +2266,7 @@ function renderPortalHistory_() {
         const scheduledRange =
           [serviceRow.scheduledStart, serviceRow.scheduledEnd]
             .filter(Boolean)
+            .map(normalizePortalPlannedTime_)
             .join("～");
 
         html +=
@@ -2257,6 +2336,7 @@ function renderPortalHistory_() {
             const scheduledRange =
               [e.scheduledStart, e.scheduledEnd]
                 .filter(Boolean)
+                .map(normalizePortalPlannedTime_)
                 .join("～");
 
             html +=
@@ -2359,7 +2439,10 @@ function renderPortalHistory_() {
   events.forEach(e => {
     if (e.eventType === "キャンセル") {
       const scheduledRange =
-        [e.scheduledStart, e.scheduledEnd].filter(Boolean).join("～");
+        [e.scheduledStart, e.scheduledEnd]
+          .filter(Boolean)
+          .map(normalizePortalPlannedTime_)
+          .join("～");
 
       html +=
         '<div class="portal-history-cancel">' +
@@ -2382,7 +2465,7 @@ function renderPortalHistory_() {
         (e.clientName || "") +
         "｜" +
         (e.service || "") +
-        (e.scheduledStart ? "　" + e.scheduledStart + " 開始予定" : "");
+        (e.scheduledStart ? "　" + normalizePortalPlannedTime_(e.scheduledStart) + " 開始予定" : "");
 
     } else if (e.eventType === "活動") {
       detailText =
@@ -2395,7 +2478,7 @@ function renderPortalHistory_() {
         (e.clientName || "") +
         "｜" +
         (e.service || "") +
-        (e.scheduledStart ? "　" + e.scheduledStart : "");
+        (e.scheduledStart ? "　" + normalizePortalPlannedTime_(e.scheduledStart) : "");
 
     } else if (e.eventType === "引き続き支援") {
       detailText =
@@ -2410,7 +2493,7 @@ function renderPortalHistory_() {
         (e.clientName || "") +
         "｜" +
         (e.service || "") +
-        (e.scheduledEnd ? "　" + e.scheduledEnd : "");
+        (e.scheduledEnd ? "　" + normalizePortalPlannedTime_(e.scheduledEnd) : "");
 
     } else {
       detailText =
@@ -2931,6 +3014,11 @@ async function sendStaffAction(
     shift
   );
 
+  setButtonsImmediatelyForAction_(
+    actionType,
+    shift
+  );
+
   setStaffActionButtonsDisabled(
     true
   );
@@ -3115,6 +3203,60 @@ function createStaffActionSendId(
 
 
 
+
+
+function setButtonsImmediatelyForAction_(
+  actionType,
+  shift
+) {
+  if (!shift) return;
+
+  /*
+   * GAS応答待ちの間に旧状態のボタンへ戻らないよう、
+   * 押した操作に対応する次状態を画面上だけ先に反映します。
+   * 実データはGAS応答後の再取得で確定します。
+   */
+  let optimisticState = "";
+
+  if (actionType === "向かいます") {
+    optimisticState =
+      "移動中";
+
+  } else if (
+    actionType === "入りました" ||
+    actionType === "支援開始"
+  ) {
+    optimisticState =
+      "支援中";
+
+  } else if (
+    actionType === "終わりました" ||
+    actionType === "キャンセル"
+  ) {
+    /*
+     * 終了/キャンセルは次の支援一覧を取得するまで
+     * 操作ボタンをすべて隠しておきます。
+     */
+    setStaffActionButtonsDisabled(
+      true
+    );
+    return;
+  }
+
+  if (optimisticState) {
+    /*
+     * todayStaffShiftsの実状態は書き換えず、
+     * ボタン表示だけ先行更新します。
+     */
+    setStaffActionButtonsByState(
+      optimisticState
+    );
+
+    setStaffActionButtonsDisabled(
+      true
+    );
+  }
+}
 
 function setGuideImmediatelyForAction_(
   actionType,

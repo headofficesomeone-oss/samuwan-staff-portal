@@ -60,7 +60,8 @@ async function postGas(data) {
             "text/plain;charset=utf-8"
         },
         body: JSON.stringify(data),
-        redirect: "follow"
+        redirect: "follow",
+        keepalive: true
       }
     );
 

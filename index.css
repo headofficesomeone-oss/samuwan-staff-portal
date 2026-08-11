@@ -440,7 +440,7 @@ body.modal-open {
 .portal-history-item:before{
   content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:#8da399;left:-5px;top:14px
 }
-.portal-history-item.route{margin-left:20px}
+.portal-history-item.route{margin-left:28px}
 .portal-history-item strong{display:block;font-size:13px}
 .portal-history-item small{display:block;margin-top:3px;color:#6e7973;line-height:1.5}
 .portal-history-cancel{
