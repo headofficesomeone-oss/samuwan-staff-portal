@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>行動記録</title>
   <link rel="stylesheet" href="./index.css?v=20260810-actionrecord-1">
-  <link rel="stylesheet" href="./action_record.css?v=20260810-1">
+  <link rel="stylesheet" href="./action_record.css?v=20260811-activity-1">
 </head>
 <body>
   <header class="record-header">
@@ -117,6 +117,30 @@
           <textarea id="manualNote" rows="3" placeholder="必要な場合だけ入力"></textarea>
           <button class="record-primary" type="button" onclick="prepareManualConfirm_()">確認へ</button>
         </div>
+
+        <div class="direct-home-box">
+          <div class="direct-home-title">どこにも立ち寄らず帰宅する場合</div>
+          <div class="direct-home-note">
+            散歩・運動・ごみ出しなど、途中の到着場所を登録しない場合はこちらを選択します。
+          </div>
+
+          <div class="activity-choice-row">
+            <button type="button" onclick="setDirectActivity_('自宅周辺の散歩')">散歩</button>
+            <button type="button" onclick="setDirectActivity_('運動')">運動</button>
+            <button type="button" onclick="setDirectActivity_('ラジオ体操')">ラジオ体操</button>
+            <button type="button" onclick="setDirectActivity_('ごみ出し')">ごみ出し</button>
+          </div>
+
+          <label class="record-label" for="directActivity">何をしたか</label>
+          <div class="input-with-action">
+            <input id="directActivity" type="text" placeholder="例：自宅周辺の散歩">
+            <button type="button" onclick="startVoiceInput_('directActivity')">🎤</button>
+          </div>
+
+          <button class="record-secondary direct-home-button" type="button" onclick="openDirectHomeFromMove_()">
+            🏠 このまま帰宅
+          </button>
+        </div>
       </div>
     </section>
 
@@ -221,7 +245,7 @@
     <section id="screenHome" class="record-screen hidden">
       <div class="record-card">
         <h1>帰宅</h1>
-        <p class="record-lead">利用者宅への到着として登録します。</p>
+        <p id="homeLead" class="record-lead">利用者宅への帰宅として登録します。</p>
         <div class="home-box">🏠 利用者宅</div>
         <div class="record-button-row stack">
           <button class="record-primary" type="button" onclick="registerHome_(false)">帰宅を登録</button>
@@ -232,6 +256,6 @@
   </main>
 
   <script src="./common.js?v=20260810-1"></script>
-  <script src="./action_record.js?v=20260811-route-fixed-1"></script>
+  <script src="./action_record.js?v=20260811-activity-1"></script>
 </body>
 </html>

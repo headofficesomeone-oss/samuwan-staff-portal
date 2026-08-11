@@ -2133,6 +2133,10 @@ function renderPortalHistory_() {
                 ? "　" + e.scheduledStart
                 : "");
 
+          } else if (e.eventType === "活動") {
+            detailText =
+              e.activity || "";
+
           } else if (e.eventType === "引き続き支援") {
             detailText =
               (e.fromService || "") +
@@ -2224,6 +2228,12 @@ function renderPortalHistory_() {
         "｜" +
         (e.service || "") +
         (e.scheduledStart ? "　" + e.scheduledStart + " 開始予定" : "");
+
+    } else if (e.eventType === "活動") {
+      detailText =
+        (e.clientName || "") +
+        "｜" +
+        (e.activity || "");
 
     } else if (e.eventType === "入りました" || e.eventType === "支援開始") {
       detailText =

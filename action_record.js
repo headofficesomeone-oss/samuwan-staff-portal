@@ -959,6 +959,75 @@ async function registerArrival_() {
   }
 }
 
+
+function setDirectActivity_(
+  text
+) {
+  const input =
+    document.getElementById(
+      "directActivity"
+    );
+
+  if (input) {
+    input.value =
+      text || "";
+  }
+}
+
+function openDirectHomeFromMove_() {
+  const active =
+    getActiveOuting_();
+
+  if (
+    !active ||
+    active.movementStatus !==
+      "移動中"
+  ) {
+    alert(
+      "現在は帰宅を登録できる状態ではありません。"
+    );
+    return;
+  }
+
+  const activity =
+    value_(
+      "directActivity"
+    );
+
+  if (!activity) {
+    alert(
+      "何をしたか入力してください。"
+    );
+    return;
+  }
+
+  active.directActivity =
+    activity;
+
+  saveActiveOuting_(
+    active
+  );
+
+  const lead =
+    document.getElementById(
+      "homeLead"
+    );
+
+  if (lead) {
+    lead.textContent =
+      activity +
+      "を行い、利用者宅へ帰宅します。";
+  }
+
+  showOnly_(
+    "screenHome"
+  );
+
+  setBadge_(
+    "帰宅"
+  );
+}
+
 function showAtPlace_() {
   const active =
     getActiveOuting_();
@@ -1430,6 +1499,22 @@ async function registerHome_(andEnd) {
     const homeActualAt =
       new Date()
         .toISOString();
+
+    /*
+     * 目的地なしの外出では、入力した活動内容を独立した履歴として残します。
+     * 表示上は「支援開始 → 活動内容 → 支援終了」とまとめられます。
+     */
+    if (active.directActivity) {
+      saveLocalHistory_(
+        "活動",
+        {
+          activity:
+            active.directActivity,
+          actualAt:
+            homeActualAt
+        }
+      );
+    }
 
     /*
      * 帰宅（移動行程）と支援終了（支援本体）は別記録にします。

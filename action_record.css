@@ -128,3 +128,41 @@ body{background:#f4f8f6}
   animation:recordSpin .8s linear infinite;
 }
 @keyframes recordSpin{to{transform:rotate(360deg)}}
+
+.direct-home-box{
+  margin-top:16px;
+  padding:14px;
+  border:1px solid #dce5e0;
+  border-radius:12px;
+  background:#f8fbf9;
+}
+.direct-home-title{
+  font-size:13px;
+  font-weight:900;
+  color:#3f4e46;
+}
+.direct-home-note{
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.55;
+  color:#6e7973;
+}
+.direct-home-button{
+  margin-top:10px;
+}
+
+.activity-choice-row{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:7px;
+  margin-top:12px;
+}
+.activity-choice-row button{
+  min-height:40px;
+  border:1px solid #d5dfda;
+  border-radius:10px;
+  background:#fff;
+  font-size:13px;
+  font-weight:800;
+  color:#4a5951;
+}
