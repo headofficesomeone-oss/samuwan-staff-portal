@@ -166,3 +166,22 @@ body{background:#f4f8f6}
   font-weight:800;
   color:#4a5951;
 }
+
+.home-activity-box{
+  margin-top:14px;
+  padding:14px;
+  border:1px solid #dce5e0;
+  border-radius:12px;
+  background:#f8fbf9;
+}
+.home-activity-title{
+  font-size:15px;
+  font-weight:900;
+  color:#33443b;
+}
+.home-activity-note{
+  margin-top:4px;
+  font-size:12px;
+  line-height:1.55;
+  color:#6e7973;
+}

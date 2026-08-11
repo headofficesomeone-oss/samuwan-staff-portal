@@ -110,6 +110,10 @@ async function initActionRecord_() {
       return;
     }
 
+    prepareHomeScreen_(
+      active
+    );
+
     showOnly_("screenHome");
     setBadge_("帰宅");
     return;
@@ -989,35 +993,9 @@ function openDirectHomeFromMove_() {
     return;
   }
 
-  const activity =
-    value_(
-      "directActivity"
-    );
-
-  if (!activity) {
-    alert(
-      "何をしたか入力してください。"
-    );
-    return;
-  }
-
-  active.directActivity =
-    activity;
-
-  saveActiveOuting_(
+  prepareHomeScreen_(
     active
   );
-
-  const lead =
-    document.getElementById(
-      "homeLead"
-    );
-
-  if (lead) {
-    lead.textContent =
-      activity +
-      "を行い、利用者宅へ帰宅します。";
-  }
 
   showOnly_(
     "screenHome"
@@ -1026,6 +1004,54 @@ function openDirectHomeFromMove_() {
   setBadge_(
     "帰宅"
   );
+}
+
+function prepareHomeScreen_(
+  active
+) {
+  const homeActivityBox =
+    document.getElementById(
+      "homeActivityBox"
+    );
+
+  const directActivityInput =
+    document.getElementById(
+      "directActivity"
+    );
+
+  const isNoStopPattern =
+    active &&
+    Number(
+      active.routeNumber || 1
+    ) === 1;
+
+  if (homeActivityBox) {
+    homeActivityBox.classList.toggle(
+      "hidden",
+      !isNoStopPattern
+    );
+  }
+
+  if (
+    directActivityInput &&
+    active &&
+    active.directActivity
+  ) {
+    directActivityInput.value =
+      active.directActivity;
+  }
+
+  const lead =
+    document.getElementById(
+      "homeLead"
+    );
+
+  if (lead) {
+    lead.textContent =
+      isNoStopPattern
+        ? "途中でどこにも立ち寄らなかった場合は、活動内容を入力して帰宅を登録します。"
+        : "利用者宅への帰宅として登録します。";
+  }
 }
 
 function showAtPlace_() {
@@ -1419,6 +1445,32 @@ async function registerHome_(andEnd) {
       "現在は帰宅を登録できません。"
     );
     return;
+  }
+
+  const isNoStopPattern =
+    Number(
+      active.routeNumber || 1
+    ) === 1;
+
+  if (isNoStopPattern) {
+    const activity =
+      value_(
+        "directActivity"
+      );
+
+    if (!activity) {
+      alert(
+        "何をしたか入力してください。"
+      );
+      return;
+    }
+
+    active.directActivity =
+      activity;
+
+    saveActiveOuting_(
+      active
+    );
   }
 
   const ok =
