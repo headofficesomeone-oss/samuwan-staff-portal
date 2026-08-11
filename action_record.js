@@ -11,7 +11,8 @@ const PORTAL_HISTORY_KEY =
 let recordUser = null;
 let recordContext = null;
 let cameraStream = null;
-let capturedImageData = "";\nlet recordOperationBusy = false;
+let capturedImageData = "";
+let recordOperationBusy = false;
 
 document.addEventListener(
   "DOMContentLoaded",
@@ -2231,3 +2232,14 @@ function returnToPortal_() {
   location.href =
     "./index.html";
 }
+
+
+window.addEventListener("error", event => {
+  const message = document.getElementById("recordMessage");
+  if (message) {
+    message.textContent =
+      "行動記録の読み込みでエラーが発生しました。ページを再読み込みしてください。";
+    message.classList.remove("hidden");
+    message.classList.add("error");
+  }
+});
