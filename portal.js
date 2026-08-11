@@ -1525,6 +1525,7 @@ function closeInstructionModal() {
 
 const PORTAL_HISTORY_KEY = "staffPortalLocalActionHistoryV1";
 let portalHistoryMode = "all";
+let portalServerHistory = null;
 
 
 let todayShiftRefreshTimer = null;
@@ -1667,16 +1668,101 @@ function savePortalLocalHistory_(eventType, shift, extra = {}) {
     ...extra
   });
   localStorage.setItem(PORTAL_HISTORY_KEY, JSON.stringify(list.slice(-300)));
+
+  /*
+   * PC/スマホ共通で履歴を見られるよう、
+   * 同じイベントをGAS側にも保存します。
+   * 表示操作を止めないため非同期で送ります。
+   */
+  postGas({
+    action: "recordPortalHistoryEvent",
+    event: list[list.length - 1]
+  }).catch(error => {
+    console.warn(
+      "履歴のサーバー同期に失敗しました",
+      error
+    );
+  });
 }
 
 function getPortalLocalHistory_() {
   try {
-    const list = JSON.parse(localStorage.getItem(PORTAL_HISTORY_KEY) || "[]");
-    const today = getTodayLocalDateText();
-    return Array.isArray(list) ? list.filter(x => x.supportDate === today && (!currentUser || x.employeeId === currentUser.employeeId)) : [];
+    const list =
+      JSON.parse(
+        localStorage.getItem(
+          PORTAL_HISTORY_KEY
+        ) || "[]"
+      );
+
+    const today =
+      getTodayLocalDateText();
+
+    return Array.isArray(list)
+      ? list.filter(
+          x =>
+            x.supportDate === today &&
+            (
+              !currentUser ||
+              x.employeeId ===
+                currentUser.employeeId
+            )
+        )
+      : [];
+
   } catch(e) {
     return [];
   }
+}
+
+function getPortalHistoryForDisplay_() {
+  const server =
+    Array.isArray(
+      portalServerHistory
+    )
+      ? portalServerHistory
+      : [];
+
+  const local =
+    getPortalLocalHistory_();
+
+  /*
+   * PCではserverが主、
+   * スマホではserver + 未同期localを統合。
+   */
+  const map =
+    new Map();
+
+  [...server, ...local]
+    .forEach(e => {
+      const key =
+        e.id ||
+        [
+          e.shiftId || "",
+          e.eventType || "",
+          e.actualAt || "",
+          e.clientName || "",
+          e.service || ""
+        ].join("|");
+
+      if (!map.has(key)) {
+        map.set(
+          key,
+          e
+        );
+      }
+    });
+
+  return Array.from(
+    map.values()
+  ).sort(
+    (a, b) =>
+      new Date(
+        a.actualAt || 0
+      ) -
+      new Date(
+        b.actualAt || 0
+      )
+  );
 }
 
 function formatActualTime_(iso) {
@@ -1839,13 +1925,82 @@ function undoLastPortalAction() {
   alert("元に戻すにはGAS側で取消対象IDを保持する処理が必要です。\nGAS実装後に有効化します。");
 }
 
-function openPortalHistory() {
-  const modal = document.getElementById("portalHistoryModal");
-  const helper = document.getElementById("historyHelperName");
-  if (helper && currentUser) helper.textContent = currentUser.employeeName;
+async function openPortalHistory() {
+  const modal =
+    document.getElementById(
+      "portalHistoryModal"
+    );
+
+  const helper =
+    document.getElementById(
+      "historyHelperName"
+    );
+
+  if (helper && currentUser) {
+    helper.textContent =
+      currentUser.employeeName;
+  }
+
+  modal?.classList.remove(
+    "hidden"
+  );
+
+  document.body.classList.add(
+    "modal-open"
+  );
+
+  const view =
+    document.getElementById(
+      "portalHistoryView"
+    );
+
+  if (view) {
+    view.innerHTML =
+      '<div class="portal-history-empty">' +
+      '履歴を読み込んでいます…' +
+      '</div>';
+  }
+
+  try {
+    const result =
+      await postGas({
+        action:
+          "getPortalHistory",
+
+        employeeId:
+          currentUser
+            ? currentUser.employeeId
+            : "",
+
+        supportDate:
+          getTodayLocalDateText()
+      });
+
+    if (
+      result &&
+      result.success === true &&
+      Array.isArray(
+        result.events
+      )
+    ) {
+      portalServerHistory =
+        result.events;
+    } else {
+      portalServerHistory =
+        null;
+    }
+
+  } catch (error) {
+    console.warn(
+      "サーバー履歴の取得に失敗しました",
+      error
+    );
+
+    portalServerHistory =
+      null;
+  }
+
   renderPortalHistory_();
-  modal?.classList.remove("hidden");
-  document.body.classList.add("modal-open");
 }
 
 function closePortalHistory() {
@@ -1863,12 +2018,12 @@ function renderPortalHistory_() {
   const view = document.getElementById("portalHistoryView");
   if (!view) return;
 
-  const all = getPortalLocalHistory_();
+  const all = getPortalHistoryForDisplay_();
 
   if (!all.length) {
     view.innerHTML =
       '<div class="portal-history-empty">' +
-      'この端末で記録した履歴はまだありません。' +
+      '本日の記録履歴はまだありません。' +
       '</div>';
     return;
   }
@@ -2119,7 +2274,7 @@ function renderPortalHistory_() {
             formatActualTime_(e.actualAt);
 
           const routeClass =
-            ["出発","到着","帰宅","移動手段変更"]
+            ["出発","到着","帰宅","移動手段変更","活動"]
               .includes(e.eventType)
                 ? " route"
                 : "";
@@ -2198,7 +2353,7 @@ function renderPortalHistory_() {
    */
   const events = all.slice();
 
-  const routeTypes = ["出発","到着","帰宅","移動手段変更"];
+  const routeTypes = ["出発","到着","帰宅","移動手段変更","活動"];
   let html = '<div class="portal-history-group">';
 
   events.forEach(e => {

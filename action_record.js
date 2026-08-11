@@ -2683,6 +2683,24 @@ function saveLocalHistory_(
       list.slice(-400)
     )
   );
+
+  /*
+   * 移動行程・活動もPCで確認できるよう
+   * GAS側へ同じ履歴イベントを同期します。
+   */
+  postGas({
+    action:
+      "recordPortalHistoryEvent",
+
+    event:
+      list[list.length - 1]
+  }).catch(
+    error =>
+      console.warn(
+        "行動履歴のサーバー同期に失敗しました",
+        error
+      )
+  );
 }
 
 function startVoiceInput_(
