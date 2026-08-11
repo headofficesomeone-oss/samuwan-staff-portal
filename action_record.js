@@ -11,12 +11,32 @@ const PORTAL_HISTORY_KEY =
 let recordUser = null;
 let recordContext = null;
 let cameraStream = null;
-let capturedImageData = "";
+let capturedImageData = "";\nlet recordOperationBusy = false;
 
 document.addEventListener(
   "DOMContentLoaded",
   initActionRecord_
 );
+
+
+function setRecordProcessing_(processing, text = "ただいま登録中です") {
+  recordOperationBusy = !!processing;
+
+  const overlay = document.getElementById("recordProcessingOverlay");
+  const textEl = document.getElementById("recordProcessingText");
+
+  if (textEl) {
+    textEl.textContent = text;
+  }
+
+  if (overlay) {
+    overlay.classList.toggle("hidden", !processing);
+  }
+}
+
+function guardRecordBusy_() {
+  return recordOperationBusy;
+}
 
 async function initActionRecord_() {
   recordUser =
@@ -230,6 +250,8 @@ function prepareStartScreen_() {
 }
 
 async function registerInitialDeparture_() {
+  if (guardRecordBusy_()) return;
+
   const place =
     value_("startPlace");
 
@@ -300,6 +322,8 @@ async function registerInitialDeparture_() {
     );
 
   if (!ok) return;
+
+  setRecordProcessing_(true, "出発を登録しています");
 
   showMessage_(
     "登録しています…"
@@ -501,6 +525,7 @@ async function registerInitialDeparture_() {
       "出発を登録しました。"
     );
 
+    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
     setTimeout(
       returnToPortal_,
       350
@@ -794,6 +819,8 @@ function prepareManualConfirm_() {
 }
 
 async function registerArrival_() {
+  if (guardRecordBusy_()) return;
+
   const active =
     getActiveOuting_();
 
@@ -828,6 +855,8 @@ async function registerArrival_() {
     );
 
   if (!ok) return;
+
+  setRecordProcessing_(true, "到着を登録しています");
 
   showMessage_(
     "到着を登録しています…"
@@ -914,6 +943,7 @@ async function registerArrival_() {
       "到着を登録しました。"
     );
 
+    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
     setTimeout(
       returnToPortal_,
       350
@@ -1000,6 +1030,8 @@ function openDepartureScreen_() {
 }
 
 async function registerNextDeparture_() {
+  if (guardRecordBusy_()) return;
+
   const active =
     getActiveOuting_();
 
@@ -1053,6 +1085,8 @@ async function registerNextDeparture_() {
     );
 
   if (!ok) return;
+
+  setRecordProcessing_(true, "出発を登録しています");
 
   showMessage_(
     "出発を登録しています…"
@@ -1175,6 +1209,7 @@ async function registerNextDeparture_() {
       "出発を登録しました。"
     );
 
+    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
     setTimeout(
       returnToPortal_,
       350
@@ -1190,6 +1225,8 @@ async function registerNextDeparture_() {
 }
 
 async function finishOutingAtCurrentPlace_() {
+  if (guardRecordBusy_()) return;
+
   const active =
     getActiveOuting_();
 
@@ -1211,6 +1248,8 @@ async function finishOutingAtCurrentPlace_() {
     );
 
   if (!ok) return;
+
+  setRecordProcessing_(true, "支援終了を登録しています");
 
   showMessage_(
     "支援終了を登録しています…"
@@ -1280,6 +1319,7 @@ async function finishOutingAtCurrentPlace_() {
         : "支援を終了しました。"
     );
 
+    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
     setTimeout(
       returnToPortal_,
       450
@@ -1295,6 +1335,8 @@ async function finishOutingAtCurrentPlace_() {
 }
 
 async function registerHome_(andEnd) {
+  if (guardRecordBusy_()) return;
+
   const active =
     getActiveOuting_();
 
@@ -1317,6 +1359,11 @@ async function registerHome_(andEnd) {
     );
 
   if (!ok) return;
+
+  setRecordProcessing_(
+    true,
+    andEnd ? "帰宅・支援終了を登録しています" : "帰宅を登録しています"
+  );
 
   showMessage_(
     "帰宅を登録しています…"
@@ -1441,6 +1488,7 @@ async function registerHome_(andEnd) {
         : "帰宅を登録しました。"
     );
 
+    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
     setTimeout(
       returnToPortal_,
       450
