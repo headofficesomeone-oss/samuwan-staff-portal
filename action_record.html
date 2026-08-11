@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>行動記録</title>
   <link rel="stylesheet" href="./index.css?v=20260810-actionrecord-1">
-  <link rel="stylesheet" href="./action_record.css?v=20260811-homeactivity-1">
+  <link rel="stylesheet" href="./action_record.css?v=20260811-activitycomplete-1">
 </head>
 <body>
   <header class="record-header">
@@ -74,6 +74,30 @@
         <button id="startRegisterButton" class="record-primary" type="button" onclick="registerInitialDeparture_()">
           支援開始・出発を登録
         </button>
+
+        <div class="start-activity-box">
+          <div class="start-activity-title">目的地に立ち寄らない場合</div>
+          <div class="start-activity-note">
+            散歩・運動・ごみ出しなど、特定の到着場所を登録しない支援はこちらです。
+          </div>
+
+          <div class="activity-choice-row">
+            <button type="button" onclick="setStartActivity_('自宅周辺の散歩')">散歩</button>
+            <button type="button" onclick="setStartActivity_('運動')">運動</button>
+            <button type="button" onclick="setStartActivity_('ラジオ体操')">ラジオ体操</button>
+            <button type="button" onclick="setStartActivity_('ごみ出し')">ごみ出し</button>
+          </div>
+
+          <label class="record-label" for="startActivity">何をしたか</label>
+          <div class="input-with-action">
+            <input id="startActivity" type="text" placeholder="例：自宅周辺の散歩">
+            <button type="button" onclick="startVoiceInput_('startActivity')">🎤</button>
+          </div>
+
+          <button class="record-secondary activity-complete-button" type="button" onclick="registerActivityOnlyRoute_()">
+            活動を登録して行程を終了
+          </button>
+        </div>
       </div>
     </section>
 
@@ -264,6 +288,6 @@
   </main>
 
   <script src="./common.js?v=20260810-1"></script>
-  <script src="./action_record.js?v=20260811-homeactivity-1"></script>
+  <script src="./action_record.js?v=20260811-activitycomplete-1"></script>
 </body>
 </html>

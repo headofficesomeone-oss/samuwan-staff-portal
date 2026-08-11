@@ -254,6 +254,172 @@ function prepareStartScreen_() {
   );
 }
 
+
+function setStartActivity_(
+  text
+) {
+  const input =
+    document.getElementById(
+      "startActivity"
+    );
+
+  if (input) {
+    input.value =
+      text || "";
+  }
+}
+
+async function getContinuousNextShift_() {
+  try {
+    const result =
+      await postGas({
+        action:
+          "getTodayStaffShifts",
+
+        employeeId:
+          recordUser.employeeId,
+
+        employeeName:
+          recordUser.employeeName
+      });
+
+    if (
+      !result ||
+      result.success !== true ||
+      !Array.isArray(
+        result.shifts
+      )
+    ) {
+      return null;
+    }
+
+    const shifts =
+      result.shifts;
+
+    const index =
+      shifts.findIndex(
+        s =>
+          s.shiftId ===
+          recordContext.shiftId
+      );
+
+    const next =
+      index >= 0
+        ? shifts[index + 1]
+        : null;
+
+    if (
+      !next ||
+      String(
+        next.clientName || ""
+      ).trim() !==
+      String(
+        recordContext.clientName || ""
+      ).trim() ||
+      String(
+        next.startTime || ""
+      ).trim() !==
+      String(
+        recordContext.scheduledEnd || ""
+      ).trim()
+    ) {
+      return null;
+    }
+
+    return next;
+
+  } catch (error) {
+    console.warn(
+      "次の連続支援確認に失敗",
+      error
+    );
+    return null;
+  }
+}
+
+async function recordContinuationFromActionRecord_(
+  nextShift
+) {
+  const result =
+    await postGas({
+      action:
+        "recordStaffContinuation",
+
+      employeeId:
+        recordUser.employeeId,
+
+      employeeName:
+        recordUser.employeeName,
+
+      fromShiftId:
+        recordContext.shiftId,
+
+      fromClientName:
+        recordContext.clientName,
+
+      fromService:
+        recordContext.service,
+
+      fromSupportDate:
+        recordContext.supportDate,
+
+      fromScheduledStart:
+        recordContext.scheduledStart,
+
+      fromScheduledEnd:
+        recordContext.scheduledEnd,
+
+      toShiftId:
+        nextShift.shiftId,
+
+      toClientName:
+        nextShift.clientName,
+
+      toService:
+        nextShift.service,
+
+      toSupportDate:
+        nextShift.supportDate,
+
+      toScheduledStart:
+        nextShift.startTime,
+
+      toScheduledEnd:
+        nextShift.endTime,
+
+      deviceTime:
+        new Date()
+          .toISOString(),
+
+      sendId:
+        [
+          recordUser.employeeId,
+          recordContext.shiftId,
+          nextShift.shiftId,
+          "引き続き支援",
+          Date.now(),
+          Math.random()
+            .toString(36)
+            .slice(2,8)
+        ].join("-"),
+
+      registrationMethod:
+        "行動記録"
+    });
+
+  if (
+    !result ||
+    result.success !== true
+  ) {
+    throw new Error(
+      result?.message ||
+      "引き続き支援へ切り替えられませんでした"
+    );
+  }
+
+  return result;
+}
+
 async function registerInitialDeparture_() {
   if (guardRecordBusy_()) return;
 
@@ -539,6 +705,413 @@ async function registerInitialDeparture_() {
   } catch (error) {
     showMessage_(
       "登録に失敗しました：" +
+      error.message,
+      true
+    );
+  }
+}
+
+
+async function registerActivityOnlyRoute_() {
+  if (guardRecordBusy_()) {
+    return;
+  }
+
+  const place =
+    value_(
+      "startPlace"
+    );
+
+  const activity =
+    value_(
+      "startActivity"
+    );
+
+  if (!place) {
+    alert(
+      "最初の場所を入力してください。"
+    );
+    return;
+  }
+
+  if (!activity) {
+    alert(
+      "何をしたか入力してください。"
+    );
+    return;
+  }
+
+  const paid =
+    recordContext.service ===
+      "有償運送";
+
+  const transport =
+    paid
+      ? "有償運送"
+      : value_(
+          "startTransport"
+        );
+
+  let driverName = "";
+  let driverId = "";
+  let isDriving = false;
+
+  if (paid) {
+    driverName =
+      recordUser.employeeName;
+
+    driverId =
+      recordUser.employeeId;
+
+    isDriving = true;
+
+  } else if (
+    transport ===
+      "有償運送"
+  ) {
+    const driver =
+      value_(
+        "startDriver"
+      );
+
+    if (!driver) {
+      alert(
+        "運転手を選択してください。"
+      );
+      return;
+    }
+
+    if (driver === "自分") {
+      driverName =
+        recordUser.employeeName;
+
+      driverId =
+        recordUser.employeeId;
+
+      isDriving = true;
+
+    } else {
+      driverName =
+        "他職員";
+    }
+  }
+
+  const ok =
+    confirm(
+      activity +
+      "として記録し、" +
+      "外出の行程を終了します。\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!ok) {
+    return;
+  }
+
+  setRecordProcessing_(
+    true,
+    "活動と行程を登録しています"
+  );
+
+  try {
+    const clientId =
+      await resolveClientId_(
+        recordContext.clientName
+      );
+
+    /*
+     * 内部的には
+     * 出発 -> 利用者宅へ帰宅
+     * の1行程を作成します。
+     */
+    const startResult =
+      await callOutingApi_(
+        "outing-start",
+        {
+          data: {
+            supportDate:
+              recordContext.supportDate ||
+              localDate_(),
+
+            shiftId:
+              recordContext.shiftId,
+
+            requestId:
+              "",
+
+            userId:
+              clientId,
+
+            userName:
+              recordContext.clientName,
+
+            serviceType:
+              recordContext.service,
+
+            serviceContent:
+              activity,
+
+            mainStaffId:
+              recordUser.employeeId,
+
+            mainStaffName:
+              recordUser.employeeName,
+
+            startPlaceType:
+              "自宅等",
+
+            startPlace:
+              place,
+
+            transport:
+              transport,
+
+            isDriving:
+              isDriving,
+
+            driverId:
+              driverId,
+
+            driverName:
+              driverName,
+
+            vehicleName:
+              "",
+
+            isPaidTransport:
+              transport ===
+                "有償運送",
+
+            supportDetail:
+              activity,
+
+            operatorId:
+              recordUser.employeeId,
+
+            operatorName:
+              recordUser.employeeName,
+
+            registerType:
+              "ポータル",
+
+            operationId:
+              operationId_()
+          }
+        }
+      );
+
+    if (
+      !startResult ||
+      startResult.success !== true
+    ) {
+      throw new Error(
+        startResult?.message ||
+        "活動行程を開始できませんでした"
+      );
+    }
+
+    const arrivalResult =
+      await callOutingApi_(
+        "outing-arrive",
+        {
+          data: {
+            outingResultId:
+              startResult.outingResultId,
+
+            routeId:
+              startResult.routeId,
+
+            arrivalType:
+              "最終到着",
+
+            arrivalPlaceType:
+              "自宅等",
+
+            arrivalPlace:
+              "利用者宅",
+
+            arrivalPlaceNote:
+              activity,
+
+            distanceKm:
+              "",
+
+            odometerArrivalKm:
+              "",
+
+            endReport:
+              activity,
+
+            operatorId:
+              recordUser.employeeId,
+
+            operatorName:
+              recordUser.employeeName,
+
+            operationId:
+              operationId_()
+          }
+        }
+      );
+
+    if (
+      !arrivalResult ||
+      arrivalResult.success !== true
+    ) {
+      throw new Error(
+        arrivalResult?.message ||
+        "活動行程を終了できませんでした"
+      );
+    }
+
+    const actualAt =
+      new Date()
+        .toISOString();
+
+    /*
+     * 外出支援自体がまだ開始されていない場合のみ、
+     * ここで支援開始を登録します。
+     * 引き続き支援から入った場合は開始済みです。
+     */
+    if (
+      !recordContext.continuation
+    ) {
+      await recordPortalStaffAction_(
+        "入りました"
+      );
+
+      saveLocalHistory_(
+        "支援開始",
+        {
+          actualAt:
+            actualAt
+        }
+      );
+    }
+
+    /*
+     * 内部には出発・帰宅を残し、
+     * 表示用に活動内容も保存します。
+     */
+    saveLocalHistory_(
+      "出発",
+      {
+        place:
+          place,
+        transport:
+          transport,
+        actualAt:
+          actualAt
+      }
+    );
+
+    saveLocalHistory_(
+      "活動",
+      {
+        activity:
+          activity,
+        actualAt:
+          actualAt
+      }
+    );
+
+    saveLocalHistory_(
+      "帰宅",
+      {
+        place:
+          "利用者宅",
+        actualAt:
+          actualAt
+      }
+    );
+
+    localStorage.removeItem(
+      ACTIVE_OUTING_KEY
+    );
+
+    /*
+     * 次が同じ利用者・連続時刻なら、
+     * ポータルへ戻して押させず、自動で引き続き支援処理を行います。
+     */
+    const nextShift =
+      await getContinuousNextShift_();
+
+    if (nextShift) {
+      await recordContinuationFromActionRecord_(
+        nextShift
+      );
+
+      saveLocalHistory_(
+        "引き続き支援",
+        {
+          shiftId:
+            nextShift.shiftId,
+
+          clientName:
+            nextShift.clientName,
+
+          service:
+            nextShift.service,
+
+          scheduledStart:
+            nextShift.startTime,
+
+          scheduledEnd:
+            nextShift.endTime,
+
+          fromShiftId:
+            recordContext.shiftId,
+
+          fromService:
+            recordContext.service,
+
+          fromScheduledStart:
+            recordContext.scheduledStart,
+
+          fromScheduledEnd:
+            recordContext.scheduledEnd,
+
+          actualAt:
+            actualAt
+        }
+      );
+
+      setRecordProcessing_(
+        true,
+        "行程を終了し、引き続き支援へ切り替えました"
+      );
+
+    } else {
+      await recordPortalStaffAction_(
+        "終わりました"
+      );
+
+      saveLocalHistory_(
+        "支援終了",
+        {
+          actualAt:
+            actualAt
+        }
+      );
+
+      setRecordProcessing_(
+        true,
+        "活動と支援終了を登録しました"
+      );
+    }
+
+    setTimeout(
+      returnToPortal_,
+      500
+    );
+
+  } catch (error) {
+    setRecordProcessing_(
+      false
+    );
+
+    showMessage_(
+      "活動の登録に失敗しました：" +
       error.message,
       true
     );
@@ -1831,67 +2404,9 @@ async function recordPortalStaffAction_(
 }
 
 async function hasContinuousNext_() {
-  try {
-    const result =
-      await postGas({
-        action:
-          "getTodayStaffShifts",
-
-        employeeId:
-          recordUser.employeeId,
-
-        employeeName:
-          recordUser.employeeName
-      });
-
-    if (
-      !result ||
-      result.success !== true ||
-      !Array.isArray(
-        result.shifts
-      )
-    ) {
-      return false;
-    }
-
-    const shifts =
-      result.shifts;
-
-    const index =
-      shifts.findIndex(
-        s =>
-          s.shiftId ===
-          recordContext.shiftId
-      );
-
-    const next =
-      index >= 0
-        ? shifts[index + 1]
-        : null;
-
-    return !!(
-      next &&
-      String(
-        next.clientName || ""
-      ).trim() ===
-      String(
-        recordContext.clientName || ""
-      ).trim() &&
-      String(
-        next.startTime || ""
-      ).trim() ===
-      String(
-        recordContext.scheduledEnd || ""
-      ).trim()
-    );
-
-  } catch (error) {
-    console.warn(
-      "次の連続支援確認に失敗",
-      error
-    );
-    return false;
-  }
+  return !!(
+    await getContinuousNextShift_()
+  );
 }
 
 async function resolveClientId_(
