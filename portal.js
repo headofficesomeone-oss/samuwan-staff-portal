@@ -4150,8 +4150,29 @@ async function sendStaffAction(
       return;
     }
 
+    if (
+      actionType === "入りました" &&
+      isOutingService_(shift)
+    ) {
+      clearPendingStaffActionState_();
+
+      setSupportGuideText_(
+        shift.clientName +
+        "さんの行動記録を開始します"
+      );
+
+      setTimeout(
+        () => {
+          openSelectedOutingActionRecord();
+        },
+        100
+      );
+
+      return;
+    }
+
     /*
-     * 正常送信できた場合は、GAS側の状態確定を確認します。
+     * 通常支援は、GAS側の状態確定を確認します。
      */
     await refreshUntilPendingStateSettled_();
 
@@ -4233,6 +4254,14 @@ async function sendStaffAction(
     );
 
   } finally {
+    if (
+      actionType === "入りました" &&
+      isOutingService_(shift)
+    ) {
+      updateStaffActionSyncStatus_();
+      return;
+    }
+
     const selectedShift =
       getSelectedTodayShift();
 
@@ -4291,32 +4320,43 @@ function setButtonsImmediatelyForAction_(
 ) {
   if (!shift) return;
 
-  /*
-   * GAS応答待ちの間に旧状態のボタンへ戻らないよう、
-   * 押した操作に対応する次状態を画面上だけ先に反映します。
-   * 実データはGAS応答後の再取得で確定します。
-   */
+  if (
+    actionType === "入りました" &&
+    isOutingService_(shift)
+  ) {
+    const actionGrid =
+      document.getElementById(
+        "portalActionButtons"
+      );
+
+    if (actionGrid) {
+      actionGrid.classList.add(
+        "hidden"
+      );
+    }
+
+    setStaffActionButtonsDisabled(
+      true
+    );
+
+    return;
+  }
+
   let optimisticState = "";
 
   if (actionType === "向かいます") {
     optimisticState =
       "移動中";
-
   } else if (
     actionType === "入りました" ||
     actionType === "支援開始"
   ) {
     optimisticState =
       "支援中";
-
   } else if (
     actionType === "終わりました" ||
     actionType === "キャンセル"
   ) {
-    /*
-     * 終了/キャンセルは次の支援一覧を取得するまで
-     * 操作ボタンをすべて隠しておきます。
-     */
     setStaffActionButtonsDisabled(
       true
     );
@@ -4324,20 +4364,14 @@ function setButtonsImmediatelyForAction_(
   }
 
   if (optimisticState) {
-    /*
-     * todayStaffShiftsの実状態は書き換えず、
-     * ボタン表示だけ先行更新します。
-     */
     setStaffActionButtonsByState(
       optimisticState
     );
-
     setStaffActionButtonsDisabled(
       true
     );
   }
 }
-
 function setGuideImmediatelyForAction_(
   actionType,
   shift,

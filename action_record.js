@@ -696,11 +696,9 @@ async function registerInitialDeparture_() {
       "出発を登録しました。"
     );
 
-    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
-    setTimeout(
-      returnToPortal_,
-      350
-    );
+    setRecordProcessing_(false);
+    showMessage_("出発を登録しました。");
+    await initActionRecord_();
 
   } catch (error) {
     showMessage_(
@@ -1460,11 +1458,9 @@ async function registerArrival_() {
       "到着を登録しました。"
     );
 
-    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
-    setTimeout(
-      returnToPortal_,
-      350
-    );
+    setRecordProcessing_(false);
+    showMessage_("到着を登録しました。");
+    await initActionRecord_();
 
   } catch (error) {
     showMessage_(
@@ -1817,11 +1813,9 @@ async function registerNextDeparture_() {
       "出発を登録しました。"
     );
 
-    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
-    setTimeout(
-      returnToPortal_,
-      350
-    );
+    setRecordProcessing_(false);
+    showMessage_("出発を登録しました。");
+    await initActionRecord_();
 
   } catch (error) {
     showMessage_(
@@ -1857,10 +1851,10 @@ async function finishOutingAtCurrentPlace_() {
 
   if (!ok) return;
 
-  setRecordProcessing_(true, "支援終了を登録しています");
+  setRecordProcessing_(true, "行動記録を終了しています");
 
   showMessage_(
-    "支援終了を登録しています…"
+    "行動記録を終了しています…"
   );
 
   try {
@@ -1916,10 +1910,7 @@ async function finishOutingAtCurrentPlace_() {
       await hasContinuousNext_();
 
     if (!hasContinuous) {
-      await recordPortalStaffAction_(
-        "終わりました"
-      );
-    }
+      }
 
     showMessage_(
       hasContinuous
@@ -1935,7 +1926,7 @@ async function finishOutingAtCurrentPlace_() {
 
   } catch (error) {
     showMessage_(
-      "支援終了に失敗しました：" +
+      "行動記録の終了に失敗しました：" +
       error.message,
       true
     );
