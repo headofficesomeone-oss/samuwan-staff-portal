@@ -928,7 +928,7 @@ async function registerActivityOnlyRoute_() {
               "自宅等",
 
             arrivalPlace:
-              "利用者宅",
+              "自宅",
 
             arrivalPlaceNote:
               activity,
@@ -1019,86 +1019,25 @@ async function registerActivityOnlyRoute_() {
       "帰宅",
       {
         place:
-          "利用者宅",
+          "自宅",
         actualAt:
           actualAt
       }
+    );
+
+    localStorage.setItem(
+      "staffPortalLastOutingPlaceV1",
+      "自宅"
     );
 
     localStorage.removeItem(
       ACTIVE_OUTING_KEY
     );
 
-    /*
-     * 次が同じ利用者・連続時刻なら、
-     * ポータルへ戻して押させず、自動で引き続き支援処理を行います。
-     */
-    const nextShift =
-      await getContinuousNextShift_();
-
-    if (nextShift) {
-      await recordContinuationFromActionRecord_(
-        nextShift
-      );
-
-      saveLocalHistory_(
-        "引き続き支援",
-        {
-          shiftId:
-            nextShift.shiftId,
-
-          clientName:
-            nextShift.clientName,
-
-          service:
-            nextShift.service,
-
-          scheduledStart:
-            nextShift.startTime,
-
-          scheduledEnd:
-            nextShift.endTime,
-
-          fromShiftId:
-            recordContext.shiftId,
-
-          fromService:
-            recordContext.service,
-
-          fromScheduledStart:
-            recordContext.scheduledStart,
-
-          fromScheduledEnd:
-            recordContext.scheduledEnd,
-
-          actualAt:
-            actualAt
-        }
-      );
-
-      setRecordProcessing_(
-        true,
-        "行程を終了し、引き続き支援へ切り替えました"
-      );
-
-    } else {
-      await recordPortalStaffAction_(
-        "終わりました"
-      );
-
-      saveLocalHistory_(
-        "支援終了",
-        {
-          actualAt:
-            actualAt
-        }
-      );
-
-      setRecordProcessing_(
-        true,
-        "活動と支援終了を登録しました"
-      );
-    }
+    setRecordProcessing_(
+      true,
+      "活動と行動記録を完了しました。ポータルへ戻ります"
+    );
 
     setTimeout(
       returnToPortal_,
@@ -2085,7 +2024,7 @@ async function registerHome_(andEnd) {
               "自宅等",
 
             arrivalPlace:
-              "利用者宅",
+              "自宅",
 
             arrivalPlaceNote:
               "",
@@ -2148,10 +2087,15 @@ async function registerHome_(andEnd) {
       "帰宅",
       {
         place:
-          "利用者宅",
+          "自宅",
         actualAt:
           homeActualAt
       }
+    );
+
+    localStorage.setItem(
+      "staffPortalLastOutingPlaceV1",
+      "自宅"
     );
 
     if (andEnd) {
@@ -2895,6 +2839,19 @@ function localDate_() {
     "-" +
     v.day
   );
+}
+
+function forceExitActionRecord_() {
+  const ok =
+    confirm(
+      "行動記録を強制終了してポータルへ戻ります。\n" +
+      "通信障害・急変・端末トラブルなど、通常の終了処理ができない場合のみ使用してください。\n\n" +
+      "よろしいですか？"
+    );
+
+  if (!ok) return;
+
+  returnToPortal_();
 }
 
 function returnToPortal_() {

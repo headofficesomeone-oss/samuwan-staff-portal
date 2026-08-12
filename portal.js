@@ -568,6 +568,396 @@ async function issueTempIdFromScreen() {
 
 let todayStaffShifts = [];
 
+const STAFF_ACTION_QUEUE_KEY =
+  "staffPortalActionQueueV1";
+
+let staffActionQueueFlushing = false;
+let staffActionQueueTimer = null;
+
+function readStaffActionQueue_() {
+  try {
+    const parsed =
+      JSON.parse(
+        localStorage.getItem(
+          STAFF_ACTION_QUEUE_KEY
+        ) || "[]"
+      );
+
+    return Array.isArray(parsed)
+      ? parsed
+      : [];
+
+  } catch (error) {
+    console.warn(
+      "未送信キューを読めませんでした",
+      error
+    );
+    return [];
+  }
+}
+
+function writeStaffActionQueue_(
+  queue
+) {
+  localStorage.setItem(
+    STAFF_ACTION_QUEUE_KEY,
+    JSON.stringify(
+      Array.isArray(queue)
+        ? queue.slice(-100)
+        : []
+    )
+  );
+
+  updateStaffActionSyncStatus_();
+}
+
+function updateStaffActionSyncStatus_() {
+  const el =
+    document.getElementById(
+      "staffActionSyncStatus"
+    );
+
+  if (!el) return;
+
+  const queue =
+    readStaffActionQueue_();
+
+  const count =
+    queue.length;
+
+  el.classList.toggle(
+    "synced",
+    count === 0
+  );
+
+  el.classList.toggle(
+    "pending",
+    count > 0
+  );
+
+  el.textContent =
+    count === 0
+      ? "✓ 同期済み"
+      : "↻ 未送信 " +
+        count +
+        "件";
+}
+
+function enqueueStaffAction_(
+  payload
+) {
+  const queue =
+    readStaffActionQueue_();
+
+  const sendId =
+    String(
+      payload.sendId || ""
+    ).trim();
+
+  if (
+    sendId &&
+    queue.some(
+      item =>
+        item &&
+        item.payload &&
+        item.payload.sendId ===
+          sendId
+    )
+  ) {
+    return;
+  }
+
+  queue.push({
+    id:
+      sendId ||
+      (
+        "Q-" +
+        Date.now() +
+        "-" +
+        Math.random()
+          .toString(36)
+          .slice(2,8)
+      ),
+
+    createdAt:
+      new Date()
+        .toISOString(),
+
+    attempts:
+      0,
+
+    lastError:
+      "",
+
+    payload:
+      payload
+  });
+
+  writeStaffActionQueue_(
+    queue
+  );
+}
+
+function removeStaffActionQueueItem_(
+  sendId
+) {
+  const queue =
+    readStaffActionQueue_()
+      .filter(
+        item =>
+          !item ||
+          !item.payload ||
+          item.payload.sendId !==
+            sendId
+      );
+
+  writeStaffActionQueue_(
+    queue
+  );
+}
+
+function updateQueuedStaffActionError_(
+  sendId,
+  error
+) {
+  const queue =
+    readStaffActionQueue_();
+
+  queue.forEach(
+    item => {
+      if (
+        item &&
+        item.payload &&
+        item.payload.sendId ===
+          sendId
+      ) {
+        item.attempts =
+          Number(
+            item.attempts || 0
+          ) + 1;
+
+        item.lastError =
+          error &&
+          error.message
+            ? error.message
+            : String(
+                error || ""
+              );
+
+        item.lastAttemptAt =
+          new Date()
+            .toISOString();
+      }
+    }
+  );
+
+  writeStaffActionQueue_(
+    queue
+  );
+}
+
+async function sendQueuedStaffActionItem_(
+  item
+) {
+  if (
+    !item ||
+    !item.payload
+  ) {
+    return {
+      success: false,
+      permanentError: true,
+      message:
+        "送信データがありません"
+    };
+  }
+
+  try {
+    const result =
+      await postGas(
+        item.payload
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      /*
+       * GASまで届いて業務エラーになった場合は
+       * 通信障害ではないため再送対象にしません。
+       */
+      return {
+        success: false,
+        permanentError: true,
+        message:
+          result &&
+          result.message
+            ? result.message
+            : "操作を登録できませんでした"
+      };
+    }
+
+    removeStaffActionQueueItem_(
+      item.payload.sendId
+    );
+
+    return {
+      success: true,
+      result:
+        result
+    };
+
+  } catch (error) {
+    /*
+     * オフライン・タイムアウト・HTTPエラー等は
+     * 端末へ残して後で再送します。
+     */
+    updateQueuedStaffActionError_(
+      item.payload.sendId,
+      error
+    );
+
+    return {
+      success: false,
+      permanentError: false,
+      error:
+        error
+    };
+  }
+}
+
+async function flushStaffActionQueue_() {
+  if (
+    staffActionQueueFlushing
+  ) {
+    return;
+  }
+
+  if (
+    typeof navigator !==
+      "undefined" &&
+    navigator.onLine === false
+  ) {
+    updateStaffActionSyncStatus_();
+    return;
+  }
+
+  const queue =
+    readStaffActionQueue_();
+
+  if (!queue.length) {
+    updateStaffActionSyncStatus_();
+    return;
+  }
+
+  staffActionQueueFlushing =
+    true;
+
+  try {
+    /*
+     * 操作順序が重要なので必ず先頭から順番に送ります。
+     * 1件でも通信失敗したら後続を止め、
+     * 次回復旧時に同じ順番で再送します。
+     */
+    for (
+      const item of queue
+    ) {
+      const sent =
+        await sendQueuedStaffActionItem_(
+          item
+        );
+
+      if (sent.success) {
+        continue;
+      }
+
+      if (sent.permanentError) {
+        /*
+         * 業務エラーはキューから除外し、
+         * 二重再送しないようにします。
+         */
+        removeStaffActionQueueItem_(
+          item.payload.sendId
+        );
+
+        console.error(
+          "未送信操作の登録不可",
+          sent.message
+        );
+
+        continue;
+      }
+
+      break;
+    }
+
+  } finally {
+    staffActionQueueFlushing =
+      false;
+
+    updateStaffActionSyncStatus_();
+  }
+}
+
+function startStaffActionQueueSync_() {
+  updateStaffActionSyncStatus_();
+
+  if (
+    staffActionQueueTimer
+  ) {
+    return;
+  }
+
+  staffActionQueueTimer =
+    setInterval(
+      () => {
+        flushStaffActionQueue_()
+          .catch(
+            error =>
+              console.warn(
+                "未送信キュー再送失敗",
+                error
+              )
+          );
+      },
+      30000
+    );
+}
+
+window.addEventListener(
+  "online",
+  () => {
+    flushStaffActionQueue_()
+      .catch(
+        error =>
+          console.warn(
+            "通信復旧後の再送失敗",
+            error
+          )
+      );
+  }
+);
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+    if (
+      document.visibilityState ===
+      "visible"
+    ) {
+      flushStaffActionQueue_()
+        .catch(
+          error =>
+            console.warn(
+              "画面復帰時の再送失敗",
+              error
+            )
+        );
+    }
+  }
+);
+
+
+
 let pendingStaffActionState = null;
 
 function getExpectedStateForAction_(
@@ -1104,6 +1494,31 @@ function escapeHtmlForOption_(
 /**
  * 本日のシフトを選択欄へ表示します。
  */
+
+const LAST_OUTING_PLACE_KEY =
+  "staffPortalLastOutingPlaceV1";
+
+function saveLastOutingPlace_(place) {
+  if (!place) return;
+  localStorage.setItem(
+    LAST_OUTING_PLACE_KEY,
+    String(place)
+  );
+}
+
+function getLastOutingPlace_() {
+  return String(
+    localStorage.getItem(
+      LAST_OUTING_PLACE_KEY
+    ) || ""
+  ).trim();
+}
+
+function clearLastOutingPlace_() {
+  localStorage.removeItem(
+    LAST_OUTING_PLACE_KEY
+  );
+}
 
 const ACTIVE_SUPPORT_CHAIN_KEY =
   "staffPortalActiveSupportChainV1";
@@ -2024,11 +2439,47 @@ window.addEventListener(
   }
 );
 
-function isOutingService_(service) {
-  const s = String(service || "");
-  return ["同行援護","移動支援","通院介助","通院等介助","有償運送"].some(v => s.includes(v));
-}
+function isOutingService_(
+  shift
+) {
+  if (!shift) return false;
 
+  const service =
+    String(shift.service || "").trim();
+
+  const destination =
+    String(shift.destination || "").trim();
+
+  const startPlace =
+    String(shift.startPlace || "").trim();
+
+  const endPlace =
+    String(shift.endPlace || "").trim();
+
+  const transport =
+    String(shift.transport || "").trim();
+
+  const explicitOutingServices = [
+    "同行援護",
+    "移動支援",
+    "通院介助",
+    "有償運送",
+    "その他外出"
+  ];
+
+  return (
+    explicitOutingServices.some(
+      name => service.includes(name)
+    ) ||
+    !!destination ||
+    !!transport ||
+    (
+      !!startPlace &&
+      !!endPlace &&
+      startPlace !== endPlace
+    )
+  );
+}
 function setButtonVisible_(id, visible) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -2066,39 +2517,126 @@ function updateSupportMainDisplay_(shift) {
 }
 
 function savePortalLocalHistory_(eventType, shift, extra = {}) {
-  if (!shift || !currentUser) return;
+  if (!shift || !currentUser) return null;
+
   let list = [];
-  try { list = JSON.parse(localStorage.getItem(PORTAL_HISTORY_KEY) || "[]"); } catch(e) {}
-  list.push({
-    id: "PH-" + Date.now() + "-" + Math.random().toString(36).slice(2,7),
-    employeeId: currentUser.employeeId || "",
-    employeeName: currentUser.employeeName || "",
-    supportDate: shift.supportDate || getTodayLocalDateText(),
-    shiftId: shift.shiftId || "",
-    clientName: shift.clientName || "",
-    service: shift.service || "",
-    scheduledStart: shift.startTime || "",
-    scheduledEnd: shift.endTime || "",
-    eventType,
-    actualAt: new Date().toISOString(),
+
+  try {
+    list =
+      JSON.parse(
+        localStorage.getItem(
+          PORTAL_HISTORY_KEY
+        ) || "[]"
+      );
+  } catch(e) {}
+
+  const event = {
+    id:
+      "PH-" +
+      Date.now() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2,7),
+
+    employeeId:
+      currentUser.employeeId ||
+      "",
+
+    employeeName:
+      currentUser.employeeName ||
+      "",
+
+    supportDate:
+      shift.supportDate ||
+      getTodayLocalDateText(),
+
+    shiftId:
+      shift.shiftId || "",
+
+    clientName:
+      shift.clientName || "",
+
+    service:
+      shift.service || "",
+
+    scheduledStart:
+      shift.startTime || "",
+
+    scheduledEnd:
+      shift.endTime || "",
+
+    eventType:
+      eventType,
+
+    actualAt:
+      new Date()
+        .toISOString(),
+
     ...extra
-  });
-  localStorage.setItem(PORTAL_HISTORY_KEY, JSON.stringify(list.slice(-300)));
+  };
+
+  list.push(
+    event
+  );
+
+  localStorage.setItem(
+    PORTAL_HISTORY_KEY,
+    JSON.stringify(
+      list.slice(-300)
+    )
+  );
 
   /*
-   * PC/スマホ共通で履歴を見られるよう、
-   * 同じイベントをGAS側にも保存します。
-   * 表示操作を止めないため非同期で送ります。
+   * 履歴同期は失敗してもlocalStorageに残り、
+   * 履歴画面を開いた時にも再同期されます。
    */
   postGas({
-    action: "recordPortalHistoryEvent",
-    event: list[list.length - 1]
-  }).catch(error => {
-    console.warn(
-      "履歴のサーバー同期に失敗しました",
-      error
+    action:
+      "recordPortalHistoryEvent",
+    event:
+      event
+  }).catch(
+    error => {
+      console.warn(
+        "履歴のサーバー同期に失敗しました",
+        error
+      );
+    }
+  );
+
+  return event;
+}
+
+function removePortalLocalHistoryBySendId_(
+  sendId
+) {
+  if (!sendId) return;
+
+  let list = [];
+
+  try {
+    list =
+      JSON.parse(
+        localStorage.getItem(
+          PORTAL_HISTORY_KEY
+        ) || "[]"
+      );
+  } catch (error) {}
+
+  list =
+    list.filter(
+      event =>
+        event.sendId !==
+        sendId
     );
-  });
+
+  localStorage.setItem(
+    PORTAL_HISTORY_KEY,
+    JSON.stringify(
+      list.slice(-300)
+    )
+  );
 }
 
 function getPortalLocalHistory_() {
@@ -3387,7 +3925,6 @@ async function sendStaffAction(
     alert(
       "操作する支援を選択してください。"
     );
-
     return;
   }
 
@@ -3395,7 +3932,6 @@ async function sendStaffAction(
     alert(
       "職員情報を確認できません。"
     );
-
     return;
   }
 
@@ -3418,15 +3954,90 @@ async function sendStaffAction(
     }
   }
 
+  const deviceTime =
+    new Date()
+      .toISOString();
+
+  const sendId =
+    createStaffActionSendId(
+      currentUser.employeeId,
+      shift.shiftId,
+      actionType
+    );
+
+  const payload = {
+    action:
+      "recordStaffAction",
+
+    employeeId:
+      currentUser.employeeId,
+
+    employeeName:
+      currentUser.employeeName,
+
+    shiftId:
+      shift.shiftId,
+
+    clientName:
+      shift.clientName,
+
+    supportDate:
+      shift.supportDate,
+
+    service:
+      shift.service,
+
+    scheduledStart:
+      shift.startTime,
+
+    scheduledEnd:
+      shift.endTime,
+
+    actionType:
+      actionType,
+
+    deviceTime:
+      deviceTime,
+
+    sendId:
+      sendId,
+
+    registrationMethod:
+      "職員ポータル",
+
+    note:
+      ""
+  };
+
+  /*
+   * 先に端末へ保存します。
+   * 通信が切れても、この時点で職員の操作は失われません。
+   */
+  enqueueStaffAction_(
+    payload
+  );
+
+  savePortalLocalHistory_(
+    actionType ===
+      "キャンセル"
+      ? "キャンセル"
+      : actionType,
+    shift,
+    {
+      localLabel:
+        options.localLabel || "",
+      sendId:
+        sendId,
+      syncPending:
+        true
+    }
+  );
+
   setGuideImmediatelyForAction_(
     actionType,
     shift
   );
 
-  /*
-   * 確認OK直後から、GASの最新状態が追いつくまで
-   * この支援の次状態を画面上で固定します。
-   */
   setPendingStaffActionState_(
     shift,
     actionType
@@ -3445,94 +4056,141 @@ async function sendStaffAction(
     true
   );
 
+  /*
+   * 支援の一連状態も通信結果を待たず端末側へ反映します。
+   */
+  if (
+    actionType ===
+    "向かいます"
+  ) {
+    saveSupportChain_(
+      shift
+    );
+  }
+
+  if (
+    actionType ===
+    "キャンセル"
+  ) {
+    showPortalCancelFlash_(
+      shift.service
+    );
+  }
+
+  const queueItem =
+    readStaffActionQueue_()
+      .find(
+        item =>
+          item &&
+          item.payload &&
+          item.payload.sendId ===
+            sendId
+      );
+
   try {
-    const deviceTime =
-      new Date().toISOString();
-
-    const sendId =
-      createStaffActionSendId(
-        currentUser.employeeId,
-        shift.shiftId,
-        actionType
+    const sent =
+      await sendQueuedStaffActionItem_(
+        queueItem
       );
 
-    const result =
-      await postGas({
-        action: "recordStaffAction",
-
-        employeeId:
-          currentUser.employeeId,
-
-        employeeName:
-          currentUser.employeeName,
-
-        shiftId:
-          shift.shiftId,
-
-        clientName:
-          shift.clientName,
-
-        supportDate:
-          shift.supportDate,
-
-        service:
-          shift.service,
-
-        scheduledStart:
-          shift.startTime,
-
-        scheduledEnd:
-          shift.endTime,
-
-        actionType:
-          actionType,
-
-        deviceTime:
-          deviceTime,
-
-        sendId:
-          sendId,
-
-        registrationMethod:
-          "職員ポータル",
-
-        note: ""
-      });
-
-    if (!result.success) {
-      throw new Error(
-        result.message ||
-        "操作を登録できませんでした。"
+    if (
+      !sent.success &&
+      sent.permanentError
+    ) {
+      /*
+       * GASには届いたが業務上登録不可。
+       * 端末上の仮履歴も取り消します。
+       */
+      removeStaffActionQueueItem_(
+        sendId
       );
+
+      removePortalLocalHistoryBySendId_(
+        sendId
+      );
+
+      clearPendingStaffActionState_();
+
+      setTodayShiftProcessing_(
+        false
+      );
+
+      await loadTodayStaffShifts(
+        true
+      );
+
+      alert(
+        "操作を登録できませんでした：" +
+        (
+          sent.message ||
+          "登録内容を確認してください。"
+        )
+      );
+
+      return;
     }
 
-    savePortalLocalHistory_(
-      actionType === "キャンセル" ? "キャンセル" : actionType,
-      shift,
-      { localLabel: options.localLabel || "" }
-    );
+    if (!sent.success) {
+      /*
+       * 通信障害時:
+       * 操作は端末に残し、画面上は次状態へ進めます。
+       * onlineイベント / 30秒周期 / 画面復帰時に自動再送します。
+       */
+      setTodayShiftProcessing_(
+        false
+      );
+
+      updateStaffActionSyncStatus_();
+
+      alert(
+        "通信できないため端末に保存しました。\n" +
+        "通信が回復すると自動で送信します。"
+      );
+
+      return;
+    }
 
     /*
-     * 「向かいます」から同一利用者の一連支援を保持します。
+     * 正常送信できた場合は、GAS側の状態確定を確認します。
      */
-    if (actionType === "向かいます") {
-      saveSupportChain_(
-        shift
+    await refreshUntilPendingStateSettled_();
+
+    setTodayShiftProcessing_(
+      false
+    );
+
+    if (
+      actionType ===
+      "入りました" &&
+      isOutingService_(shift)
+    ) {
+      setTimeout(
+        () => {
+          openSelectedOutingActionRecord();
+        },
+        250
       );
     }
 
-    if (actionType === "キャンセル") {
+    if (
+      actionType ===
+      "キャンセル"
+    ) {
       const remainingSameClient =
         todayStaffShifts.some(
           s =>
-            s.shiftId !== shift.shiftId &&
+            s.shiftId !==
+              shift.shiftId &&
             String(
               s.clientName || ""
             ).trim() ===
             String(
               shift.clientName || ""
             ).trim() &&
-            !["終了","キャンセル"].includes(
+            ![
+              "終了",
+              "キャンセル"
+            ].includes(
               String(
                 s.currentState ||
                 "未開始"
@@ -3540,28 +4198,12 @@ async function sendStaffAction(
             )
         );
 
-      if (!remainingSameClient) {
+      if (
+        !remainingSameClient
+      ) {
         clearSupportChain_();
       }
     }
-
-    if (actionType === "キャンセル") {
-      showPortalCancelFlash_(shift.service);
-    }
-
-    const selectedShiftId =
-      shift.shiftId;
-
-    /*
-     * 登録直後にGAS側一覧が古い状態を返すことがあるため、
-     * pending状態を固定したまま短時間再確認します。
-     */
-    await refreshUntilPendingStateSettled_();
-
-    /*
-     * 正式状態が確認できた後に操作ロックを解除します。
-     */
-    setTodayShiftProcessing_(false);
 
     const select =
       document.getElementById(
@@ -3570,18 +4212,24 @@ async function sendStaffAction(
 
     if (select) {
       select.value =
-        selectedShiftId;
+        shift.shiftId;
 
       handleTodayShiftChange();
     }
 
   } catch (error) {
-    clearPendingStaffActionState_();
-    setTodayShiftProcessing_(false);
+    /*
+     * 予期しない例外でもキューは消しません。
+     */
+    setTodayShiftProcessing_(
+      false
+    );
+
+    updateStaffActionSyncStatus_();
 
     alert(
-      "操作の登録に失敗しました：" +
-      error.message
+      "通信状態を確認できないため端末に保存しました。\n" +
+      "通信が回復すると自動で送信します。"
     );
 
   } finally {
@@ -3598,7 +4246,9 @@ async function sendStaffAction(
         pendingStaffActionState.expectedState
       );
 
-    } else if (selectedShift) {
+    } else if (
+      selectedShift
+    ) {
       setStaffActionButtonsByState(
         selectedShift.currentState ||
         "未開始"
@@ -3609,10 +4259,10 @@ async function sendStaffAction(
         true
       );
     }
+
+    updateStaffActionSyncStatus_();
   }
-
 }
-
 
 
 function createStaffActionSendId(
@@ -4393,5 +5043,25 @@ document.addEventListener(
   "DOMContentLoaded",
   () => {
     startTodayShiftAutoRefresh_();
+  }
+);
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    startStaffActionQueueSync_();
+
+    /*
+     * 起動直後にも未送信があれば一度再送します。
+     */
+    flushStaffActionQueue_()
+      .catch(
+        error =>
+          console.warn(
+            "起動時の未送信再送失敗",
+            error
+          )
+      );
   }
 );
