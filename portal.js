@@ -1202,6 +1202,9 @@ function setTodayShiftOptions(shifts) {
     return;
   }
 
+  const previousSelectedShiftId =
+    select.value || "";
+
   const allShifts =
     Array.isArray(shifts)
       ? shifts
@@ -1375,8 +1378,38 @@ function setTodayShiftOptions(shifts) {
     );
   }
 
+  /*
+   * Android/Chromeのネイティブselectを開くと、
+   * 閉じた瞬間にwindow focusが発生することがあります。
+   * そのfocus再読込で選択値が初期化されないよう、
+   * select操作中は自動再取得を止めます。
+   */
+  select.onpointerdown =
+    beginSupportSelectInteraction_;
+
+  select.onmousedown =
+    beginSupportSelectInteraction_;
+
+  select.ontouchstart =
+    beginSupportSelectInteraction_;
+
+  select.onfocus =
+    beginSupportSelectInteraction_;
+
   select.onchange =
-    handleTodayShiftChange;
+    () => {
+      handleTodayShiftChange();
+      endSupportSelectInteraction_(
+        500
+      );
+    };
+
+  select.onblur =
+    () => {
+      endSupportSelectInteraction_(
+        500
+      );
+    };
 
   if (chainShift) {
     select.value =
@@ -1400,12 +1433,39 @@ function setTodayShiftOptions(shifts) {
   }
 
   select.disabled = false;
-  select.value = "";
 
-  updateSupportGuideByState_(
-    null,
-    selectableShifts.length
-  );
+  const previousStillSelectable =
+    previousSelectedShiftId &&
+    selectableShifts.some(
+      shift =>
+        shift.shiftId ===
+        previousSelectedShiftId
+    );
+
+  if (previousStillSelectable) {
+    select.value =
+      previousSelectedShiftId;
+
+    const selectedShift =
+      selectableShifts.find(
+        shift =>
+          shift.shiftId ===
+          previousSelectedShiftId
+      );
+
+    updateSupportGuideByState_(
+      selectedShift,
+      selectableShifts.length
+    );
+
+  } else {
+    select.value = "";
+
+    updateSupportGuideByState_(
+      null,
+      selectableShifts.length
+    );
+  }
 
   handleTodayShiftChange();
 }
@@ -1737,6 +1797,37 @@ let portalServerHistory = null;
 let todayShiftRefreshTimer = null;
 let todayShiftRefreshRunning = false;
 let portalActionProcessing = false;
+let supportSelectInteracting = false;
+let supportSelectInteractionTimer = null;
+
+function beginSupportSelectInteraction_() {
+  supportSelectInteracting = true;
+
+  if (supportSelectInteractionTimer) {
+    clearTimeout(
+      supportSelectInteractionTimer
+    );
+  }
+}
+
+function endSupportSelectInteraction_(
+  delay = 350
+) {
+  if (supportSelectInteractionTimer) {
+    clearTimeout(
+      supportSelectInteractionTimer
+    );
+  }
+
+  supportSelectInteractionTimer =
+    setTimeout(
+      () => {
+        supportSelectInteracting = false;
+      },
+      delay
+    );
+}
+
 
 function startTodayShiftAutoRefresh_() {
   if (todayShiftRefreshTimer) {
@@ -1753,7 +1844,8 @@ function startTodayShiftAutoRefresh_() {
         if (
           document.hidden ||
           todayShiftRefreshRunning ||
-          portalActionProcessing
+          portalActionProcessing ||
+          supportSelectInteracting
         ) {
           return;
         }
@@ -1778,7 +1870,8 @@ function startTodayShiftAutoRefresh_() {
 function refreshTodayShiftsOnReturn_() {
   if (
     document.visibilityState === "visible" &&
-    !portalActionProcessing
+    !portalActionProcessing &&
+    !supportSelectInteracting
   ) {
     loadTodayStaffShifts(true)
       .catch(
@@ -1799,7 +1892,10 @@ document.addEventListener(
 window.addEventListener(
   "focus",
   () => {
-    if (portalActionProcessing) {
+    if (
+      portalActionProcessing ||
+      supportSelectInteracting
+    ) {
       return;
     }
 
