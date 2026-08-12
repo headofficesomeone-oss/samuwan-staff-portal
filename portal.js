@@ -630,6 +630,115 @@ function clearPendingStaffActionState_() {
   pendingStaffActionState = null;
 }
 
+
+function getLocalLatestStateByShift_(
+  shiftId
+) {
+  if (!shiftId) {
+    return "";
+  }
+
+  const events =
+    getPortalLocalHistory_()
+      .filter(
+        event =>
+          event.shiftId === shiftId
+      )
+      .sort(
+        (a, b) =>
+          new Date(
+            a.actualAt || 0
+          ) -
+          new Date(
+            b.actualAt || 0
+          )
+      );
+
+  if (!events.length) {
+    return "";
+  }
+
+  let state = "";
+
+  events.forEach(
+    event => {
+      const type =
+        String(
+          event.eventType || ""
+        ).trim();
+
+      if (type === "向かいます") {
+        state = "移動中";
+
+      } else if (
+        type === "入りました" ||
+        type === "支援開始" ||
+        type === "引き続き支援"
+      ) {
+        state = "支援中";
+
+      } else if (
+        type === "終わりました" ||
+        type === "支援終了"
+      ) {
+        state = "終了";
+
+      } else if (
+        type === "キャンセル"
+      ) {
+        state = "キャンセル";
+      }
+    }
+  );
+
+  return state;
+}
+
+function applyLocalHistoryStateFallback_(
+  shifts
+) {
+  const list =
+    Array.isArray(shifts)
+      ? shifts.map(
+          shift => ({ ...shift })
+        )
+      : [];
+
+  list.forEach(
+    shift => {
+      const serverState =
+        String(
+          shift.currentState || ""
+        ).trim();
+
+      /*
+       * キャッシュ表示時など、サーバー状態が空/未開始でも
+       * この端末の最新履歴が先へ進んでいれば、
+       * GAS取得完了までの仮表示として履歴側を優先します。
+       */
+      if (
+        !serverState ||
+        serverState === "未開始"
+      ) {
+        const localState =
+          getLocalLatestStateByShift_(
+            shift.shiftId
+          );
+
+        if (
+          localState &&
+          localState !== "未開始"
+        ) {
+          shift.currentState =
+            localState;
+        }
+      }
+    }
+  );
+
+  return list;
+}
+
 function applyPendingStaffActionState_(
   shifts
 ) {
@@ -811,7 +920,9 @@ async function loadTodayStaffShifts(forceRefresh = false) {
   if (cache) {
     todayStaffShifts =
       applyPendingStaffActionState_(
-        cache.shifts || []
+        applyLocalHistoryStateFallback_(
+          cache.shifts || []
+        )
       );
 
     setTodayShiftOptions(
@@ -863,21 +974,22 @@ async function loadTodayStaffShifts(forceRefresh = false) {
 	    String(latestVersion);
     
     /*
-     * 更新番号が同じなら、
-     * シフト一覧は再取得しません。
+     * 基本シフトの更新番号が同じでも、
+     * 「向かいます」「入りました」「終わりました」などの
+     * 現在状態は別データで随時変化します。
+     *
+     * そのためキャッシュは画面を素早く出すためだけに使い、
+     * 本日の支援一覧は毎回GASから取得して現在状態を更新します。
      */
     if (cacheIsCurrent) {
       console.log(
-        "基本シフトの変更なし：" +
-        "保存済みシフトを使用します。"
+        "基本シフトの変更なし。" +
+        "現在状態だけ最新化します。"
       );
-
-      return;
     }
 
     /*
-     * 更新番号が変わった場合だけ、
-     * 最新の担当シフトを取得します。
+     * 最新の担当シフトと現在状態を取得します。
      */
     const result =
       await postGas({
@@ -918,7 +1030,9 @@ async function loadTodayStaffShifts(forceRefresh = false) {
 
     todayStaffShifts =
       applyPendingStaffActionState_(
-        newShifts
+        applyLocalHistoryStateFallback_(
+          newShifts
+        )
       );
 
     /*
@@ -935,7 +1049,7 @@ async function loadTodayStaffShifts(forceRefresh = false) {
      */
     saveTodayStaffShiftCache(
       latestVersion,
-      newShifts
+      todayStaffShifts
     );
 
     /*
