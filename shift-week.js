@@ -73,15 +73,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadMasters();
 
   /*
-    基本シフトは通常、翌週分を作成するため、
-    起動時は翌週の月曜日を初期表示します。
+    起動時は「今日」が属する週を初期表示します。
   */
-  const nextWeekMonday = addDays(getMonday(new Date()), 7);
-  setWeekMonday(nextWeekMonday);
+  const today = new Date();
+  const thisWeekMonday = getMonday(today);
+  setWeekMonday(thisWeekMonday);
+
+  /*
+    曜日フィルターも今日の曜日へ合わせます。
+  */
+  setTodayWeekdayFilter_(today);
 
   /* 起動時はGASから最新状態を取得します。 */
   await loadCurrentWeek({ forceReload: true });
 });
+
+function setTodayWeekdayFilter_(date = new Date()) {
+  const weekdayNames = [
+    "日", "月", "火", "水", "木", "金", "土"
+  ];
+
+  const weekday =
+    weekdayNames[date.getDay()] || "";
+
+  const select =
+    document.getElementById("weekdayFilter");
+
+  selectedWeekdayFilter = weekday;
+
+  if (select) {
+    select.value = weekday;
+  }
+}
+
 
 function bindScreenEvents() {
   document
@@ -662,11 +686,20 @@ async function createInitialWeek() {
   button.disabled = true;
   button.textContent = "作成中...";
 
+  const slowTimer = setTimeout(() => {
+    setMessage(
+      "作成に時間がかかっています。処理は継続中ですので、そのままお待ちください。"
+    );
+    button.textContent = "作成中…";
+  }, 30000);
+
   try {
     const result = await jsonpRequest(
       "week-create",
       { weekMonday },
-      "shiftWeekCreateCallback"
+      "shiftWeekCreateCallback",
+      {},
+      120000
     );
 
     setMessage(result.message || "初回作成が完了しました。");
@@ -674,8 +707,45 @@ async function createInitialWeek() {
     /* 作成後は、必ずGASから再取得します。 */
     await loadCurrentWeek({ forceReload: true });
   } catch (error) {
-    showApiError(error, "基本シフトの初回作成に失敗しました");
+    const message =
+      error && error.message
+        ? String(error.message)
+        : "";
+
+    if (
+      message.includes(
+        "GASの応答がタイムアウトしました"
+      )
+    ) {
+      setMessage(
+        "応答確認に時間がかかったため、作成結果を確認しています。"
+      );
+
+      try {
+        await loadCurrentWeek({
+          forceReload: true
+        });
+
+        if (currentWeekItems.length > 0) {
+          setMessage(
+            "基本シフトの作成を確認しました。"
+          );
+          return;
+        }
+      } catch (confirmError) {
+        console.warn(
+          "初回作成後の確認に失敗しました",
+          confirmError
+        );
+      }
+    }
+
+    showApiError(
+      error,
+      "基本シフトの初回作成に失敗しました"
+    );
   } finally {
+    clearTimeout(slowTimer);
     button.disabled = false;
     button.textContent = originalText;
   }
@@ -1331,7 +1401,8 @@ function jsonpRequest(
   action,
   payload = null,
   callbackPrefix = "callback",
-  extraParameters = {}
+  extraParameters = {},
+  timeoutMs = 30000
 ) {
   return new Promise((resolve, reject) => {
     const callbackName =
@@ -1358,7 +1429,7 @@ function jsonpRequest(
       finished = true;
       cleanup();
       reject(new ApiError("GASの応答がタイムアウトしました"));
-    }, 30000);
+    }, timeoutMs);
 
     window[callbackName] = result => {
       if (finished) return;
