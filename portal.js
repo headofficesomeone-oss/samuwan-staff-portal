@@ -568,6 +568,191 @@ async function issueTempIdFromScreen() {
 
 let todayStaffShifts = [];
 
+let pendingStaffActionState = null;
+
+function getExpectedStateForAction_(
+  actionType
+) {
+  if (actionType === "向かいます") {
+    return "移動中";
+  }
+
+  if (
+    actionType === "入りました" ||
+    actionType === "支援開始" ||
+    actionType === "引き続き支援"
+  ) {
+    return "支援中";
+  }
+
+  if (actionType === "終わりました") {
+    return "終了";
+  }
+
+  if (actionType === "キャンセル") {
+    return "キャンセル";
+  }
+
+  return "";
+}
+
+function setPendingStaffActionState_(
+  shift,
+  actionType
+) {
+  if (!shift) return;
+
+  const expectedState =
+    getExpectedStateForAction_(
+      actionType
+    );
+
+  if (!expectedState) {
+    pendingStaffActionState = null;
+    return;
+  }
+
+  pendingStaffActionState = {
+    shiftId:
+      shift.shiftId,
+    clientName:
+      shift.clientName,
+    actionType:
+      actionType,
+    expectedState:
+      expectedState,
+    startedAt:
+      Date.now()
+  };
+}
+
+function clearPendingStaffActionState_() {
+  pendingStaffActionState = null;
+}
+
+function applyPendingStaffActionState_(
+  shifts
+) {
+  const list =
+    Array.isArray(shifts)
+      ? shifts.map(
+          shift => ({ ...shift })
+        )
+      : [];
+
+  const pending =
+    pendingStaffActionState;
+
+  if (!pending) {
+    return list;
+  }
+
+  /*
+   * 10秒以上残る場合は異常とみなし、
+   * 通常のサーバー状態へ戻します。
+   */
+  if (
+    Date.now() -
+      pending.startedAt >
+    10000
+  ) {
+    clearPendingStaffActionState_();
+    return list;
+  }
+
+  const target =
+    list.find(
+      shift =>
+        shift.shiftId ===
+        pending.shiftId
+    );
+
+  if (!target) {
+    /*
+     * 終了・キャンセル後に一覧から対象が消える実装でも
+     * 正常完了とみなします。
+     */
+    if (
+      ["終了","キャンセル"].includes(
+        pending.expectedState
+      )
+    ) {
+      clearPendingStaffActionState_();
+    }
+
+    return list;
+  }
+
+  const actualState =
+    String(
+      target.currentState ||
+      "未開始"
+    ).trim();
+
+  /*
+   * GAS側の状態が期待状態まで進んだら固定解除。
+   */
+  if (
+    actualState ===
+    pending.expectedState
+  ) {
+    clearPendingStaffActionState_();
+    return list;
+  }
+
+  /*
+   * GASの再取得が一瞬古い状態を返しても、
+   * 画面上だけは操作後の期待状態を維持します。
+   */
+  target.currentState =
+    pending.expectedState;
+
+  return list;
+}
+
+function waitPortalStateSync_(
+  milliseconds
+) {
+  return new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        milliseconds
+      )
+  );
+}
+
+async function refreshUntilPendingStateSettled_() {
+  /*
+   * GAS登録直後はSTAFF_ACTIONと一覧側の反映に僅かな差が
+   * 出る場合があるため、短時間だけ再確認します。
+   */
+  for (
+    let attempt = 0;
+    attempt < 3;
+    attempt++
+  ) {
+    await loadTodayStaffShifts(
+      true
+    );
+
+    if (!pendingStaffActionState) {
+      return;
+    }
+
+    await waitPortalStateSync_(
+      250
+    );
+  }
+
+  /*
+   * 3回で同期しなくても、固定は最大10秒で自然解除されます。
+   * 画面には古い「未開始」を出しません。
+   */
+}
+
+
+
 
 /**
  * 本日の担当シフトを表示します。
@@ -625,7 +810,9 @@ async function loadTodayStaffShifts(forceRefresh = false) {
    */
   if (cache) {
     todayStaffShifts =
-      cache.shifts || [];
+      applyPendingStaffActionState_(
+        cache.shifts || []
+      );
 
     setTodayShiftOptions(
       todayStaffShifts
@@ -730,10 +917,14 @@ async function loadTodayStaffShifts(forceRefresh = false) {
       );
 
     todayStaffShifts =
-      newShifts;
+      applyPendingStaffActionState_(
+        newShifts
+      );
 
     /*
      * プルダウンを最新状態へ更新します。
+     * 操作直後はGASが一瞬古い状態を返しても、
+     * pending状態を優先して表示します。
      */
     setTodayShiftOptions(
       todayStaffShifts
@@ -744,7 +935,7 @@ async function loadTodayStaffShifts(forceRefresh = false) {
      */
     saveTodayStaffShiftCache(
       latestVersion,
-      todayStaffShifts
+      newShifts
     );
 
     /*
@@ -1379,8 +1570,16 @@ function handleTodayShiftChange() {
   hideAddedShiftNotice();
 
   const currentState =
-    shift.currentState ||
-    "未開始";
+    (
+      pendingStaffActionState &&
+      pendingStaffActionState.shiftId ===
+        shift.shiftId
+    )
+      ? pendingStaffActionState.expectedState
+      : (
+          shift.currentState ||
+          "未開始"
+        );
 
   updateSupportGuideByState_(
     shift,
@@ -3014,6 +3213,15 @@ async function sendStaffAction(
     shift
   );
 
+  /*
+   * 確認OK直後から、GASの最新状態が追いつくまで
+   * この支援の次状態を画面上で固定します。
+   */
+  setPendingStaffActionState_(
+    shift,
+    actionType
+  );
+
   setButtonsImmediatelyForAction_(
     actionType,
     shift
@@ -3135,18 +3343,15 @@ async function sendStaffAction(
       shift.shiftId;
 
     /*
-     * 最新状態を読み直す直前まで
-     * 「ただいま処理中です」を維持します。
-     * ここで通常表示へ戻し、その直後に最新状態を取得して
-     * ボタン/アイコンを切り替えます。
+     * 登録直後にGAS側一覧が古い状態を返すことがあるため、
+     * pending状態を固定したまま短時間再確認します。
+     */
+    await refreshUntilPendingStateSettled_();
+
+    /*
+     * 正式状態が確認できた後に操作ロックを解除します。
      */
     setTodayShiftProcessing_(false);
-
-		/*
-		 * 完了メッセージは表示せず、
-		 * 最新状態を取得して次のボタンへ切り替えます。
-		 */
-		await loadTodayStaffShifts(true);
 
     const select =
       document.getElementById(
@@ -3161,6 +3366,9 @@ async function sendStaffAction(
     }
 
   } catch (error) {
+    clearPendingStaffActionState_();
+    setTodayShiftProcessing_(false);
+
     alert(
       "操作の登録に失敗しました：" +
       error.message
@@ -3169,14 +3377,26 @@ async function sendStaffAction(
   } finally {
     const selectedShift =
       getSelectedTodayShift();
-    if (selectedShift) {
+
+    if (
+      selectedShift &&
+      pendingStaffActionState &&
+      selectedShift.shiftId ===
+        pendingStaffActionState.shiftId
+    ) {
+      setStaffActionButtonsByState(
+        pendingStaffActionState.expectedState
+      );
+
+    } else if (selectedShift) {
       setStaffActionButtonsByState(
         selectedShift.currentState ||
         "未開始"
       );
+
     } else {
-      setStaffActionButtonsByState(
-        ""
+      setStaffActionButtonsDisabled(
+        true
       );
     }
   }
