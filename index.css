@@ -708,3 +708,12 @@ body.modal-open {
 .staff-action-sync-status.pending{
   color:#b26a00;
 }
+
+.staff-action-sync-status.warning{
+  color:#c47a00;
+  font-weight:900;
+}
+.staff-action-sync-status.danger{
+  color:#c0392b;
+  font-weight:900;
+}

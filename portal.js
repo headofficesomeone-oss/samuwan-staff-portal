@@ -603,7 +603,7 @@ function writeStaffActionQueue_(
     STAFF_ACTION_QUEUE_KEY,
     JSON.stringify(
       Array.isArray(queue)
-        ? queue.slice(-100)
+        ? queue
         : []
     )
   );
@@ -619,30 +619,35 @@ function updateStaffActionSyncStatus_() {
 
   if (!el) return;
 
-  const queue =
-    readStaffActionQueue_();
-
   const count =
-    queue.length;
+    readStaffActionQueue_().length;
 
-  el.classList.toggle(
+  el.classList.remove(
     "synced",
-    count === 0
-  );
-
-  el.classList.toggle(
     "pending",
-    count > 0
+    "warning",
+    "danger"
   );
 
-  el.textContent =
-    count === 0
-      ? "✓ 同期済み"
-      : "↻ 未送信 " +
-        count +
-        "件";
+  if (count === 0) {
+    el.classList.add("synced");
+    el.textContent = "✓ 同期済み";
+  } else if (count <= 10) {
+    el.classList.add("pending");
+    el.textContent =
+      "↻ 未送信 " + count + "件";
+  } else if (count < 50) {
+    el.classList.add("warning");
+    el.textContent =
+      "⚠ 未送信 " + count + "件";
+  } else {
+    el.classList.add("danger");
+    el.textContent =
+      "⚠ 通信確認 未送信 " +
+      count +
+      "件";
+  }
 }
-
 function enqueueStaffAction_(
   payload
 ) {
@@ -3949,14 +3954,8 @@ async function sendStaffAction(
         "」を記録しますか？"
       );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
   }
-
-  const deviceTime =
-    new Date()
-      .toISOString();
 
   const sendId =
     createStaffActionSendId(
@@ -3966,60 +3965,44 @@ async function sendStaffAction(
     );
 
   const payload = {
-    action:
-      "recordStaffAction",
-
+    action: "recordStaffAction",
     employeeId:
       currentUser.employeeId,
-
     employeeName:
       currentUser.employeeName,
-
     shiftId:
       shift.shiftId,
-
     clientName:
       shift.clientName,
-
     supportDate:
       shift.supportDate,
-
     service:
       shift.service,
-
     scheduledStart:
       shift.startTime,
-
     scheduledEnd:
       shift.endTime,
-
     actionType:
       actionType,
-
     deviceTime:
-      deviceTime,
-
+      new Date().toISOString(),
     sendId:
       sendId,
-
     registrationMethod:
       "職員ポータル",
-
-    note:
-      ""
+    note: ""
   };
 
   /*
-   * 先に端末へ保存します。
-   * 通信が切れても、この時点で職員の操作は失われません。
+   * まず端末へ保存。
+   * 通信完了を待たず画面を先へ進める。
    */
   enqueueStaffAction_(
     payload
   );
 
   savePortalLocalHistory_(
-    actionType ===
-      "キャンセル"
+    actionType === "キャンセル"
       ? "キャンセル"
       : actionType,
     shift,
@@ -4048,248 +4031,96 @@ async function sendStaffAction(
     shift
   );
 
-  setStaffActionButtonsDisabled(
-    true
-  );
-
-  setTodayShiftProcessing_(
-    true
-  );
-
-  /*
-   * 支援の一連状態も通信結果を待たず端末側へ反映します。
-   */
-  if (
-    actionType ===
-    "向かいます"
-  ) {
-    saveSupportChain_(
-      shift
-    );
+  if (actionType === "向かいます") {
+    saveSupportChain_(shift);
   }
 
-  if (
-    actionType ===
-    "キャンセル"
-  ) {
+  if (actionType === "キャンセル") {
     showPortalCancelFlash_(
       shift.service
     );
   }
 
-  const queueItem =
-    readStaffActionQueue_()
-      .find(
-        item =>
-          item &&
-          item.payload &&
-          item.payload.sendId ===
-            sendId
-      );
+  updateStaffActionSyncStatus_();
 
-  try {
-    const sent =
-      await sendQueuedStaffActionItem_(
-        queueItem
-      );
-
-    if (
-      !sent.success &&
-      sent.permanentError
-    ) {
-      /*
-       * GASには届いたが業務上登録不可。
-       * 端末上の仮履歴も取り消します。
-       */
-      removeStaffActionQueueItem_(
-        sendId
-      );
-
-      removePortalLocalHistoryBySendId_(
-        sendId
-      );
-
-      clearPendingStaffActionState_();
-
-      setTodayShiftProcessing_(
-        false
-      );
-
-      await loadTodayStaffShifts(
-        true
-      );
-
-      alert(
-        "操作を登録できませんでした：" +
-        (
-          sent.message ||
-          "登録内容を確認してください。"
-        )
-      );
-
-      return;
-    }
-
-    if (!sent.success) {
-      /*
-       * 通信障害時:
-       * 操作は端末に残し、画面上は次状態へ進めます。
-       * onlineイベント / 30秒周期 / 画面復帰時に自動再送します。
-       */
-      setTodayShiftProcessing_(
-        false
-      );
-
-      updateStaffActionSyncStatus_();
-
-      alert(
-        "通信できないため端末に保存しました。\n" +
-        "通信が回復すると自動で送信します。"
-      );
-
-      return;
-    }
-
-    if (
-      actionType === "入りました" &&
-      isOutingService_(shift)
-    ) {
-      clearPendingStaffActionState_();
-
-      setSupportGuideText_(
-        shift.clientName +
-        "さんの行動記録を開始します"
-      );
-
-      setTimeout(
-        () => {
-          openSelectedOutingActionRecord();
-        },
-        100
-      );
-
-      return;
-    }
-
-    /*
-     * 通常支援は、GAS側の状態確定を確認します。
-     */
-    await refreshUntilPendingStateSettled_();
-
-    setTodayShiftProcessing_(
-      false
+  /*
+   * 外出支援の「入りました」は
+   * 送信を待たず行動記録へ。
+   */
+  if (
+    actionType === "入りました" &&
+    isOutingService_(shift)
+  ) {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんの行動記録を開始します"
     );
 
-    if (
-      actionType ===
-      "入りました" &&
-      isOutingService_(shift)
-    ) {
-      setTimeout(
-        () => {
-          openSelectedOutingActionRecord();
-        },
-        250
-      );
-    }
+    setTimeout(
+      () => {
+        openSelectedOutingActionRecord();
+      },
+      50
+    );
+  }
 
-    if (
-      actionType ===
-      "キャンセル"
-    ) {
-      const remainingSameClient =
-        todayStaffShifts.some(
-          s =>
-            s.shiftId !==
-              shift.shiftId &&
-            String(
-              s.clientName || ""
-            ).trim() ===
-            String(
-              shift.clientName || ""
-            ).trim() &&
-            ![
-              "終了",
-              "キャンセル"
-            ].includes(
-              String(
-                s.currentState ||
-                "未開始"
-              ).trim()
-            )
-        );
+  /*
+   * 送信は裏でFIFO順に実行。
+   */
+  flushStaffActionQueue_()
+    .then(
+      async () => {
+        updateStaffActionSyncStatus_();
 
-      if (
-        !remainingSameClient
-      ) {
-        clearSupportChain_();
+        if (
+          !(
+            actionType === "入りました" &&
+            isOutingService_(shift)
+          )
+        ) {
+          try {
+            await loadTodayStaffShifts(
+              true
+            );
+          } catch (error) {
+            console.warn(
+              "操作後の状態再取得に失敗",
+              error
+            );
+          }
+        }
       }
-    }
-
-    const select =
-      document.getElementById(
-        "todayShiftSelect"
-      );
-
-    if (select) {
-      select.value =
-        shift.shiftId;
-
-      handleTodayShiftChange();
-    }
-
-  } catch (error) {
-    /*
-     * 予期しない例外でもキューは消しません。
-     */
-    setTodayShiftProcessing_(
-      false
+    )
+    .catch(
+      error => {
+        console.warn(
+          "バックグラウンド送信に失敗",
+          error
+        );
+        updateStaffActionSyncStatus_();
+      }
     );
 
-    updateStaffActionSyncStatus_();
+  setTodayShiftProcessing_(
+    false
+  );
 
-    alert(
-      "通信状態を確認できないため端末に保存しました。\n" +
-      "通信が回復すると自動で送信します。"
-    );
-
-  } finally {
-    if (
+  if (
+    !(
       actionType === "入りました" &&
       isOutingService_(shift)
-    ) {
-      updateStaffActionSyncStatus_();
-      return;
-    }
-
-    const selectedShift =
-      getSelectedTodayShift();
-
-    if (
-      selectedShift &&
-      pendingStaffActionState &&
-      selectedShift.shiftId ===
-        pendingStaffActionState.shiftId
-    ) {
-      setStaffActionButtonsByState(
-        pendingStaffActionState.expectedState
+    )
+  ) {
+    const expected =
+      getExpectedStateForAction_(
+        actionType
       );
 
-    } else if (
-      selectedShift
-    ) {
+    if (expected) {
       setStaffActionButtonsByState(
-        selectedShift.currentState ||
-        "未開始"
-      );
-
-    } else {
-      setStaffActionButtonsDisabled(
-        true
+        expected
       );
     }
-
-    updateStaffActionSyncStatus_();
   }
 }
 
