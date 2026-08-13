@@ -2425,6 +2425,11 @@ function setTodayShiftOptions(shifts) {
       null
     );
 
+    renderMovingEntryFailsafe_(
+      null,
+      ""
+    );
+
     return;
   }
 
@@ -2501,6 +2506,11 @@ function setTodayShiftOptions(shifts) {
       ).trim() === "移動中"
     ) {
       setStaffActionButtonsByState(
+        "移動中"
+      );
+
+      renderMovingEntryFailsafe_(
+        chainShift,
         "移動中"
       );
     }
@@ -2764,6 +2774,15 @@ function handleTodayShiftChange() {
   }
 
   setStaffActionButtonsByState(
+    currentState
+  );
+
+  /*
+   * リロード直後など、通常ボタン領域の表示順に左右されないよう
+   * 移動中専用ボタンを最後にもう一度確定します。
+   */
+  renderMovingEntryFailsafe_(
+    shift,
     currentState
   );
 }
@@ -4375,6 +4394,47 @@ async function continueToNextSupport() {
 }
 
 
+function renderMovingEntryFailsafe_(
+  shift,
+  currentState
+) {
+  const area =
+    document.getElementById(
+      "movingEntryFailsafe"
+    );
+
+  const button =
+    document.getElementById(
+      "movingEntryFailsafeButton"
+    );
+
+  if (!area || !button) {
+    return;
+  }
+
+  const state =
+    String(
+      currentState || ""
+    ).trim();
+
+  const pc =
+    isPcPortalOperation_();
+
+  const show =
+    !!shift &&
+    state === "移動中" &&
+    !pc;
+
+  area.classList.toggle(
+    "hidden",
+    !show
+  );
+
+  button.disabled =
+    !show;
+}
+
+
 function setStaffActionButtonsByState(currentState) {
   const instructionButton = document.getElementById("instructionButton");
   const moveButton = document.getElementById("moveButton");
@@ -4390,6 +4450,12 @@ function setStaffActionButtonsByState(currentState) {
     .forEach(b => { if (b) { b.disabled = true; b.classList.add("hidden"); } });
 
   const shift = getSelectedTodayShift();
+
+  renderMovingEntryFailsafe_(
+    shift,
+    currentState
+  );
+
   updateSupportMainDisplay_(shift);
 
   const pc =
@@ -4810,6 +4876,11 @@ function setButtonsImmediatelyForAction_(
     actionType === "入りました" &&
     isOutingService_(shift)
   ) {
+    renderMovingEntryFailsafe_(
+      null,
+      ""
+    );
+
     const actionGrid =
       document.getElementById(
         "portalActionButtons"
