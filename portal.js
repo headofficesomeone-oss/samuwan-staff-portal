@@ -2490,6 +2490,21 @@ function setTodayShiftOptions(shifts) {
     );
 
     handleTodayShiftChange();
+
+    /*
+     * 支援中のプルダウン固定は維持。
+     * ただし移動中なら「入りました」が必ず見える状態を再確定する。
+     */
+    if (
+      String(
+        chainShift.currentState || ""
+      ).trim() === "移動中"
+    ) {
+      setStaffActionButtonsByState(
+        "移動中"
+      );
+    }
+
     return;
   }
 
@@ -2701,6 +2716,18 @@ function handleTodayShiftChange() {
           shift.currentState ||
           "未開始"
         );
+
+  /*
+   * 旧版で「向かいます」中に行動記録へ入った残骸がある場合の自動復旧。
+   */
+  if (
+    String(currentState).trim() ===
+      "移動中"
+  ) {
+    clearStalePreEntryOutingState_(
+      shift
+    );
+  }
 
   updateSupportGuideByState_(
     shift,
@@ -3368,6 +3395,77 @@ function showPortalCancelFlash_(service) {
   el.classList.remove("hidden");
   setTimeout(() => { el.classList.add("hidden"); el.textContent = ""; }, 2000);
 }
+
+
+function clearStalePreEntryOutingState_(shift) {
+  if (!shift) return;
+
+  const state =
+    String(
+      shift.currentState || ""
+    ).trim();
+
+  /*
+   * 「向かいます」後（移動中）は、まだ行動記録を開始していない段階。
+   * 旧版で行動記録ボタンを押して作られたローカル残骸があれば削除する。
+   *
+   * 未送信として確定済みの行動記録セッションは削除しない。
+   */
+  if (state !== "移動中") {
+    return;
+  }
+
+  try {
+    const active =
+      JSON.parse(
+        localStorage.getItem(
+          "staffPortalActiveOuting"
+        ) || "null"
+      );
+
+    if (
+      active &&
+      (
+        !active.shiftId ||
+        active.shiftId === shift.shiftId
+      )
+    ) {
+      localStorage.removeItem(
+        "staffPortalActiveOuting"
+      );
+    }
+  } catch (error) {
+    localStorage.removeItem(
+      "staffPortalActiveOuting"
+    );
+  }
+
+  try {
+    const session =
+      JSON.parse(
+        localStorage.getItem(
+          "staffPortalActionRecordSessionV1"
+        ) || "null"
+      );
+
+    if (
+      session &&
+      (
+        !session.shiftId ||
+        session.shiftId === shift.shiftId
+      )
+    ) {
+      localStorage.removeItem(
+        "staffPortalActionRecordSessionV1"
+      );
+    }
+  } catch (error) {
+    localStorage.removeItem(
+      "staffPortalActionRecordSessionV1"
+    );
+  }
+}
+
 
 function getActiveOutingForShift_(shift) {
   if (!shift) return null;
@@ -4346,17 +4444,48 @@ function setStaffActionButtonsByState(currentState) {
     case "移動中":
       /*
        * 外出支援でも「向かいます」の次は必ず「入りました」。
-       * 行動記録は「入りました」後に自動遷移するため、
-       * ここでは行動記録ボタンを出しません。
+       * 旧版のローカル状態が残っていても、この状態では
+       * 行動記録ボタンを出さず「入りました」を最優先で表示する。
        */
+      {
+        const actionGrid =
+          document.getElementById(
+            "portalActionButtons"
+          );
+
+        if (actionGrid) {
+          actionGrid.classList.remove(
+            "hidden"
+          );
+        }
+      }
+
+      if (actionRecordButton) {
+        actionRecordButton.disabled = true;
+        actionRecordButton.classList.add(
+          "hidden"
+        );
+      }
+
+      if (homeReturnButton) {
+        homeReturnButton.disabled = true;
+        homeReturnButton.classList.add(
+          "hidden"
+        );
+      }
+
       if (enterButton) {
         enterButton.disabled = false;
-        enterButton.classList.remove("hidden");
+        enterButton.classList.remove(
+          "hidden"
+        );
       }
 
       if (cancelButton) {
         cancelButton.disabled = false;
-        cancelButton.classList.remove("hidden");
+        cancelButton.classList.remove(
+          "hidden"
+        );
       }
       break;
 
