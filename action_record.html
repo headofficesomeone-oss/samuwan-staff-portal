@@ -9,7 +9,7 @@
 </head>
 <body>
   <header class="record-header">
-    <button class="record-back" type="button" onclick="returnToPortal_()">‹</button>
+    <button class="record-back" type="button" onclick="temporarilyReturnToPortal_()">‹</button>
     <div>
       <div class="record-title">行動記録</div>
       <div id="recordHelperName" class="record-helper"></div>
@@ -193,7 +193,7 @@
         </div>
 
         <button class="record-primary" type="button" onclick="openDepartureScreen_()">🚶 出発</button>
-        <button class="record-secondary danger-outline" type="button" onclick="finishOutingAtCurrentPlace_()">■ 支援終了</button>
+        <button class="record-secondary danger-outline" type="button" onclick="finishOutingAtCurrentPlace_()">■ 行動記録終了</button>
 
         <button class="record-link-button" type="button" onclick="toggleTransportChange_()">移動手段を変更</button>
 
@@ -280,14 +280,14 @@
         </div>
 
         <div class="record-button-row stack">
-          <button class="record-primary" type="button" onclick="registerHome_(false)">帰宅を登録</button>
-          <button class="record-secondary danger-outline" type="button" onclick="registerHome_(true)">帰宅して支援終了</button>
+          <button class="record-primary" type="button" onclick="registerHome_(false)">帰宅して行動記録終了</button>
+          <button class="record-secondary danger-outline" type="button" onclick="forceExitActionRecord_()">強制終了</button>
         </div>
       </div>
     </section>
   </main>
 
   <script src="./common.js?v=20260811-historyfix-2"></script>
-  <script src="./action_record.js?v=20260812-outingstay-1"></script>
+  <script src="./action_record.js?v=20260813-localsession-1"></script>
 </body>
 </html>

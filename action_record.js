@@ -8,6 +8,12 @@ const ACTIVE_OUTING_KEY =
 const PORTAL_HISTORY_KEY =
   "staffPortalLocalActionHistoryV1";
 
+const ACTION_RECORD_SESSION_KEY =
+  "staffPortalActionRecordSessionV1";
+
+const ACTION_RECORD_PENDING_KEY =
+  "staffPortalPendingActionRecordSessionsV1";
+
 let recordUser = null;
 let recordContext = null;
 let cameraStream = null;
@@ -18,6 +24,195 @@ document.addEventListener(
   "DOMContentLoaded",
   initActionRecord_
 );
+
+function getActionRecordSession_() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        ACTION_RECORD_SESSION_KEY
+      ) || "null"
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveActionRecordSession_(session) {
+  localStorage.setItem(
+    ACTION_RECORD_SESSION_KEY,
+    JSON.stringify(session)
+  );
+}
+
+function ensureActionRecordSession_() {
+  let session =
+    getActionRecordSession_();
+
+  if (
+    session &&
+    session.shiftId ===
+      recordContext.shiftId
+  ) {
+    return session;
+  }
+
+  session = {
+    sessionId:
+      "ARS-" +
+      Date.now() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2,8),
+
+    shiftId:
+      recordContext.shiftId,
+
+    clientName:
+      recordContext.clientName,
+
+    service:
+      recordContext.service,
+
+    supportDate:
+      recordContext.supportDate ||
+      localDate_(),
+
+    scheduledStart:
+      recordContext.scheduledStart,
+
+    scheduledEnd:
+      recordContext.scheduledEnd,
+
+    employeeId:
+      recordUser.employeeId,
+
+    employeeName:
+      recordUser.employeeName,
+
+    continuation:
+      !!recordContext.continuation,
+
+    createdAt:
+      new Date().toISOString(),
+
+    events: [],
+    historyEventIds: []
+  };
+
+  saveActionRecordSession_(session);
+  return session;
+}
+
+function appendActionRecordSessionEvent_(event) {
+  const session =
+    ensureActionRecordSession_();
+
+  session.events.push({
+    eventId:
+      "ARE-" +
+      Date.now() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2,8),
+
+    actualAt:
+      new Date().toISOString(),
+
+    ...event
+  });
+
+  saveActionRecordSession_(session);
+  return session;
+}
+
+function appendSessionHistoryId_(historyId) {
+  if (!historyId) return;
+
+  const session =
+    getActionRecordSession_();
+
+  if (
+    !session ||
+    session.shiftId !==
+      recordContext.shiftId
+  ) {
+    return;
+  }
+
+  session.historyEventIds =
+    Array.from(
+      new Set([
+        ...(session.historyEventIds || []),
+        historyId
+      ])
+    );
+
+  saveActionRecordSession_(session);
+}
+
+function enqueueCompletedActionRecordSession_(
+  completionType,
+  finalPlace
+) {
+  const session =
+    ensureActionRecordSession_();
+
+  session.completedAt =
+    new Date().toISOString();
+
+  session.completionType =
+    completionType || "";
+
+  session.finalPlace =
+    finalPlace || "";
+
+  let pending = [];
+
+  try {
+    pending =
+      JSON.parse(
+        localStorage.getItem(
+          ACTION_RECORD_PENDING_KEY
+        ) || "[]"
+      );
+  } catch (error) {}
+
+  if (!Array.isArray(pending)) {
+    pending = [];
+  }
+
+  if (
+    !pending.some(
+      item =>
+        item &&
+        item.sessionId ===
+          session.sessionId
+    )
+  ) {
+    pending.push(session);
+  }
+
+  localStorage.setItem(
+    ACTION_RECORD_PENDING_KEY,
+    JSON.stringify(pending)
+  );
+
+  localStorage.removeItem(
+    ACTION_RECORD_SESSION_KEY
+  );
+
+  localStorage.removeItem(
+    ACTIVE_OUTING_KEY
+  );
+}
+
+function temporarilyReturnToPortal_() {
+  stopCamera_();
+  location.href = "./index.html";
+}
+
 
 
 function setRecordProcessing_(processing, text = "ただいま登録中です") {
@@ -427,9 +622,7 @@ async function registerInitialDeparture_() {
     value_("startPlace");
 
   if (!place) {
-    alert(
-      "最初の場所を入力してください。"
-    );
+    alert("最初の場所を入力してください。");
     return;
   }
 
@@ -454,16 +647,13 @@ async function registerInitialDeparture_() {
     isDriving = true;
 
   } else if (
-    transport ===
-      "有償運送"
+    transport === "有償運送"
   ) {
     const driver =
       value_("startDriver");
 
     if (!driver) {
-      alert(
-        "運転手を選択してください。"
-      );
+      alert("運転手を選択してください。");
       return;
     }
 
@@ -473,7 +663,6 @@ async function registerInitialDeparture_() {
       driverId =
         recordUser.employeeId;
       isDriving = true;
-
     } else {
       driverName = "他職員";
     }
@@ -494,248 +683,77 @@ async function registerInitialDeparture_() {
 
   if (!ok) return;
 
-  setRecordProcessing_(true, "出発を登録しています");
+  ensureActionRecordSession_();
 
-  showMessage_(
-    "登録しています…"
+  appendActionRecordSessionEvent_({
+    type: "start",
+    place,
+    transport,
+    driverName,
+    driverId,
+    isDriving,
+    isPaidTransport:
+      transport === "有償運送"
+  });
+
+  saveActiveOuting_({
+    outingResultId: "",
+    routeId: "LOCAL-1",
+    routeNumber: 1,
+    shiftId:
+      recordContext.shiftId,
+    userName:
+      recordContext.clientName,
+    service:
+      recordContext.service,
+    supportDate:
+      recordContext.supportDate,
+    scheduledStart:
+      recordContext.scheduledStart,
+    scheduledEnd:
+      recordContext.scheduledEnd,
+    currentPlace:
+      place,
+    movementStatus:
+      "移動中",
+    transport,
+    driverId,
+    driverName,
+    isDriving,
+    localOnly: true
+  });
+
+  saveLocalHistory_(
+    "出発",
+    {
+      place,
+      transport
+    }
   );
 
-  try {
-    const clientId =
-      await resolveClientId_(
-        recordContext.clientName
-      );
+  showMessage_(
+    "出発を端末に保存しました。"
+  );
 
-    const result =
-      await callOutingApi_(
-        "outing-start",
-        {
-          data: {
-            supportDate:
-              recordContext.supportDate ||
-              localDate_(),
-
-            shiftId:
-              recordContext.shiftId,
-
-            requestId:
-              "",
-
-            userId:
-              clientId,
-
-            userName:
-              recordContext.clientName,
-
-            serviceType:
-              recordContext.service,
-
-            serviceContent:
-              "",
-
-            mainStaffId:
-              recordUser.employeeId,
-
-            mainStaffName:
-              recordUser.employeeName,
-
-            startPlaceType:
-              "自宅等",
-
-            startPlace:
-              place,
-
-            transport:
-              transport,
-
-            isDriving:
-              isDriving,
-
-            driverId:
-              driverId,
-
-            driverName:
-              driverName,
-
-            vehicleName:
-              "",
-
-            isPaidTransport:
-              transport ===
-                "有償運送",
-
-            supportDetail:
-              "",
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            registerType:
-              "ポータル",
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !result ||
-      result.success !== true
-    ) {
-      throw new Error(
-        result?.message ||
-        "出発を登録できませんでした"
-      );
-    }
-
-    const active = {
-      outingResultId:
-        result.outingResultId,
-
-      routeId:
-        result.routeId,
-
-      routeNumber:
-        result.routeNumber || 1,
-
-      shiftId:
-        recordContext.shiftId,
-
-      userId:
-        clientId,
-
-      userName:
-        recordContext.clientName,
-
-      service:
-        recordContext.service,
-
-      supportDate:
-        recordContext.supportDate,
-
-      scheduledStart:
-        recordContext.scheduledStart,
-
-      scheduledEnd:
-        recordContext.scheduledEnd,
-
-      currentPlace:
-        place,
-
-      movementStatus:
-        "移動中",
-
-      transport:
-        transport,
-
-      driverId:
-        driverId,
-
-      driverName:
-        driverName,
-
-      isDriving:
-        isDriving
-    };
-
-    saveActiveOuting_(active);
-
-    if (
-      !recordContext.continuation
-    ) {
-      await recordPortalStaffAction_(
-        "入りました"
-      );
-
-      /*
-       * 支援そのものの開始と、移動行程の出発は別記録にします。
-       *
-       * 全行程:
-       *   14:57 支援開始
-       *     14:57 出発
-       *
-       * という形で表示できます。
-       */
-      saveLocalHistory_(
-        "支援開始",
-        {}
-      );
-
-      saveLocalHistory_(
-        "出発",
-        {
-          place:
-            place,
-          transport:
-            transport
-        }
-      );
-
-    } else {
-      /*
-       * 引き続き支援の場合は、支援開始自体は
-       * 「引き続き支援」で既に記録済みなので、
-       * 移動行程として「出発」だけを追加します。
-       */
-      saveLocalHistory_(
-        "出発",
-        {
-          place:
-            place,
-          transport:
-            transport
-        }
-      );
-    }
-
-    showMessage_(
-      "出発を登録しました。"
-    );
-
-    setRecordProcessing_(false);
-    showMessage_("出発を登録しました。");
-    await initActionRecord_();
-
-  } catch (error) {
-    showMessage_(
-      "登録に失敗しました：" +
-      error.message,
-      true
-    );
-  }
+  await initActionRecord_();
 }
 
-
 async function registerActivityOnlyRoute_() {
-  if (guardRecordBusy_()) {
-    return;
-  }
+  if (guardRecordBusy_()) return;
 
   const place =
-    value_(
-      "startPlace"
-    );
+    value_("startPlace");
 
   const activity =
-    value_(
-      "startActivity"
-    );
+    value_("startActivity");
 
   if (!place) {
-    alert(
-      "最初の場所を入力してください。"
-    );
+    alert("最初の場所を入力してください。");
     return;
   }
 
   if (!activity) {
-    alert(
-      "何をしたか入力してください。"
-    );
+    alert("何をしたか入力してください。");
     return;
   }
 
@@ -746,9 +764,7 @@ async function registerActivityOnlyRoute_() {
   const transport =
     paid
       ? "有償運送"
-      : value_(
-          "startTransport"
-        );
+      : value_("startTransport");
 
   let driverName = "";
   let driverId = "";
@@ -757,302 +773,109 @@ async function registerActivityOnlyRoute_() {
   if (paid) {
     driverName =
       recordUser.employeeName;
-
     driverId =
       recordUser.employeeId;
-
     isDriving = true;
 
   } else if (
-    transport ===
-      "有償運送"
+    transport === "有償運送"
   ) {
     const driver =
-      value_(
-        "startDriver"
-      );
+      value_("startDriver");
 
     if (!driver) {
-      alert(
-        "運転手を選択してください。"
-      );
+      alert("運転手を選択してください。");
       return;
     }
 
     if (driver === "自分") {
       driverName =
         recordUser.employeeName;
-
       driverId =
         recordUser.employeeId;
-
       isDriving = true;
-
     } else {
-      driverName =
-        "他職員";
+      driverName = "他職員";
     }
   }
 
   const ok =
     confirm(
       activity +
-      "として記録し、" +
-      "外出の行程を終了します。\n\n" +
+      "として記録し、行動記録を終了します。\n\n" +
       "よろしいですか？"
     );
 
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
-  setRecordProcessing_(
-    true,
-    "活動と行程を登録しています"
+  ensureActionRecordSession_();
+
+  appendActionRecordSessionEvent_({
+    type: "start",
+    place,
+    transport,
+    driverName,
+    driverId,
+    isDriving,
+    isPaidTransport:
+      transport === "有償運送",
+    supportDetail:
+      activity
+  });
+
+  const actualAt =
+    new Date().toISOString();
+
+  saveLocalHistory_(
+    "出発",
+    {
+      place,
+      transport,
+      actualAt
+    }
   );
 
-  try {
-    const clientId =
-      await resolveClientId_(
-        recordContext.clientName
-      );
-
-    /*
-     * 内部的には
-     * 出発 -> 利用者宅へ帰宅
-     * の1行程を作成します。
-     */
-    const startResult =
-      await callOutingApi_(
-        "outing-start",
-        {
-          data: {
-            supportDate:
-              recordContext.supportDate ||
-              localDate_(),
-
-            shiftId:
-              recordContext.shiftId,
-
-            requestId:
-              "",
-
-            userId:
-              clientId,
-
-            userName:
-              recordContext.clientName,
-
-            serviceType:
-              recordContext.service,
-
-            serviceContent:
-              activity,
-
-            mainStaffId:
-              recordUser.employeeId,
-
-            mainStaffName:
-              recordUser.employeeName,
-
-            startPlaceType:
-              "自宅等",
-
-            startPlace:
-              place,
-
-            transport:
-              transport,
-
-            isDriving:
-              isDriving,
-
-            driverId:
-              driverId,
-
-            driverName:
-              driverName,
-
-            vehicleName:
-              "",
-
-            isPaidTransport:
-              transport ===
-                "有償運送",
-
-            supportDetail:
-              activity,
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            registerType:
-              "ポータル",
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !startResult ||
-      startResult.success !== true
-    ) {
-      throw new Error(
-        startResult?.message ||
-        "活動行程を開始できませんでした"
-      );
+  saveLocalHistory_(
+    "活動",
+    {
+      activity,
+      actualAt
     }
+  );
 
-    const arrivalResult =
-      await callOutingApi_(
-        "outing-arrive",
-        {
-          data: {
-            outingResultId:
-              startResult.outingResultId,
+  appendActionRecordSessionEvent_({
+    type: "home",
+    place: "自宅",
+    activity,
+    final: true
+  });
 
-            routeId:
-              startResult.routeId,
-
-            arrivalType:
-              "最終到着",
-
-            arrivalPlaceType:
-              "自宅等",
-
-            arrivalPlace:
-              "自宅",
-
-            arrivalPlaceNote:
-              activity,
-
-            distanceKm:
-              "",
-
-            odometerArrivalKm:
-              "",
-
-            endReport:
-              activity,
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !arrivalResult ||
-      arrivalResult.success !== true
-    ) {
-      throw new Error(
-        arrivalResult?.message ||
-        "活動行程を終了できませんでした"
-      );
+  saveLocalHistory_(
+    "帰宅",
+    {
+      place: "自宅",
+      actualAt
     }
+  );
 
-    const actualAt =
-      new Date()
-        .toISOString();
+  localStorage.setItem(
+    "staffPortalLastOutingPlaceV1",
+    "自宅"
+  );
 
-    /*
-     * 外出支援自体がまだ開始されていない場合のみ、
-     * ここで支援開始を登録します。
-     * 引き続き支援から入った場合は開始済みです。
-     */
-    if (
-      !recordContext.continuation
-    ) {
-      await recordPortalStaffAction_(
-        "入りました"
-      );
+  enqueueCompletedActionRecordSession_(
+    "帰宅",
+    "自宅"
+  );
 
-      saveLocalHistory_(
-        "支援開始",
-        {
-          actualAt:
-            actualAt
-        }
-      );
-    }
+  showMessage_(
+    "行動記録を端末に保存しました。"
+  );
 
-    /*
-     * 内部には出発・帰宅を残し、
-     * 表示用に活動内容も保存します。
-     */
-    saveLocalHistory_(
-      "出発",
-      {
-        place:
-          place,
-        transport:
-          transport,
-        actualAt:
-          actualAt
-      }
-    );
-
-    saveLocalHistory_(
-      "活動",
-      {
-        activity:
-          activity,
-        actualAt:
-          actualAt
-      }
-    );
-
-    saveLocalHistory_(
-      "帰宅",
-      {
-        place:
-          "自宅",
-        actualAt:
-          actualAt
-      }
-    );
-
-    localStorage.setItem(
-      "staffPortalLastOutingPlaceV1",
-      "自宅"
-    );
-
-    localStorage.removeItem(
-      ACTIVE_OUTING_KEY
-    );
-
-    setRecordProcessing_(
-      true,
-      "活動と行動記録を完了しました。ポータルへ戻ります"
-    );
-
-    setTimeout(
-      returnToPortal_,
-      500
-    );
-
-  } catch (error) {
-    setRecordProcessing_(
-      false
-    );
-
-    showMessage_(
-      "活動の登録に失敗しました：" +
-      error.message,
-      true
-    );
-  }
+  setTimeout(
+    returnToPortal_,
+    250
+  );
 }
 
 function showMoveScreen_() {
@@ -1340,14 +1163,10 @@ async function registerArrival_() {
     getActiveOuting_();
 
   const place =
-    value_(
-      "confirmPlace"
-    );
+    value_("confirmPlace");
 
   const note =
-    value_(
-      "confirmNote"
-    );
+    value_("confirmNote");
 
   if (!active) {
     alert(
@@ -1357,9 +1176,7 @@ async function registerArrival_() {
   }
 
   if (!place) {
-    alert(
-      "到着場所を入力してください。"
-    );
+    alert("到着場所を入力してください。");
     return;
   }
 
@@ -1371,106 +1188,36 @@ async function registerArrival_() {
 
   if (!ok) return;
 
-  setRecordProcessing_(true, "到着を登録しています");
+  appendActionRecordSessionEvent_({
+    type: "arrival",
+    place,
+    note
+  });
 
-  showMessage_(
-    "到着を登録しています…"
+  active.currentPlace =
+    place;
+
+  active.movementStatus =
+    "待機中";
+
+  active.arrivalType =
+    "経由地";
+
+  saveActiveOuting_(active);
+
+  saveLocalHistory_(
+    "到着",
+    {
+      place
+    }
   );
 
-  try {
-    const result =
-      await callOutingApi_(
-        "outing-arrive",
-        {
-          data: {
-            outingResultId:
-              active.outingResultId,
+  showMessage_(
+    "到着を端末に保存しました。"
+  );
 
-            routeId:
-              active.routeId,
-
-            arrivalType:
-              "経由地",
-
-            arrivalPlaceType:
-              "店舗等",
-
-            arrivalPlace:
-              place,
-
-            arrivalPlaceNote:
-              note,
-
-            distanceKm:
-              "",
-
-            odometerArrivalKm:
-              "",
-
-            endReport:
-              "",
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !result ||
-      result.success !== true
-    ) {
-      throw new Error(
-        result?.message ||
-        "到着を登録できませんでした"
-      );
-    }
-
-    active.currentPlace =
-      result.arrivalPlace ||
-      place;
-
-    active.movementStatus =
-      "待機中";
-
-    active.arrivalType =
-      "経由地";
-
-    saveActiveOuting_(
-      active
-    );
-
-    saveLocalHistory_(
-      "到着",
-      {
-        place:
-          active.currentPlace
-      }
-    );
-
-    showMessage_(
-      "到着を登録しました。"
-    );
-
-    setRecordProcessing_(false);
-    showMessage_("到着を登録しました。");
-    await initActionRecord_();
-
-  } catch (error) {
-    showMessage_(
-      "到着登録に失敗しました：" +
-      error.message,
-      true
-    );
-  }
+  await initActionRecord_();
 }
-
 
 function setDirectActivity_(
   text
@@ -1642,27 +1389,18 @@ async function registerNextDeparture_() {
   if (!active) return;
 
   const transport =
-    value_(
-      "nextTransport"
-    );
+    value_("nextTransport");
 
   let driverName = "";
   let driverId = "";
   let isDriving = false;
 
-  if (
-    transport ===
-      "有償運送"
-  ) {
+  if (transport === "有償運送") {
     const driver =
-      value_(
-        "nextDriver"
-      );
+      value_("nextDriver");
 
     if (!driver) {
-      alert(
-        "運転手を選択してください。"
-      );
+      alert("運転手を選択してください。");
       return;
     }
 
@@ -1672,10 +1410,8 @@ async function registerNextDeparture_() {
       driverId =
         recordUser.employeeId;
       isDriving = true;
-
     } else {
-      driverName =
-        "他職員";
+      driverName = "他職員";
     }
   }
 
@@ -1690,140 +1426,62 @@ async function registerNextDeparture_() {
 
   if (!ok) return;
 
-  setRecordProcessing_(true, "出発を登録しています");
+  appendActionRecordSessionEvent_({
+    type: "nextDeparture",
+    place:
+      active.currentPlace,
+    transport,
+    driverName,
+    driverId,
+    isDriving,
+    previousDriverId:
+      active.driverId || "",
+    isPaidTransport:
+      transport === "有償運送"
+  });
 
-  showMessage_(
-    "出発を登録しています…"
+  active.routeNumber =
+    Number(
+      active.routeNumber || 1
+    ) + 1;
+
+  active.routeId =
+    "LOCAL-" +
+    active.routeNumber;
+
+  active.movementStatus =
+    "移動中";
+
+  active.transport =
+    transport;
+
+  active.driverName =
+    driverName;
+
+  active.driverId =
+    driverId;
+
+  active.isDriving =
+    isDriving;
+
+  delete active.arrivalType;
+
+  saveActiveOuting_(active);
+
+  saveLocalHistory_(
+    "出発",
+    {
+      place:
+        active.currentPlace,
+      transport
+    }
   );
 
-  try {
-    const result =
-      await callOutingApi_(
-        "outing-next-departure",
-        {
-          data: {
-            outingResultId:
-              active.outingResultId,
+  showMessage_(
+    "出発を端末に保存しました。"
+  );
 
-            previousRouteId:
-              active.routeId,
-
-            departurePlaceType:
-              "経由地",
-
-            departurePlace:
-              active.currentPlace,
-
-            departurePlaceNote:
-              "",
-
-            transport:
-              transport,
-
-            isDriving:
-              isDriving,
-
-            driverId:
-              driverId,
-
-            driverName:
-              driverName,
-
-            driverChanged:
-              true,
-
-            previousDriverId:
-              active.driverId ||
-              "",
-
-            vehicleName:
-              "",
-
-            isPaidTransport:
-              transport ===
-                "有償運送",
-
-            supportDetail:
-              "",
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !result ||
-      result.success !== true
-    ) {
-      throw new Error(
-        result?.message ||
-        "出発を登録できませんでした"
-      );
-    }
-
-    active.routeId =
-      result.routeId;
-
-    active.routeNumber =
-      result.routeNumber;
-
-    active.currentPlace =
-      result.departurePlace ||
-      active.currentPlace;
-
-    active.movementStatus =
-      "移動中";
-
-    active.transport =
-      transport;
-
-    active.driverName =
-      driverName;
-
-    active.driverId =
-      driverId;
-
-    active.isDriving =
-      isDriving;
-
-    delete active.arrivalType;
-
-    saveActiveOuting_(
-      active
-    );
-
-    saveLocalHistory_(
-      "出発",
-      {
-        place:
-          active.currentPlace,
-        transport:
-          transport
-      }
-    );
-
-    showMessage_(
-      "出発を登録しました。"
-    );
-
-    setRecordProcessing_(false);
-    showMessage_("出発を登録しました。");
-    await initActionRecord_();
-
-  } catch (error) {
-    showMessage_(
-      "出発登録に失敗しました：" +
-      error.message,
-      true
-    );
-  }
+  await initActionRecord_();
 }
 
 async function finishOutingAtCurrentPlace_() {
@@ -1846,91 +1504,31 @@ async function finishOutingAtCurrentPlace_() {
   const ok =
     confirm(
       active.currentPlace +
-      "で外出の行程を終了しますか？"
+      "で行動記録を終了しますか？"
     );
 
   if (!ok) return;
 
-  setRecordProcessing_(true, "行動記録を終了しています");
+  appendActionRecordSessionEvent_({
+    type: "finishCurrent",
+    place:
+      active.currentPlace,
+    final: true
+  });
 
-  showMessage_(
-    "行動記録を終了しています…"
+  enqueueCompletedActionRecordSession_(
+    "現在地終了",
+    active.currentPlace
   );
 
-  try {
-    const result =
-      await callOutingApi_(
-        "outing-finish-current-arrival",
-        {
-          data: {
-            outingResultId:
-              active.outingResultId,
+  showMessage_(
+    "行動記録を端末に保存しました。"
+  );
 
-            routeId:
-              active.routeId,
-
-            endReport:
-              "",
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !result ||
-      result.success !== true
-    ) {
-      throw new Error(
-        result?.message ||
-        "支援終了を登録できませんでした"
-      );
-    }
-
-    localStorage.removeItem(
-      ACTIVE_OUTING_KEY
-    );
-
-    saveLocalHistory_(
-      "支援終了",
-      {
-        place:
-          active.currentPlace
-      }
-    );
-
-    const hasContinuous =
-      await hasContinuousNext_();
-
-    if (!hasContinuous) {
-      }
-
-    showMessage_(
-      hasContinuous
-        ? "行程を終了しました。ポータルで引き続き支援へ進めます。"
-        : "支援を終了しました。"
-    );
-
-    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
-    setTimeout(
-      returnToPortal_,
-      450
-    );
-
-  } catch (error) {
-    showMessage_(
-      "行動記録の終了に失敗しました：" +
-      error.message,
-      true
-    );
-  }
+  setTimeout(
+    returnToPortal_,
+    250
+  );
 }
 
 async function registerHome_(andEnd) {
@@ -1955,11 +1553,11 @@ async function registerHome_(andEnd) {
       active.routeNumber || 1
     ) === 1;
 
+  let activity = "";
+
   if (isNoStopPattern) {
-    const activity =
-      value_(
-        "directActivity"
-      );
+    activity =
+      value_("directActivity");
 
     if (!activity) {
       alert(
@@ -1967,306 +1565,61 @@ async function registerHome_(andEnd) {
       );
       return;
     }
-
-    active.directActivity =
-      activity;
-
-    saveActiveOuting_(
-      active
-    );
   }
 
   const ok =
     confirm(
-      andEnd
-        ? "利用者宅への帰宅と支援終了を登録しますか？"
-        : "利用者宅への帰宅を登録しますか？"
+      "利用者宅への帰宅を登録し、行動記録を終了しますか？"
     );
 
   if (!ok) return;
 
-  setRecordProcessing_(
-    true,
-    andEnd ? "帰宅・支援終了を登録しています" : "帰宅を登録しています"
-  );
+  const actualAt =
+    new Date().toISOString();
 
-  showMessage_(
-    "帰宅を登録しています…"
-  );
-
-  try {
-    const result =
-      await callOutingApi_(
-        "outing-arrive",
-        {
-          data: {
-            outingResultId:
-              active.outingResultId,
-
-            routeId:
-              active.routeId,
-
-            arrivalType:
-              andEnd
-                ? "最終到着"
-                : "経由地",
-
-            arrivalPlaceType:
-              "自宅等",
-
-            arrivalPlace:
-              "自宅",
-
-            arrivalPlaceNote:
-              "",
-
-            distanceKm:
-              "",
-
-            odometerArrivalKm:
-              "",
-
-            endReport:
-              "",
-
-            operatorId:
-              recordUser.employeeId,
-
-            operatorName:
-              recordUser.employeeName,
-
-            operationId:
-              operationId_()
-          }
-        }
-      );
-
-    if (
-      !result ||
-      result.success !== true
-    ) {
-      throw new Error(
-        result?.message ||
-        "帰宅を登録できませんでした"
-      );
-    }
-
-    const homeActualAt =
-      new Date()
-        .toISOString();
-
-    /*
-     * 目的地なしの外出では、入力した活動内容を独立した履歴として残します。
-     * 表示上は「支援開始 → 活動内容 → 支援終了」とまとめられます。
-     */
-    if (active.directActivity) {
-      saveLocalHistory_(
-        "活動",
-        {
-          activity:
-            active.directActivity,
-          actualAt:
-            homeActualAt
-        }
-      );
-    }
-
-    /*
-     * 帰宅（移動行程）と支援終了（支援本体）は別記録にします。
-     */
+  if (activity) {
     saveLocalHistory_(
-      "帰宅",
+      "活動",
       {
-        place:
-          "自宅",
-        actualAt:
-          homeActualAt
+        activity,
+        actualAt
       }
     );
+  }
 
-    localStorage.setItem(
-      "staffPortalLastOutingPlaceV1",
-      "自宅"
-    );
+  appendActionRecordSessionEvent_({
+    type: "home",
+    place: "自宅",
+    activity,
+    final: true
+  });
 
-    if (andEnd) {
-      localStorage.removeItem(
-        ACTIVE_OUTING_KEY
-      );
-
-      saveLocalHistory_(
-        "支援終了",
-        {
-          place:
-            "利用者宅",
-          actualAt:
-            homeActualAt
-        }
-      );
-
-      const hasContinuous =
-        await hasContinuousNext_();
-
-      if (!hasContinuous) {
-        await recordPortalStaffAction_(
-          "終わりました"
-        );
-      }
-
-    } else {
-      active.currentPlace =
-        "利用者宅";
-
-      active.movementStatus =
-        "待機中";
-
-      active.arrivalType =
-        "経由地";
-
-      saveActiveOuting_(
-        active
-      );
+  saveLocalHistory_(
+    "帰宅",
+    {
+      place: "自宅",
+      actualAt
     }
-
-    showMessage_(
-      andEnd
-        ? "帰宅・支援終了を登録しました。"
-        : "帰宅を登録しました。"
-    );
-
-    setRecordProcessing_(true, "登録しました。ポータルへ戻ります");
-    setTimeout(
-      returnToPortal_,
-      450
-    );
-
-  } catch (error) {
-    showMessage_(
-      "帰宅登録に失敗しました：" +
-      error.message,
-      true
-    );
-  }
-}
-
-function toggleTransportChange_() {
-  document
-    .getElementById(
-      "transportChangeBox"
-    )
-    .classList
-    .toggle(
-      "hidden"
-    );
-}
-
-function toggleChangedDriver_() {
-  document
-    .getElementById(
-      "changedDriverWrap"
-    )
-    .classList
-    .toggle(
-      "hidden",
-      value_(
-        "changedTransport"
-      ) !==
-        "有償運送"
-    );
-}
-
-function applyTransportChange_() {
-  const active =
-    getActiveOuting_();
-
-  if (!active) return;
-
-  const transport =
-    value_(
-      "changedTransport"
-    );
-
-  if (
-    transport ===
-      "有償運送" &&
-    !value_(
-      "changedDriver"
-    )
-  ) {
-    alert(
-      "運転手を選択してください。"
-    );
-    return;
-  }
-
-  active.transport =
-    transport;
-
-  if (
-    transport ===
-      "有償運送"
-  ) {
-    const self =
-      value_(
-        "changedDriver"
-      ) === "自分";
-
-    active.driverName =
-      self
-        ? recordUser.employeeName
-        : "他職員";
-
-    active.driverId =
-      self
-        ? recordUser.employeeId
-        : "";
-
-    active.isDriving =
-      self;
-  } else {
-    active.driverName = "";
-    active.driverId = "";
-    active.isDriving = false;
-  }
-
-  saveActiveOuting_(
-    active
   );
 
-  document
-    .getElementById(
-      "transportChangeBox"
-    )
-    .classList
-    .add(
-      "hidden"
-    );
+  localStorage.setItem(
+    "staffPortalLastOutingPlaceV1",
+    "自宅"
+  );
+
+  enqueueCompletedActionRecordSession_(
+    "帰宅",
+    "自宅"
+  );
 
   showMessage_(
-    "移動手段を変更しました。次の出発に反映します。"
+    "帰宅と行動記録を端末に保存しました。"
   );
-}
 
-function toggleDriverField_(prefix) {
-  const transport =
-    value_(
-      prefix === "start"
-        ? "startTransport"
-        : "nextTransport"
-    );
-
-  document
-    .getElementById(
-      prefix === "start"
-        ? "startDriverWrap"
-        : "nextDriverWrap"
-    )
-    .classList
-    .toggle(
-      "hidden",
-      transport !==
-        "有償運送"
-    );
+  setTimeout(
+    returnToPortal_,
+    250
+  );
 }
 
 async function recordPortalStaffAction_(
@@ -2560,8 +1913,7 @@ function saveLocalHistory_(
 
   const actualAt =
     extra.actualAt ||
-    new Date()
-      .toISOString();
+    new Date().toISOString();
 
   const cleanExtra = {
     ...extra
@@ -2569,7 +1921,7 @@ function saveLocalHistory_(
 
   delete cleanExtra.actualAt;
 
-  list.push({
+  const event = {
     id:
       "PH-" +
       Date.now() +
@@ -2603,14 +1955,13 @@ function saveLocalHistory_(
     scheduledEnd:
       recordContext.scheduledEnd,
 
-    eventType:
-      eventType,
-
-    actualAt:
-      actualAt,
-
+    eventType,
+    actualAt,
+    syncPending: true,
     ...cleanExtra
-  });
+  };
+
+  list.push(event);
 
   localStorage.setItem(
     PORTAL_HISTORY_KEY,
@@ -2619,24 +1970,13 @@ function saveLocalHistory_(
     )
   );
 
-  /*
-   * 移動行程・活動もPCで確認できるよう
-   * GAS側へ同じ履歴イベントを同期します。
-   */
-  postGas({
-    action:
-      "recordPortalHistoryEvent",
-
-    event:
-      list[list.length - 1]
-  }).catch(
-    error =>
-      console.warn(
-        "行動履歴のサーバー同期に失敗しました",
-        error
-      )
+  appendSessionHistoryId_(
+    event.id
   );
+
+  return event;
 }
+
 
 function startVoiceInput_(
   inputId
@@ -2836,14 +2176,33 @@ function forceExitActionRecord_() {
   const ok =
     confirm(
       "行動記録を強制終了してポータルへ戻ります。\n" +
-      "通信障害・急変・端末トラブルなど、通常の終了処理ができない場合のみ使用してください。\n\n" +
+      "通常の終了処理ができない場合のみ使用してください。\n\n" +
+      "現在までの記録は端末に保持します。\n" +
       "よろしいですか？"
     );
 
   if (!ok) return;
 
+  const active =
+    getActiveOuting_();
+
+  if (active) {
+    appendActionRecordSessionEvent_({
+      type: "forceFinish",
+      place:
+        active.currentPlace || "",
+      final: true
+    });
+
+    enqueueCompletedActionRecordSession_(
+      "強制終了",
+      active.currentPlace || ""
+    );
+  }
+
   returnToPortal_();
 }
+
 
 function returnToPortal_() {
   stopCamera_();

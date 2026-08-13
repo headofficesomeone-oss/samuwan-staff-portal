@@ -568,6 +568,518 @@ async function issueTempIdFromScreen() {
 
 let todayStaffShifts = [];
 
+
+const ACTION_RECORD_PENDING_KEY =
+  "staffPortalPendingActionRecordSessionsV1";
+
+const ACTION_RECORD_API_URL =
+  "https://script.google.com/macros/s/AKfycbw0DoVUbEfvfrmKrgjYig2vmJRkzXmqKAOr9RJheB88xx0WEC-IyXYicYgmhYt_ko7A/exec";
+
+let actionRecordQueueFlushing =
+  false;
+
+function readPendingActionRecordSessions_() {
+  try {
+    const parsed =
+      JSON.parse(
+        localStorage.getItem(
+          ACTION_RECORD_PENDING_KEY
+        ) || "[]"
+      );
+
+    return Array.isArray(parsed)
+      ? parsed
+      : [];
+
+  } catch (error) {
+    return [];
+  }
+}
+
+function writePendingActionRecordSessions_(sessions) {
+  localStorage.setItem(
+    ACTION_RECORD_PENDING_KEY,
+    JSON.stringify(
+      Array.isArray(sessions)
+        ? sessions
+        : []
+    )
+  );
+
+  updateStaffActionSyncStatus_();
+}
+
+async function callActionRecordApi_(
+  action,
+  payload
+) {
+  const url =
+    ACTION_RECORD_API_URL +
+    "?action=" +
+    encodeURIComponent(action) +
+    "&payload=" +
+    encodeURIComponent(
+      JSON.stringify(payload)
+    ) +
+    "&_=" +
+    Date.now();
+
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+        redirect: "follow",
+        cache: "no-store"
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      "HTTPエラー：" +
+      response.status
+    );
+  }
+
+  return JSON.parse(
+    await response.text()
+  );
+}
+
+async function resolveActionRecordClientId_(
+  clientName
+) {
+  const result =
+    await postGas({
+      action:
+        "getClientList"
+    });
+
+  if (
+    !result ||
+    result.success !== true
+  ) {
+    throw new Error(
+      "利用者情報を取得できません"
+    );
+  }
+
+  const target =
+    (result.clients || [])
+      .find(
+        c =>
+          String(
+            c.name || ""
+          ).trim() ===
+          String(
+            clientName || ""
+          ).trim()
+      );
+
+  if (!target) {
+    throw new Error(
+      "利用者IDを確認できません：" +
+      clientName
+    );
+  }
+
+  return target.clientId;
+}
+
+function actionRecordOperationId_() {
+  return (
+    "WEB-ARS-" +
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2,8)
+      .toUpperCase()
+  );
+}
+
+async function syncOneActionRecordSession_(
+  session
+) {
+  const clientId =
+    await resolveActionRecordClientId_(
+      session.clientName
+    );
+
+  let outingResultId = "";
+  let routeId = "";
+  let previousDriverId = "";
+
+  for (
+    const event of
+      session.events || []
+  ) {
+    if (event.type === "start") {
+      const result =
+        await callActionRecordApi_(
+          "outing-start",
+          {
+            data: {
+              supportDate:
+                session.supportDate,
+              shiftId:
+                session.shiftId,
+              requestId: "",
+              userId:
+                clientId,
+              userName:
+                session.clientName,
+              serviceType:
+                session.service,
+              serviceContent:
+                event.supportDetail || "",
+              mainStaffId:
+                session.employeeId,
+              mainStaffName:
+                session.employeeName,
+              startPlaceType:
+                "自宅等",
+              startPlace:
+                event.place,
+              transport:
+                event.transport,
+              isDriving:
+                !!event.isDriving,
+              driverId:
+                event.driverId || "",
+              driverName:
+                event.driverName || "",
+              vehicleName: "",
+              isPaidTransport:
+                !!event.isPaidTransport,
+              supportDetail:
+                event.supportDetail || "",
+              operatorId:
+                session.employeeId,
+              operatorName:
+                session.employeeName,
+              registerType:
+                "ポータル",
+              operationId:
+                actionRecordOperationId_()
+            }
+          }
+        );
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result?.message ||
+          "行動記録を開始できませんでした"
+        );
+      }
+
+      outingResultId =
+        result.outingResultId;
+
+      routeId =
+        result.routeId;
+
+      previousDriverId =
+        event.driverId || "";
+
+      continue;
+    }
+
+    if (event.type === "arrival") {
+      const result =
+        await callActionRecordApi_(
+          "outing-arrive",
+          {
+            data: {
+              outingResultId,
+              routeId,
+              arrivalType:
+                "経由地",
+              arrivalPlaceType:
+                "店舗等",
+              arrivalPlace:
+                event.place,
+              arrivalPlaceNote:
+                event.note || "",
+              distanceKm: "",
+              odometerArrivalKm: "",
+              endReport: "",
+              operatorId:
+                session.employeeId,
+              operatorName:
+                session.employeeName,
+              operationId:
+                actionRecordOperationId_()
+            }
+          }
+        );
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result?.message ||
+          "到着を同期できませんでした"
+        );
+      }
+
+      continue;
+    }
+
+    if (
+      event.type ===
+        "nextDeparture"
+    ) {
+      const result =
+        await callActionRecordApi_(
+          "outing-next-departure",
+          {
+            data: {
+              outingResultId,
+              previousRouteId:
+                routeId,
+              departurePlaceType:
+                "経由地",
+              departurePlace:
+                event.place,
+              departurePlaceNote: "",
+              transport:
+                event.transport,
+              isDriving:
+                !!event.isDriving,
+              driverId:
+                event.driverId || "",
+              driverName:
+                event.driverName || "",
+              driverChanged: true,
+              previousDriverId:
+                previousDriverId || "",
+              vehicleName: "",
+              isPaidTransport:
+                !!event.isPaidTransport,
+              supportDetail: "",
+              operatorId:
+                session.employeeId,
+              operatorName:
+                session.employeeName,
+              operationId:
+                actionRecordOperationId_()
+            }
+          }
+        );
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result?.message ||
+          "再出発を同期できませんでした"
+        );
+      }
+
+      routeId =
+        result.routeId;
+
+      previousDriverId =
+        event.driverId || "";
+
+      continue;
+    }
+
+    if (event.type === "home") {
+      const result =
+        await callActionRecordApi_(
+          "outing-arrive",
+          {
+            data: {
+              outingResultId,
+              routeId,
+              arrivalType:
+                "最終到着",
+              arrivalPlaceType:
+                "自宅等",
+              arrivalPlace:
+                "自宅",
+              arrivalPlaceNote:
+                event.activity || "",
+              distanceKm: "",
+              odometerArrivalKm: "",
+              endReport:
+                event.activity || "",
+              operatorId:
+                session.employeeId,
+              operatorName:
+                session.employeeName,
+              operationId:
+                actionRecordOperationId_()
+            }
+          }
+        );
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result?.message ||
+          "帰宅を同期できませんでした"
+        );
+      }
+
+      continue;
+    }
+
+    if (
+      event.type === "finishCurrent" ||
+      event.type === "forceFinish"
+    ) {
+      const result =
+        await callActionRecordApi_(
+          "outing-finish-current-arrival",
+          {
+            data: {
+              outingResultId,
+              routeId,
+              endReport: "",
+              operatorId:
+                session.employeeId,
+              operatorName:
+                session.employeeName,
+              operationId:
+                actionRecordOperationId_()
+            }
+          }
+        );
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result?.message ||
+          "行動記録終了を同期できませんでした"
+        );
+      }
+    }
+  }
+
+  let history = [];
+
+  try {
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          "staffPortalLocalActionHistoryV1"
+        ) || "[]"
+      );
+  } catch (error) {}
+
+  const historyIds =
+    new Set(
+      session.historyEventIds || []
+    );
+
+  for (const event of history) {
+    if (
+      !historyIds.has(event.id)
+    ) {
+      continue;
+    }
+
+    const result =
+      await postGas({
+        action:
+          "recordPortalHistoryEvent",
+        event
+      });
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result?.message ||
+        "行動履歴を同期できませんでした"
+      );
+    }
+
+    event.syncPending =
+      false;
+  }
+
+  localStorage.setItem(
+    "staffPortalLocalActionHistoryV1",
+    JSON.stringify(
+      history.slice(-400)
+    )
+  );
+}
+
+async function flushPendingActionRecordSessions_() {
+  if (actionRecordQueueFlushing) {
+    return;
+  }
+
+  if (
+    readStaffActionQueue_()
+      .length > 0
+  ) {
+    return;
+  }
+
+  if (
+    typeof navigator !==
+      "undefined" &&
+    navigator.onLine === false
+  ) {
+    return;
+  }
+
+  const pending =
+    readPendingActionRecordSessions_();
+
+  if (!pending.length) {
+    updateStaffActionSyncStatus_();
+    return;
+  }
+
+  actionRecordQueueFlushing =
+    true;
+
+  try {
+    while (true) {
+      const current =
+        readPendingActionRecordSessions_();
+
+      if (!current.length) break;
+
+      await syncOneActionRecordSession_(
+        current[0]
+      );
+
+      writePendingActionRecordSessions_(
+        current.slice(1)
+      );
+    }
+
+  } catch (error) {
+    console.warn(
+      "行動記録の同期に失敗",
+      error
+    );
+
+  } finally {
+    actionRecordQueueFlushing =
+      false;
+    updateStaffActionSyncStatus_();
+  }
+}
+
 const STAFF_ACTION_QUEUE_KEY =
   "staffPortalActionQueueV1";
 
@@ -620,7 +1132,8 @@ function updateStaffActionSyncStatus_() {
   if (!el) return;
 
   const count =
-    readStaffActionQueue_().length;
+    readStaffActionQueue_().length +
+    readPendingActionRecordSessions_().length;
 
   el.classList.remove(
     "synced",
@@ -900,6 +1413,20 @@ async function flushStaffActionQueue_() {
       false;
 
     updateStaffActionSyncStatus_();
+
+    if (
+      readStaffActionQueue_()
+        .length === 0
+    ) {
+      flushPendingActionRecordSessions_()
+        .catch(
+          error =>
+            console.warn(
+              "行動記録の後続同期に失敗",
+              error
+            )
+        );
+    }
   }
 }
 
@@ -2445,47 +2972,51 @@ window.addEventListener(
 );
 
 function isOutingService_(
-  shift
+  shiftOrService
 ) {
-  if (!shift) return false;
+  if (!shiftOrService) return false;
+
+  const shift =
+    typeof shiftOrService ===
+      "string"
+      ? {
+          service:
+            shiftOrService
+        }
+      : shiftOrService;
 
   const service =
-    String(shift.service || "").trim();
+    String(
+      shift.service || ""
+    ).trim();
 
   const destination =
-    String(shift.destination || "").trim();
+    String(
+      shift.destination || ""
+    ).trim();
 
-  const startPlace =
-    String(shift.startPlace || "").trim();
-
-  const endPlace =
-    String(shift.endPlace || "").trim();
-
-  const transport =
-    String(shift.transport || "").trim();
-
-  const explicitOutingServices = [
+  const alwaysOuting = [
     "同行援護",
     "移動支援",
     "通院介助",
     "有償運送",
-    "その他外出"
+    "その他外出",
+    "外出"
   ];
 
   return (
-    explicitOutingServices.some(
-      name => service.includes(name)
+    alwaysOuting.some(
+      name =>
+        service.includes(name)
     ) ||
-    !!destination ||
-    !!transport ||
     (
-      !!startPlace &&
-      !!endPlace &&
-      startPlace !== endPlace
+      service.includes(
+        "身体介護"
+      ) &&
+      !!destination
     )
   );
-}
-function setButtonVisible_(id, visible) {
+}function setButtonVisible_(id, visible) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle("hidden", !visible);
@@ -3826,8 +4357,26 @@ function setStaffActionButtonsByState(currentState) {
 
   const outing =
     isOutingService_(
-      shift.service
+      shift
     );
+
+  const activeOuting =
+    getActiveOutingForShift_(
+      shift
+    );
+
+  if (actionRecordButton) {
+    const label =
+      actionRecordButton
+        .querySelector("strong");
+
+    if (label) {
+      label.textContent =
+        activeOuting
+          ? "行動記録に戻る"
+          : "行動記録";
+    }
+  }
 
   switch (currentState || "未開始") {
     case "未開始":
@@ -3846,9 +4395,6 @@ function setStaffActionButtonsByState(currentState) {
 
     case "支援中":
       if (outing) {
-        const activeOuting =
-          getActiveOutingForShift_(shift);
-
         if (activeOuting) {
           if (actionRecordButton) {
             actionRecordButton.disabled = false;
@@ -4928,5 +5474,25 @@ document.addEventListener(
             error
           )
       );
+  }
+);
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    setTimeout(
+      () => {
+        flushPendingActionRecordSessions_()
+          .catch(
+            error =>
+              console.warn(
+                "起動時の行動記録同期に失敗",
+                error
+              )
+          );
+      },
+      1000
+    );
   }
 );
