@@ -719,38 +719,3 @@ body.modal-open {
 }
 
 
-/* 移動中に通常操作グリッドが何らかの理由で消えても、
-   「入りました」だけは必ず出すフェイルセーフ */
-.moving-entry-failsafe{
-  margin-top:16px;
-}
-
-.moving-entry-failsafe.hidden{
-  display:none !important;
-}
-
-.moving-entry-failsafe button{
-  width:100%;
-  min-height:84px;
-  border-radius:16px;
-  border:1px solid #b8d4ea;
-  background:#fff;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  font-weight:900;
-  font-size:16px;
-  cursor:pointer;
-  box-shadow:0 6px 18px rgba(34,48,60,.06);
-}
-
-.moving-entry-failsafe button span{
-  font-size:25px;
-}
-
-.moving-entry-failsafe button:disabled{
-  opacity:.4;
-  cursor:not-allowed;
-}

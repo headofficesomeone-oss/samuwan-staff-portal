@@ -2424,13 +2424,7 @@ function setTodayShiftOptions(shifts) {
     applyPcOperationGuard_(
       null
     );
-
-    renderMovingEntryFailsafe_(
-      null,
-      ""
-    );
-
-    return;
+return;
   }
 
   const actionGrid =
@@ -2508,12 +2502,7 @@ function setTodayShiftOptions(shifts) {
       setStaffActionButtonsByState(
         "移動中"
       );
-
-      renderMovingEntryFailsafe_(
-        chainShift,
-        "移動中"
-      );
-    }
+}
 
     return;
   }
@@ -2781,10 +2770,6 @@ function handleTodayShiftChange() {
    * リロード直後など、通常ボタン領域の表示順に左右されないよう
    * 移動中専用ボタンを最後にもう一度確定します。
    */
-  renderMovingEntryFailsafe_(
-    shift,
-    currentState
-  );
 }
 
 /**
@@ -4463,45 +4448,6 @@ function applyPcOperationGuard_(shift) {
 }
 
 
-function renderMovingEntryFailsafe_(
-  shift,
-  currentState
-) {
-  const area =
-    document.getElementById(
-      "movingEntryFailsafe"
-    );
-
-  const button =
-    document.getElementById(
-      "movingEntryFailsafeButton"
-    );
-
-  if (!area || !button) {
-    return;
-  }
-
-  const state =
-    String(
-      currentState || ""
-    ).trim();
-
-  const pc =
-    isPortalPc_();
-
-  const show =
-    !!shift &&
-    state === "移動中" &&
-    !pc;
-
-  area.classList.toggle(
-    "hidden",
-    !show
-  );
-
-  button.disabled =
-    !show;
-}
 
 
 function setStaffActionButtonsByState(currentState) {
@@ -4519,13 +4465,7 @@ function setStaffActionButtonsByState(currentState) {
     .forEach(b => { if (b) { b.disabled = true; b.classList.add("hidden"); } });
 
   const shift = getSelectedTodayShift();
-
-  renderMovingEntryFailsafe_(
-    shift,
-    currentState
-  );
-
-  updateSupportMainDisplay_(shift);
+updateSupportMainDisplay_(shift);
 
   const pc =
     applyPcOperationGuard_(
@@ -4578,9 +4518,8 @@ function setStaffActionButtonsByState(currentState) {
 
     case "移動中":
       /*
-       * 外出支援でも「向かいます」の次は必ず「入りました」。
-       * 旧版のローカル状態が残っていても、この状態では
-       * 行動記録ボタンを出さず「入りました」を最優先で表示する。
+       * 「向かいます」の次は、通常の操作グリッド内に
+       * 「入りました」を1つだけ表示します。
        */
       {
         const actionGrid =
@@ -4945,12 +4884,7 @@ function setButtonsImmediatelyForAction_(
     actionType === "入りました" &&
     isOutingService_(shift)
   ) {
-    renderMovingEntryFailsafe_(
-      null,
-      ""
-    );
-
-    const actionGrid =
+const actionGrid =
       document.getElementById(
         "portalActionButtons"
       );

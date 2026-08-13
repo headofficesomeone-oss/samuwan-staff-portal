@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>職員ポータル</title>
-  <link rel="stylesheet" href="index.css?v=20260814-movingfailsafe-1">
+  <link rel="stylesheet" href="index.css?v=20260814-singleenter-1">
 </head>
 <body>
 
@@ -199,16 +199,7 @@
 
             <span id="supportHeaderState" class="support-state-pill support-state-side">待機中</span>
           </div>
-
-          <div id="movingEntryFailsafe" class="moving-entry-failsafe hidden">
-            <button id="movingEntryFailsafeButton" type="button"
-              onclick="sendStaffAction('入りました')">
-              <span>📍</span>
-              <strong>入りました</strong>
-            </button>
-          </div>
-
-          <div id="portalActionButtons" class="support-action-grid hidden">
+<div id="portalActionButtons" class="support-action-grid hidden">
             <button id="moveButton" class="support-action-button action-go hidden" type="button"
               onclick="sendStaffAction('向かいます')">
               <span>🚶</span><strong>向かいます</strong>
@@ -508,6 +499,6 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="./common.js?v=20260811-historyfix-2"></script>
-<script src="./portal.js?v=20260814-pcguardrestore-1"></script>
+<script src="./portal.js?v=20260814-singleenter-1"></script>
 </body>
 </html>
