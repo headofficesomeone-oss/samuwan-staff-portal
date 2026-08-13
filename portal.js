@@ -3055,6 +3055,16 @@ function updateSupportMainDisplay_(shift) {
 function savePortalLocalHistory_(eventType, shift, extra = {}) {
   if (!shift || !currentUser) return null;
 
+  const deferServerSync =
+    extra &&
+    extra.deferServerSync === true;
+
+  const cleanExtra = {
+    ...(extra || {})
+  };
+
+  delete cleanExtra.deferServerSync;
+
   let list = [];
 
   try {
@@ -3109,7 +3119,10 @@ function savePortalLocalHistory_(eventType, shift, extra = {}) {
       new Date()
         .toISOString(),
 
-    ...extra
+    syncPending:
+      deferServerSync === true,
+
+    ...cleanExtra
   };
 
   list.push(
@@ -3124,22 +3137,33 @@ function savePortalLocalHistory_(eventType, shift, extra = {}) {
   );
 
   /*
-   * 履歴同期は失敗してもlocalStorageに残り、
-   * 履歴画面を開いた時にも再同期されます。
+   * 外出の「入りました」や外出への引き続き支援は、
+   * 1件目の出発時までGAS通信を保留します。
    */
-  postGas({
-    action:
-      "recordPortalHistoryEvent",
-    event:
-      event
-  }).catch(
-    error => {
-      console.warn(
-        "履歴のサーバー同期に失敗しました",
-        error
-      );
-    }
-  );
+  if (!deferServerSync) {
+    postGas({
+      action:
+        "recordPortalHistoryEvent",
+      event:
+        event
+    }).then(
+      result => {
+        if (
+          result &&
+          result.success === true
+        ) {
+          event.syncPending = false;
+        }
+      }
+    ).catch(
+      error => {
+        console.warn(
+          "履歴のサーバー同期に失敗しました",
+          error
+        );
+      }
+    );
+  }
 
   return event;
 }
@@ -4053,12 +4077,16 @@ async function continueToNextSupport() {
     getSelectedTodayShift();
 
   if (!currentShift) {
-    alert("現在の支援を確認できません。");
+    alert(
+      "現在の支援を確認できません。"
+    );
     return;
   }
 
   const nextShift =
-    getNextTodayShift_(currentShift);
+    getNextTodayShift_(
+      currentShift
+    );
 
   if (!nextShift) {
     alert(
@@ -4087,236 +4115,167 @@ async function continueToNextSupport() {
 
   if (!confirmed) return;
 
+  const nextIsOuting =
+    isOutingService_(
+      nextShift
+    );
+
+  const sendId =
+    createStaffActionSendId(
+      currentUser.employeeId,
+      currentShift.shiftId,
+      "引き続き支援"
+    );
+
+  const payload = {
+    action:
+      "recordStaffContinuation",
+
+    employeeId:
+      currentUser.employeeId,
+
+    employeeName:
+      currentUser.employeeName,
+
+    fromShiftId:
+      currentShift.shiftId,
+
+    fromClientName:
+      currentShift.clientName,
+
+    fromService:
+      currentShift.service,
+
+    fromSupportDate:
+      currentShift.supportDate,
+
+    fromScheduledStart:
+      currentShift.startTime,
+
+    fromScheduledEnd:
+      currentShift.endTime,
+
+    toShiftId:
+      nextShift.shiftId,
+
+    toClientName:
+      nextShift.clientName,
+
+    toService:
+      nextShift.service,
+
+    toSupportDate:
+      nextShift.supportDate,
+
+    toScheduledStart:
+      nextShift.startTime,
+
+    toScheduledEnd:
+      nextShift.endTime,
+
+    deviceTime:
+      new Date().toISOString(),
+
+    sendId:
+      sendId,
+
+    registrationMethod:
+      "職員ポータル"
+  };
+
+  /*
+   * 引き続きもまず端末保存。
+   */
+  enqueueStaffAction_(
+    payload
+  );
+
+  savePortalLocalHistory_(
+    "引き続き支援",
+    nextShift,
+    {
+      fromShiftId:
+        currentShift.shiftId,
+      fromService:
+        currentShift.service,
+      fromScheduledStart:
+        currentShift.startTime,
+      fromScheduledEnd:
+        currentShift.endTime,
+      sendId:
+        sendId,
+      deferServerSync:
+        nextIsOuting
+    }
+  );
+
+  saveSupportChain_(
+    nextShift
+  );
+
   setGuideImmediatelyForAction_(
     "引き続き支援",
     currentShift,
     nextShift
   );
 
-  setStaffActionButtonsDisabled(true);
-  setTodayShiftProcessing_(true);
+  const select =
+    document.getElementById(
+      "todayShiftSelect"
+    );
 
-  try {
-    const deviceTime =
-      new Date().toISOString();
+  if (select) {
+    select.value =
+      nextShift.shiftId;
+  }
 
-    const sendId =
-      createStaffActionSendId(
-        currentUser.employeeId,
-        currentShift.shiftId,
-        "引き続き支援"
-      );
+  if (nextIsOuting) {
+    /*
+     * 次が外出なら、引き続きボタン直後にはGASへ送らない。
+     * 行動記録へ移り、最初の出発直後にまとめて同期する。
+     */
+    setTimeout(
+      () => {
+        openSelectedOutingActionRecord({
+          continuation: true
+        });
+      },
+      50
+    );
 
-    const result =
-      await postGas({
-        action:
-          "recordStaffContinuation",
+    return;
+  }
 
-        employeeId:
-          currentUser.employeeId,
-
-        employeeName:
-          currentUser.employeeName,
-
-        fromShiftId:
-          currentShift.shiftId,
-
-        fromClientName:
-          currentShift.clientName,
-
-        fromService:
-          currentShift.service,
-
-        fromSupportDate:
-          currentShift.supportDate,
-
-        fromScheduledStart:
-          currentShift.startTime,
-
-        fromScheduledEnd:
-          currentShift.endTime,
-
-        toShiftId:
-          nextShift.shiftId,
-
-        toClientName:
-          nextShift.clientName,
-
-        toService:
-          nextShift.service,
-
-        toSupportDate:
-          nextShift.supportDate,
-
-        toScheduledStart:
-          nextShift.startTime,
-
-        toScheduledEnd:
-          nextShift.endTime,
-
-        deviceTime:
-          deviceTime,
-
-        sendId:
-          sendId,
-
-        registrationMethod:
-          "職員ポータル"
-      });
-
-    if (!result.success) {
-      throw new Error(
-        result.message ||
-        "引き続き支援を登録できませんでした。"
-      );
-    }
-
-    savePortalLocalHistory_(
-      "引き続き支援",
-      nextShift,
-      {
-        fromShiftId:
-          currentShift.shiftId,
-        fromService:
-          currentShift.service,
-        fromScheduledStart:
-          currentShift.startTime,
-        fromScheduledEnd:
-          currentShift.endTime
+  /*
+   * 次が居宅なら、引き続きボタン直後が通信ポイント。
+   */
+  flushStaffActionQueue_()
+    .then(
+      async () => {
+        try {
+          await loadTodayStaffShifts(
+            true
+          );
+        } catch (error) {
+          console.warn(
+            "引き続き支援後の再取得に失敗",
+            error
+          );
+        }
+      }
+    )
+    .catch(
+      error => {
+        console.warn(
+          "引き続き支援の送信に失敗",
+          error
+        );
       }
     );
 
-    saveSupportChain_(
-      nextShift
-    );
-
-    setTodayShiftProcessing_(false);
-
-    await loadTodayStaffShifts(true);
-
-    const select =
-      document.getElementById(
-        "todayShiftSelect"
-      );
-
-    if (select) {
-      select.value =
-        nextShift.shiftId;
-
-      handleTodayShiftChange();
-    }
-
-    if (isOutingService_(nextShift.service)) {
-      openSelectedOutingActionRecord({
-        continuation: true
-      });
-    }
-
-  } catch (error) {
-    alert(
-      "引き続き支援の登録に失敗しました：" +
-      error.message
-    );
-
-  } finally {
-    /*
-     * 正常時は loadTodayStaffShifts() の直前で解除済み。
-     * エラー等で処理中表示が残っている場合だけ解除します。
-     */
-    const processingSelect =
-      document.getElementById(
-        "todayShiftSelect"
-      );
-
-    if (
-      processingSelect &&
-      processingSelect.options.length === 1 &&
-      processingSelect.options[0].textContent ===
-        "ただいま処理中です"
-    ) {
-      setTodayShiftProcessing_(false);
-      await loadTodayStaffShifts(true);
-    }
-
-    const selectedShift =
-      getSelectedTodayShift();
-
-    setStaffActionButtonsByState(
-      selectedShift
-        ? selectedShift.currentState ||
-          "未開始"
-        : ""
-    );
-  }
+  handleTodayShiftChange();
 }
 
-
-function isPortalPc_() {
-  const ua =
-    String(
-      navigator.userAgent || ""
-    );
-
-  const touchDevice =
-    navigator.maxTouchPoints > 1;
-
-  const mobileUa =
-    /Android|iPhone|iPod|Mobile|Windows Phone/i
-      .test(ua);
-
-  const ipadLike =
-    /iPad/i.test(ua) ||
-    (
-      /Macintosh/i.test(ua) &&
-      touchDevice
-    );
-
-  return !mobileUa &&
-    !ipadLike;
-}
-
-function applyPcOperationGuard_(shift) {
-  const pc =
-    isPortalPc_();
-
-  const notice =
-    document.getElementById(
-      "pcOperationNotice"
-    );
-
-  const actionGrid =
-    document.getElementById(
-      "portalActionButtons"
-    );
-
-  const tempButton =
-    document.getElementById(
-      "temporaryChangeButton"
-    );
-
-  if (notice) {
-    notice.classList.toggle(
-      "hidden",
-      !pc
-    );
-  }
-
-  if (actionGrid) {
-    actionGrid.classList.toggle(
-      "hidden",
-      pc || !shift
-    );
-  }
-
-  if (tempButton) {
-    tempButton.classList.toggle(
-      "hidden",
-      pc || !shift
-    );
-  }
-
-  return pc;
-}
 
 function setStaffActionButtonsByState(currentState) {
   const instructionButton = document.getElementById("instructionButton");
@@ -4385,12 +4344,20 @@ function setStaffActionButtonsByState(currentState) {
       break;
 
     case "移動中":
-      if (outing) {
-        if (actionRecordButton) { actionRecordButton.disabled = false; actionRecordButton.classList.remove("hidden"); }
-      } else {
-        if (enterButton) { enterButton.disabled = false; enterButton.classList.remove("hidden"); }
+      /*
+       * 外出支援でも「向かいます」の次は必ず「入りました」。
+       * 行動記録は「入りました」後に自動遷移するため、
+       * ここでは行動記録ボタンを出しません。
+       */
+      if (enterButton) {
+        enterButton.disabled = false;
+        enterButton.classList.remove("hidden");
       }
-      if (cancelButton) { cancelButton.disabled = false; cancelButton.classList.remove("hidden"); }
+
+      if (cancelButton) {
+        cancelButton.disabled = false;
+        cancelButton.classList.remove("hidden");
+      }
       break;
 
     case "支援中":
@@ -4558,7 +4525,13 @@ async function sendStaffAction(
       sendId:
         sendId,
       syncPending:
-        true
+        true,
+      deferServerSync:
+        (
+          actionType ===
+            "入りました" &&
+          isOutingService_(shift)
+        )
     }
   );
 
@@ -4610,20 +4583,27 @@ async function sendStaffAction(
     );
   }
 
-  /*
-   * 送信は裏でFIFO順に実行。
-   */
-  flushStaffActionQueue_()
-    .then(
-      async () => {
-        updateStaffActionSyncStatus_();
+  const deferGasUntilFirstDeparture =
+    (
+      actionType === "入りました" &&
+      isOutingService_(shift)
+    );
 
-        if (
-          !(
-            actionType === "入りました" &&
-            isOutingService_(shift)
-          )
-        ) {
+  /*
+   * 通信ポイント:
+   * 向かいます直後
+   * 居宅の入りました直後
+   * 終わりました直後
+   *
+   * 外出の入りましたは通信せず、
+   * 1件目の出発直後まで端末に保持します。
+   */
+  if (!deferGasUntilFirstDeparture) {
+    flushStaffActionQueue_()
+      .then(
+        async () => {
+          updateStaffActionSyncStatus_();
+
           try {
             await loadTodayStaffShifts(
               true
@@ -4635,17 +4615,17 @@ async function sendStaffAction(
             );
           }
         }
-      }
-    )
-    .catch(
-      error => {
-        console.warn(
-          "バックグラウンド送信に失敗",
-          error
-        );
-        updateStaffActionSyncStatus_();
-      }
-    );
+      )
+      .catch(
+        error => {
+          console.warn(
+            "バックグラウンド送信に失敗",
+            error
+          );
+          updateStaffActionSyncStatus_();
+        }
+      );
+  }
 
   setTodayShiftProcessing_(
     false
@@ -5492,7 +5472,7 @@ document.addEventListener(
               )
           );
       },
-      1000
+      100
     );
   }
 );

@@ -214,6 +214,161 @@ function temporarilyReturnToPortal_() {
 }
 
 
+const STAFF_ACTION_QUEUE_KEY =
+  "staffPortalActionQueueV1";
+
+async function flushDeferredStaffActionsFromActionRecord_() {
+  let queue = [];
+
+  try {
+    queue =
+      JSON.parse(
+        localStorage.getItem(
+          STAFF_ACTION_QUEUE_KEY
+        ) || "[]"
+      );
+  } catch (error) {}
+
+  if (!Array.isArray(queue)) {
+    queue = [];
+  }
+
+  while (queue.length > 0) {
+    const item =
+      queue[0];
+
+    if (
+      !item ||
+      !item.payload
+    ) {
+      queue.shift();
+      continue;
+    }
+
+    const result =
+      await postGas(
+        item.payload
+      );
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result?.message ||
+        "操作を同期できませんでした"
+      );
+    }
+
+    queue.shift();
+
+    localStorage.setItem(
+      STAFF_ACTION_QUEUE_KEY,
+      JSON.stringify(queue)
+    );
+  }
+}
+
+async function flushDeferredPortalHistoryFromActionRecord_() {
+  let history = [];
+
+  try {
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          PORTAL_HISTORY_KEY
+        ) || "[]"
+      );
+  } catch (error) {}
+
+  if (!Array.isArray(history)) {
+    history = [];
+  }
+
+  for (const event of history) {
+    if (
+      event &&
+      event.syncPending === true &&
+      (
+        event.eventType ===
+          "入りました" ||
+        event.eventType ===
+          "引き続き支援"
+      )
+    ) {
+      const result =
+        await postGas({
+          action:
+            "recordPortalHistoryEvent",
+          event:
+            event
+        });
+
+      if (
+        !result ||
+        result.success !== true
+      ) {
+        throw new Error(
+          result?.message ||
+          "履歴を同期できませんでした"
+        );
+      }
+
+      event.syncPending =
+        false;
+    }
+  }
+
+  localStorage.setItem(
+    PORTAL_HISTORY_KEY,
+    JSON.stringify(
+      history.slice(-400)
+    )
+  );
+}
+
+async function runFirstDepartureGasCheckpoint_() {
+  if (
+    typeof navigator !==
+      "undefined" &&
+    navigator.onLine === false
+  ) {
+    return;
+  }
+
+  try {
+    /*
+     * 外出の「入りました」や外出への引き続き支援を、
+     * ここで初めてGASへ送ります。
+     */
+    await flushDeferredStaffActionsFromActionRecord_();
+
+    await flushDeferredPortalHistoryFromActionRecord_();
+
+    /*
+     * 送信後、GAS側の本日の支援状態も確認します。
+     */
+    await postGas({
+      action:
+        "getTodayStaffShifts",
+      employeeId:
+        recordUser.employeeId,
+      employeeName:
+        recordUser.employeeName
+    });
+
+  } catch (error) {
+    /*
+     * 失敗しても端末保存済みなので行動記録は止めません。
+     */
+    console.warn(
+      "1件目出発時のGAS確認に失敗",
+      error
+    );
+  }
+}
+
+
 
 function setRecordProcessing_(processing, text = "ただいま登録中です") {
   recordOperationBusy = !!processing;
@@ -734,6 +889,19 @@ async function registerInitialDeparture_() {
   showMessage_(
     "出発を端末に保存しました。"
   );
+
+  /*
+   * 1件目の出発直後が外出支援のGAS通信ポイント。
+   * 画面展開は止めず、裏で問い合わせます。
+   */
+  runFirstDepartureGasCheckpoint_()
+    .catch(
+      error =>
+        console.warn(
+          "出発時チェックポイント失敗",
+          error
+        )
+    );
 
   await initActionRecord_();
 }
