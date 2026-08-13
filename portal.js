@@ -4394,6 +4394,75 @@ async function continueToNextSupport() {
 }
 
 
+
+function isPortalPc_() {
+  const ua =
+    String(
+      navigator.userAgent || ""
+    );
+
+  const touchDevice =
+    navigator.maxTouchPoints > 1;
+
+  const mobileUa =
+    /Android|iPhone|iPod|Mobile|Windows Phone/i
+      .test(ua);
+
+  const ipadLike =
+    /iPad/i.test(ua) ||
+    (
+      /Macintosh/i.test(ua) &&
+      touchDevice
+    );
+
+  return !mobileUa &&
+    !ipadLike;
+}
+
+function applyPcOperationGuard_(shift) {
+  const pc =
+    isPortalPc_();
+
+  const notice =
+    document.getElementById(
+      "pcOperationNotice"
+    );
+
+  const actionGrid =
+    document.getElementById(
+      "portalActionButtons"
+    );
+
+  const tempButton =
+    document.getElementById(
+      "temporaryChangeButton"
+    );
+
+  if (notice) {
+    notice.classList.toggle(
+      "hidden",
+      !pc
+    );
+  }
+
+  if (actionGrid) {
+    actionGrid.classList.toggle(
+      "hidden",
+      pc || !shift
+    );
+  }
+
+  if (tempButton) {
+    tempButton.classList.toggle(
+      "hidden",
+      pc || !shift
+    );
+  }
+
+  return pc;
+}
+
+
 function renderMovingEntryFailsafe_(
   shift,
   currentState
@@ -4418,7 +4487,7 @@ function renderMovingEntryFailsafe_(
     ).trim();
 
   const pc =
-    isPcPortalOperation_();
+    isPortalPc_();
 
   const show =
     !!shift &&
