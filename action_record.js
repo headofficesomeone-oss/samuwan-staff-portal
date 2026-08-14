@@ -955,7 +955,12 @@ async function registerInitialDeparture_() {
         )
     );
 
-  await initActionRecord_();
+  /*
+   * 出発登録後の状態は端末内で既に「移動中」と確定しています。
+   * ここで全体の初期化処理を再実行すると、通信・再判定の途中エラーで
+   * 画面だけ元の状態に残ることがあるため、移動中画面へ直接遷移します。
+   */
+  showMoveScreen_();
 }
 
 async function registerActivityOnlyRoute_() {
@@ -1721,7 +1726,11 @@ async function registerNextDeparture_() {
     "出発を端末に保存しました。"
   );
 
-  await initActionRecord_();
+  /*
+   * 次の出発も、端末保存完了時点で状態は「移動中」です。
+   * GASや初期化処理を待たず、そのまま移動画面へ進めます。
+   */
+  showMoveScreen_();
 }
 
 async function finishOutingAtCurrentPlace_() {
@@ -2573,11 +2582,24 @@ function returnToPortal_() {
 
 
 window.addEventListener("error", event => {
-  const message = document.getElementById("recordMessage");
-  if (message) {
-    message.textContent =
-      "登録は完了しています。表示を最新にする場合はページを再読み込みしてください。";
-    message.classList.remove("hidden");
-    message.classList.add("error");
-  }
+  /*
+   * 行動記録は端末保存を優先しているため、画面描画上の軽微な
+   * JavaScriptエラーを「登録エラー」のように赤表示しません。
+   * 本当に操作が失敗した場合は各処理側で明示します。
+   */
+  console.error(
+    "行動記録画面エラー:",
+    event.error || event.message || event
+  );
 });
+
+
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+    console.error(
+      "行動記録 非同期処理エラー:",
+      event.reason || event
+    );
+  }
+);
