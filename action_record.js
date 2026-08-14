@@ -14,6 +14,10 @@ const ACTION_RECORD_SESSION_KEY =
 const ACTION_RECORD_PENDING_KEY =
   "staffPortalPendingActionRecordSessionsV1";
 
+const ACTION_RECORD_COMPLETED_KEY =
+  "staffPortalCompletedActionRecordV1";
+
+
 let recordUser = null;
 let recordContext = null;
 let cameraStream = null;
@@ -197,6 +201,22 @@ function enqueueCompletedActionRecordSession_(
   localStorage.setItem(
     ACTION_RECORD_PENDING_KEY,
     JSON.stringify(pending)
+  );
+
+  localStorage.setItem(
+    ACTION_RECORD_COMPLETED_KEY,
+    JSON.stringify({
+      shiftId:
+        session.shiftId,
+      sessionId:
+        session.sessionId,
+      completionType:
+        completionType || "",
+      finalPlace:
+        finalPlace || "",
+      completedAt:
+        session.completedAt
+    })
   );
 
   localStorage.removeItem(

@@ -572,6 +572,40 @@ let todayStaffShifts = [];
 const ACTION_RECORD_PENDING_KEY =
   "staffPortalPendingActionRecordSessionsV1";
 
+const ACTION_RECORD_COMPLETED_KEY =
+  "staffPortalCompletedActionRecordV1";
+
+function getCompletedActionRecord_() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        ACTION_RECORD_COMPLETED_KEY
+      ) || "null"
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+function isActionRecordCompletedForShift_(shift) {
+  if (!shift) return false;
+
+  const completed =
+    getCompletedActionRecord_();
+
+  return !!(
+    completed &&
+    completed.shiftId === shift.shiftId
+  );
+}
+
+function clearCompletedActionRecord_() {
+  localStorage.removeItem(
+    ACTION_RECORD_COMPLETED_KEY
+  );
+}
+
+
 const ACTION_RECORD_API_URL =
   "https://script.google.com/macros/s/AKfycbw0DoVUbEfvfrmKrgjYig2vmJRkzXmqKAOr9RJheB88xx0WEC-IyXYicYgmhYt_ko7A/exec";
 
@@ -4217,6 +4251,8 @@ async function continueToNextSupport() {
 
   if (!confirmed) return;
 
+  clearCompletedActionRecord_();
+
   const nextIsOuting =
     isOutingService_(
       nextShift
@@ -4565,32 +4601,128 @@ updateSupportMainDisplay_(shift);
 
     case "支援中":
       if (outing) {
+        const completed =
+          isActionRecordCompletedForShift_(
+            shift
+          );
+
         if (activeOuting) {
+          /*
+           * 行動記録中にメインへ一時退避した状態。
+           * 「終わりました」は出さず、再開だけ表示。
+           */
           if (actionRecordButton) {
             actionRecordButton.disabled = false;
-            actionRecordButton.classList.remove("hidden");
+            actionRecordButton.classList.remove(
+              "hidden"
+            );
+
+            const label =
+              actionRecordButton
+                .querySelector("strong");
+
+            if (label) {
+              label.textContent =
+                "行動記録を再開";
+            }
+          }
+
+          if (homeReturnButton) {
+            homeReturnButton.disabled = true;
+            homeReturnButton.classList.add(
+              "hidden"
+            );
+          }
+
+          if (finishButton) {
+            finishButton.disabled = true;
+            finishButton.classList.add(
+              "hidden"
+            );
+          }
+
+          if (continueButton) {
+            continueButton.disabled = true;
+            continueButton.classList.add(
+              "hidden"
+            );
+          }
+
+        } else if (completed) {
+          /*
+           * 行動記録完了後だけ終了系を表示。
+           */
+          if (actionRecordButton) {
+            actionRecordButton.disabled = true;
+            actionRecordButton.classList.add(
+              "hidden"
+            );
+          }
+
+          if (homeReturnButton) {
+            homeReturnButton.disabled = true;
+            homeReturnButton.classList.add(
+              "hidden"
+            );
           }
 
           if (
-            homeReturnButton &&
-            activeOuting.movementStatus ===
-              "移動中"
+            canContinueSupport_(shift)
           ) {
-            homeReturnButton.disabled = false;
-            homeReturnButton.classList.remove("hidden");
+            if (continueButton) {
+              continueButton.disabled = false;
+              continueButton.classList.remove(
+                "hidden"
+              );
+            }
+          } else if (finishButton) {
+            finishButton.disabled = false;
+            finishButton.classList.remove(
+              "hidden"
+            );
           }
 
-        } else if (
-          canContinueSupport_(shift)
-        ) {
+        } else {
+          /*
+           * 外出支援で支援中だが、行動記録状態がまだ作られていない場合。
+           * 誤って終了させないため再開ボタンを表示。
+           */
+          if (actionRecordButton) {
+            actionRecordButton.disabled = false;
+            actionRecordButton.classList.remove(
+              "hidden"
+            );
+
+            const label =
+              actionRecordButton
+                .querySelector("strong");
+
+            if (label) {
+              label.textContent =
+                "行動記録を再開";
+            }
+          }
+
+          if (homeReturnButton) {
+            homeReturnButton.disabled = true;
+            homeReturnButton.classList.add(
+              "hidden"
+            );
+          }
+
+          if (finishButton) {
+            finishButton.disabled = true;
+            finishButton.classList.add(
+              "hidden"
+            );
+          }
+
           if (continueButton) {
-            continueButton.disabled = false;
-            continueButton.classList.remove("hidden");
+            continueButton.disabled = true;
+            continueButton.classList.add(
+              "hidden"
+            );
           }
-
-        } else if (finishButton) {
-          finishButton.disabled = false;
-          finishButton.classList.remove("hidden");
         }
 
       } else if (
@@ -4598,12 +4730,16 @@ updateSupportMainDisplay_(shift);
       ) {
         if (continueButton) {
           continueButton.disabled = false;
-          continueButton.classList.remove("hidden");
+          continueButton.classList.remove(
+            "hidden"
+          );
         }
 
       } else if (finishButton) {
         finishButton.disabled = false;
-        finishButton.classList.remove("hidden");
+        finishButton.classList.remove(
+          "hidden"
+        );
       }
 
       break;
@@ -4754,13 +4890,28 @@ async function sendStaffAction(
   );
 
   if (actionType === "向かいます") {
+    clearCompletedActionRecord_();
     saveSupportChain_(shift);
+  }
+
+  if (
+    actionType === "入りました" &&
+    isOutingService_(shift)
+  ) {
+    clearCompletedActionRecord_();
   }
 
   if (actionType === "キャンセル") {
     showPortalCancelFlash_(
       shift.service
     );
+  }
+
+  if (
+    actionType === "終わりました" ||
+    actionType === "キャンセル"
+  ) {
+    clearCompletedActionRecord_();
   }
 
   updateStaffActionSyncStatus_();
