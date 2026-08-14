@@ -462,8 +462,13 @@ async function initActionRecord_() {
     recordContext.scheduledEnd
   );
 
-  const active =
+  let active =
     getActiveOuting_();
+
+  if (!active) {
+    active =
+      recoverActiveOutingFromSession_();
+  }
 
   if (
     recordContext.mode === "home"
@@ -2107,6 +2112,127 @@ async function isStaleActiveOuting_(
     return false;
   }
 }
+
+function recoverActiveOutingFromSession_() {
+  const session =
+    getActionRecordSession_();
+
+  if (
+    !session ||
+    session.shiftId !==
+      recordContext.shiftId ||
+    !Array.isArray(
+      session.events
+    ) ||
+    session.events.length === 0
+  ) {
+    return null;
+  }
+
+  let currentPlace = "";
+  let movementStatus = "";
+  let transport = "";
+  let driverId = "";
+  let driverName = "";
+  let isDriving = false;
+  let routeNumber = 0;
+
+  for (const event of session.events) {
+    if (
+      event.type === "start" ||
+      event.type ===
+        "nextDeparture"
+    ) {
+      routeNumber += 1;
+
+      currentPlace =
+        event.place ||
+        currentPlace;
+
+      movementStatus =
+        "移動中";
+
+      transport =
+        event.transport || "";
+
+      driverId =
+        event.driverId || "";
+
+      driverName =
+        event.driverName || "";
+
+      isDriving =
+        !!event.isDriving;
+
+      continue;
+    }
+
+    if (
+      event.type === "arrival"
+    ) {
+      currentPlace =
+        event.place ||
+        currentPlace;
+
+      movementStatus =
+        "待機中";
+    }
+  }
+
+  if (!movementStatus) {
+    return null;
+  }
+
+  const recovered = {
+    outingResultId: "",
+    routeId:
+      "LOCAL-" +
+      Math.max(
+        routeNumber,
+        1
+      ),
+    routeNumber:
+      Math.max(
+        routeNumber,
+        1
+      ),
+    shiftId:
+      session.shiftId,
+    userName:
+      session.clientName,
+    service:
+      session.service,
+    supportDate:
+      session.supportDate,
+    scheduledStart:
+      session.scheduledStart,
+    scheduledEnd:
+      session.scheduledEnd,
+    currentPlace:
+      currentPlace || "自宅",
+    movementStatus:
+      movementStatus,
+    transport:
+      transport,
+    driverId:
+      driverId,
+    driverName:
+      driverName,
+    isDriving:
+      isDriving,
+    localOnly:
+      true,
+    recovered:
+      true
+  };
+
+  saveActiveOuting_(
+    recovered
+  );
+
+  return recovered;
+}
+
 
 function getActiveOuting_() {
   try {

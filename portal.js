@@ -3443,16 +3443,47 @@ function clearStalePreEntryOutingState_(shift) {
       shift.currentState || ""
     ).trim();
 
-  /*
-   * 「向かいます」後（移動中）は、まだ行動記録を開始していない段階。
-   * 旧版で行動記録ボタンを押して作られたローカル残骸があれば削除する。
-   *
-   * 未送信として確定済みの行動記録セッションは削除しない。
-   */
   if (state !== "移動中") {
     return;
   }
 
+  /*
+   * 以前は「移動中」なら行動記録のlocalStorageを削除していましたが、
+   * 1件目出発直後にGAS側の状態反映が少し遅れると、
+   * 正常な行動記録まで消してしまうことがありました。
+   *
+   * 行動記録セッションに出発等のeventが1件でもある場合は
+   * 絶対に削除しません。
+   */
+  let session = null;
+
+  try {
+    session =
+      JSON.parse(
+        localStorage.getItem(
+          "staffPortalActionRecordSessionV1"
+        ) || "null"
+      );
+  } catch (error) {}
+
+  if (
+    session &&
+    (
+      !session.shiftId ||
+      session.shiftId === shift.shiftId
+    ) &&
+    Array.isArray(
+      session.events
+    ) &&
+    session.events.length > 0
+  ) {
+    return;
+  }
+
+  /*
+   * activeだけが残り、行動記録eventが1件もない場合だけ
+   * 旧版の開始前残骸として削除します。
+   */
   try {
     const active =
       JSON.parse(
@@ -3466,44 +3497,15 @@ function clearStalePreEntryOutingState_(shift) {
       (
         !active.shiftId ||
         active.shiftId === shift.shiftId
-      )
+      ) &&
+      !active.localOnly
     ) {
       localStorage.removeItem(
         "staffPortalActiveOuting"
       );
     }
-  } catch (error) {
-    localStorage.removeItem(
-      "staffPortalActiveOuting"
-    );
-  }
-
-  try {
-    const session =
-      JSON.parse(
-        localStorage.getItem(
-          "staffPortalActionRecordSessionV1"
-        ) || "null"
-      );
-
-    if (
-      session &&
-      (
-        !session.shiftId ||
-        session.shiftId === shift.shiftId
-      )
-    ) {
-      localStorage.removeItem(
-        "staffPortalActionRecordSessionV1"
-      );
-    }
-  } catch (error) {
-    localStorage.removeItem(
-      "staffPortalActionRecordSessionV1"
-    );
-  }
+  } catch (error) {}
 }
-
 
 function getActiveOutingForShift_(shift) {
   if (!shift) return null;
