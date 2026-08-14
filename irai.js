@@ -1,4 +1,5 @@
 let clientListCache = null;
+let employeeListCache = null;
 let pendingShiftRequestData = null;
 let currentUser = null;
 let currentConflictResult = null;
@@ -69,7 +70,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 	}
 
   await loadClientList();
+  await loadEmployeeListForAssignments();
   changeRequestMode();
+  toggleAdditionalStaffArea();
 });
 
 async function loadClientList() {
@@ -118,6 +121,144 @@ function setClientOptions(clients) {
   });
 }
 
+
+async function loadEmployeeListForAssignments() {
+  if (employeeListCache) {
+    setAdditionalStaffOptions(employeeListCache);
+    return;
+  }
+
+  try {
+    const result = await postGas({
+      action: "getEmployeeList"
+    });
+
+    if (!result.success) {
+      throw new Error(
+        result.message ||
+        "職員一覧を取得できませんでした。"
+      );
+    }
+
+    employeeListCache =
+      Array.isArray(result.employees)
+        ? result.employees
+        : [];
+
+    setAdditionalStaffOptions(
+      employeeListCache
+    );
+
+  } catch (error) {
+    console.warn(
+      "追加担当者一覧の取得に失敗",
+      error
+    );
+  }
+}
+
+function setAdditionalStaffOptions(employees) {
+  const secondary =
+    document.getElementById("secondaryEmployee");
+
+  const trainee =
+    document.getElementById("traineeEmployee");
+
+  if (!secondary || !trainee) return;
+
+  const currentId =
+    String(currentUser?.employeeId || "").trim();
+
+  secondary.innerHTML =
+    '<option value="">副担当なし</option>';
+
+  trainee.innerHTML =
+    '<option value="">見習いなし</option>';
+
+  (employees || []).forEach(employee => {
+    const id =
+      String(employee.employeeId || "").trim();
+
+    const name =
+      String(employee.name || "").trim();
+
+    if (
+      !id ||
+      !name ||
+      id === currentId
+    ) {
+      return;
+    }
+
+    [secondary, trainee].forEach(select => {
+      const option =
+        document.createElement("option");
+
+      option.value = id;
+      option.textContent = name;
+      option.dataset.name = name;
+      select.appendChild(option);
+    });
+  });
+}
+
+function toggleAdditionalStaffArea() {
+  const checked =
+    document.getElementById(
+      "reporterWillSupport"
+    )?.checked === true;
+
+  const area =
+    document.getElementById(
+      "additionalStaffArea"
+    );
+
+  area?.classList.toggle(
+    "hidden",
+    !checked
+  );
+
+  if (!checked) {
+    const secondary =
+      document.getElementById(
+        "secondaryEmployee"
+      );
+    const trainee =
+      document.getElementById(
+        "traineeEmployee"
+      );
+
+    if (secondary) secondary.value = "";
+    if (trainee) trainee.value = "";
+  }
+}
+
+function getSelectedEmployeeInfo_(selectId) {
+  const select =
+    document.getElementById(selectId);
+
+  if (!select || !select.value) {
+    return {
+      employeeId: "",
+      employeeName: ""
+    };
+  }
+
+  const option =
+    select.options[select.selectedIndex];
+
+  return {
+    employeeId:
+      String(select.value || "").trim(),
+    employeeName:
+      String(
+        option?.dataset?.name ||
+        option?.textContent ||
+        ""
+      ).trim()
+  };
+}
+
 function changeRequestMode() {
   const checked = document.querySelector('input[name="requestMode"]:checked');
   if (!checked) return;
@@ -149,6 +290,25 @@ async function handleShiftRequestSubmit(event) {
   const transportation = document.getElementById("transportation").value.trim();
   const specialNotes = document.getElementById("specialNotes").value.trim();
 	const reporterWillSupport = document.getElementById("reporterWillSupport") ?.checked === true;
+
+	const secondaryEmployee =
+	  reporterWillSupport
+	    ? getSelectedEmployeeInfo_("secondaryEmployee")
+	    : { employeeId: "", employeeName: "" };
+
+	const traineeEmployee =
+	  reporterWillSupport
+	    ? getSelectedEmployeeInfo_("traineeEmployee")
+	    : { employeeId: "", employeeName: "" };
+
+	if (
+	  secondaryEmployee.employeeId &&
+	  traineeEmployee.employeeId &&
+	  secondaryEmployee.employeeId === traineeEmployee.employeeId
+	) {
+	  alert("副担当と見習いに同じ職員は選択できません。");
+	  return;
+	}
 
   if (!clientId || !requestType || !startTime) {
     alert("未入力があります");
@@ -219,6 +379,18 @@ async function handleShiftRequestSubmit(event) {
 	      ? currentUser.employeeName
 	      : "",
 
+	  secondaryAssignedEmployeeId:
+	    secondaryEmployee.employeeId,
+
+	  secondaryAssignedEmployeeName:
+	    secondaryEmployee.employeeName,
+
+	  traineeEmployeeId:
+	    traineeEmployee.employeeId,
+
+	  traineeEmployeeName:
+	    traineeEmployee.employeeName,
+
 	  shiftAutoCreateRequested:
 	    reporterWillSupport,
 
@@ -267,7 +439,7 @@ function showShiftConfirm(data) {
 
   document.getElementById("shiftConfirmContent").innerHTML = `
     <div class="confirm-row"><div class="confirm-label">報告者</div><div>${escapeHtml(data.reporter)}</div></div>
-    <div class="confirm-row"><div class="confirm-label">担当予定</div><div>${data.reporterWillSupport ? escapeHtml(data.assignedEmployeeName) + "（入力者本人）" : "担当者未指定"}</div></div>
+    <div class="confirm-row"><div class="confirm-label">主担当</div><div>${data.reporterWillSupport ? escapeHtml(data.assignedEmployeeName) + "（入力者本人）" : "担当者未指定"}</div></div>\n    <div class="confirm-row"><div class="confirm-label">副担当</div><div>${escapeHtml(data.secondaryAssignedEmployeeName || "なし")}</div></div>\n    <div class="confirm-row"><div class="confirm-label">見習い</div><div>${escapeHtml(data.traineeEmployeeName || "なし")}</div></div>
     <div class="confirm-row"><div class="confirm-label">利用者</div><div>${escapeHtml(data.clientName)}</div></div>
     <div class="confirm-row"><div class="confirm-label">区分</div><div>${escapeHtml(data.requestType)}</div></div>
     <div class="confirm-row"><div class="confirm-label">対象日</div><div>${data.requests.length}件</div><div class="date-list">${datesHtml}</div></div>
@@ -459,6 +631,7 @@ async function savePendingShiftRequest(button) {
 
     document.getElementById("shiftRequestForm").reset();
     changeRequestMode();
+    toggleAdditionalStaffArea();
     pendingShiftRequestData = null;
     currentConflictResult = null;
     selectedConflictIndex = -1;

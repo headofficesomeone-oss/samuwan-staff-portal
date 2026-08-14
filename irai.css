@@ -104,3 +104,8 @@
     width: 110px;
   }
 }
+.additional-staff-area{margin:-4px 0 26px;padding:18px;border:1px solid #d7e5dc;border-radius:14px;background:#f8fcf9}
+.additional-staff-area.hidden{display:none}
+.additional-staff-title{margin-bottom:5px;font-size:18px;font-weight:800;color:#22303c}
+.additional-staff-note{margin:0 0 16px;color:#697780;line-height:1.6;font-size:14px}
+.additional-staff-area .form-group:last-child{margin-bottom:0}

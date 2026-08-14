@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>利用依頼受付</title>
-  <link rel="stylesheet" href="irai.css?v=20260731-2">
+  <link rel="stylesheet" href="irai.css?v=20260814-multistaff-1">
 </head>
 <body>
   <header class="app-header">
@@ -44,6 +44,8 @@
               <option>通院（同行）</option>
               <option>外出（同行）</option>
               <option>外出（移動）</option>
+              <option>買物（同行）</option>
+              <option>買物（移動）</option>
               <option>身体介護</option>
               <option>家事援助</option>
               <option>生活援助</option>
@@ -165,6 +167,7 @@
 					    <input
 					      type="checkbox"
 					      id="reporterWillSupport"
+                onchange="toggleAdditionalStaffArea()"
 					    >
 
 					    <span class="support-self-text">
@@ -179,6 +182,25 @@
 					    </span>
 					  </label>
 					</div>
+
+          <div id="additionalStaffArea" class="additional-staff-area hidden">
+            <div class="additional-staff-title">追加担当者</div>
+            <p class="additional-staff-note">2人介助や見習い同行がある場合に選択してください。</p>
+
+            <div class="form-group">
+              <label>副担当</label>
+              <select id="secondaryEmployee">
+                <option value="">副担当なし</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>見習い</label>
+              <select id="traineeEmployee">
+                <option value="">見習いなし</option>
+              </select>
+            </div>
+          </div>
 
           <button class="main-button" type="submit">依頼内容を確認する</button>
           <button class="back-button" type="button" onclick="backToPortal()">ポータルへ戻る</button>
@@ -246,6 +268,6 @@
   </main>
 
 	<script src="common.js?v=20260721-3"></script>
-	<script src="irai.js?v=20260801-3"></script>
+	<script src="irai.js?v=20260814-multistaff-1"></script>
 </body>
 </html>
