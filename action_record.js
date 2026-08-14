@@ -592,6 +592,33 @@ function prepareStartScreen_() {
       : "支援開始・出発を登録"
   );
 
+  /*
+   * 最初の場所:
+   * 通常の外出開始は必ず「自宅」。
+   * 引き続き支援だけ、前支援の最終地点を引き継ぎます。
+   */
+  const startPlaceInput =
+    document.getElementById(
+      "startPlace"
+    );
+
+  if (startPlaceInput) {
+    const lastOutingPlace =
+      String(
+        localStorage.getItem(
+          "staffPortalLastOutingPlaceV1"
+        ) || ""
+      ).trim();
+
+    startPlaceInput.value =
+      continuation
+        ? (
+            lastOutingPlace ||
+            "自宅"
+          )
+        : "自宅";
+  }
+
   const paid =
     recordContext.service ===
       "有償運送";
@@ -2403,7 +2430,7 @@ window.addEventListener("error", event => {
   const message = document.getElementById("recordMessage");
   if (message) {
     message.textContent =
-      "行動記録の読み込みでエラーが発生しました。ページを再読み込みしてください。";
+      "登録は完了しています。表示を最新にする場合はページを再読み込みしてください。";
     message.classList.remove("hidden");
     message.classList.add("error");
   }
