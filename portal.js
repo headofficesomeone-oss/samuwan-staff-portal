@@ -2738,7 +2738,7 @@ function handleTodayShiftChange() {
    */
   hideAddedShiftNotice();
 
-  const currentState =
+  let currentState =
     (
       pendingStaffActionState &&
       pendingStaffActionState.shiftId ===
@@ -2750,12 +2750,51 @@ function handleTodayShiftChange() {
           "未開始"
         );
 
+  const localActiveOuting =
+    getActiveOutingForShift_(
+      shift
+    );
+
+  const localActionCompleted =
+    isActionRecordCompletedForShift_(
+      shift
+    );
+
   /*
-   * 旧版で「向かいます」中に行動記録へ入った残骸がある場合の自動復旧。
+   * 外出支援では、GAS側の「入りました」の反映より
+   * スマホ内の行動記録状態を優先します。
+   *
+   * これにより
+   * 向かいます → 入りました → 自宅出発 → かえで到着
+   * のあとメインへ戻っても、再び「入りました」は出ません。
+   */
+  if (
+    isOutingService_(shift) &&
+    (
+      localActiveOuting ||
+      localActionCompleted
+    )
+  ) {
+    currentState =
+      "支援中";
+
+    /*
+     * ガイドや状態表示も同じ判定に揃えるため、
+     * この端末上の表示用状態を更新します。
+     */
+    shift.currentState =
+      "支援中";
+  }
+
+  /*
+   * 本当に「向かいます」段階で、まだ行動記録が存在しない時だけ
+   * 旧版残骸の掃除を行います。
    */
   if (
     String(currentState).trim() ===
-      "移動中"
+      "移動中" &&
+    !localActiveOuting &&
+    !localActionCompleted
   ) {
     clearStalePreEntryOutingState_(
       shift
@@ -4314,7 +4353,7 @@ async function continueToNextSupport() {
       nextShift.endTime,
 
     deviceTime:
-      new Date().toISOString(),
+      actionDeviceTime,
 
     sendId:
       sendId,
@@ -4534,6 +4573,29 @@ updateSupportMainDisplay_(shift);
     getActiveOutingForShift_(
       shift
     );
+
+  const completedOuting =
+    isActionRecordCompletedForShift_(
+      shift
+    );
+
+  /*
+   * サーバー表示が一時的に「移動中」のままでも、
+   * 行動記録が開始済みなら実際の画面状態は「支援中」です。
+   */
+  if (
+    outing &&
+    String(
+      currentState || ""
+    ).trim() === "移動中" &&
+    (
+      activeOuting ||
+      completedOuting
+    )
+  ) {
+    currentState =
+      "支援中";
+  }
 
   if (actionRecordButton) {
     const label =
@@ -4773,6 +4835,124 @@ function getSelectedTodayShift() {
   );
 }
 
+
+async function finalizeUntouchedCoStaffAfterFinish_(
+  shift,
+  finishTime
+) {
+  if (!shift || !currentUser) {
+    return null;
+  }
+
+  try {
+    const result =
+      await postGas({
+        action:
+          "finalizeUntouchedCoStaff",
+
+        shiftId:
+          shift.shiftId,
+
+        clientName:
+          shift.clientName,
+
+        supportDate:
+          shift.supportDate,
+
+        service:
+          shift.service,
+
+        scheduledStart:
+          shift.startTime,
+
+        scheduledEnd:
+          shift.endTime,
+
+        finisherEmployeeId:
+          currentUser.employeeId,
+
+        finisherEmployeeName:
+          currentUser.employeeName,
+
+        finishTime:
+          finishTime ||
+          new Date().toISOString(),
+
+        registrationMethod:
+          "職員ポータル自動補完"
+      });
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result?.message ||
+        "複数人介助の未入力確認に失敗しました。"
+      );
+    }
+
+    const forced =
+      Array.isArray(
+        result.forcedStaff
+      )
+        ? result.forcedStaff
+        : [];
+
+    const partial =
+      Array.isArray(
+        result.partialStaff
+      )
+        ? result.partialStaff
+        : [];
+
+    if (
+      forced.length ||
+      partial.length
+    ) {
+      const lines = [];
+
+      if (forced.length) {
+        lines.push(
+          "未入力のため強制終了：" +
+          forced
+            .map(item => item.employeeName)
+            .join("、")
+        );
+      }
+
+      if (partial.length) {
+        lines.push(
+          "途中入力のため要確認：" +
+          partial
+            .map(item => item.employeeName)
+            .join("、")
+        );
+      }
+
+      alert(
+        "複数人介助の確認\n\n" +
+        lines.join("\n")
+      );
+    }
+
+    return result;
+
+  } catch (error) {
+    /*
+     * 本人の「終わりました」は既に端末保存/送信済み。
+     * 他担当者確認の失敗で本人の終了処理を巻き戻しません。
+     */
+    console.warn(
+      "他担当者の未入力確認に失敗",
+      error
+    );
+
+    return null;
+  }
+}
+
+
 async function sendStaffAction(
   actionType,
   options = {}
@@ -4810,6 +4990,9 @@ async function sendStaffAction(
 
     if (!confirmed) return;
   }
+
+  const actionDeviceTime =
+    new Date().toISOString();
 
   const sendId =
     createStaffActionSendId(
@@ -4959,6 +5142,16 @@ async function sendStaffAction(
       .then(
         async () => {
           updateStaffActionSyncStatus_();
+
+          if (
+            actionType ===
+              "終わりました"
+          ) {
+            await finalizeUntouchedCoStaffAfterFinish_(
+              shift,
+              actionDeviceTime
+            );
+          }
 
           try {
             await loadTodayStaffShifts(

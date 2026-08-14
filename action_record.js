@@ -648,6 +648,18 @@ function prepareStartScreen_() {
       !paid
     );
 
+  /*
+   * 通院介助・同行援護などで移動手段が「有償運送」の場合、
+   * 初期表示の時点で運転手欄を表示します。
+   * これまでは移動手段を変更した時だけ表示判定していたため、
+   * 「有償運送」が最初から選ばれていると
+   * 運転手欄が見えないまま登録時に
+   * 「運転手を選択してください」となっていました。
+   */
+  if (!paid) {
+    toggleDriverField_("start");
+  }
+
   showOnly_("screenStart");
   setBadge_(
     continuation
@@ -822,6 +834,47 @@ async function recordContinuationFromActionRecord_(
   return result;
 }
 
+
+function getTransportRole_(transport) {
+  const value =
+    String(
+      transport || ""
+    ).trim();
+
+  if (value === "有償運送") {
+    return {
+      workRole: "有償運送",
+      isDriving: true,
+      isPaidTransport: true,
+      driverId:
+        recordUser.employeeId,
+      driverName:
+        recordUser.employeeName
+    };
+  }
+
+  if (value === "自家用車") {
+    return {
+      workRole: "自家用車運転",
+      isDriving: true,
+      isPaidTransport: false,
+      driverId:
+        recordUser.employeeId,
+      driverName:
+        recordUser.employeeName
+    };
+  }
+
+  return {
+    workRole: "支援",
+    isDriving: false,
+    isPaidTransport: false,
+    driverId: "",
+    driverName: ""
+  };
+}
+
+
 async function registerInitialDeparture_() {
   if (guardRecordBusy_()) return;
 
@@ -842,38 +895,19 @@ async function registerInitialDeparture_() {
       ? "有償運送"
       : value_("startTransport");
 
-  let driverName = "";
-  let driverId = "";
-  let isDriving = false;
+  const roleInfo =
+    getTransportRole_(
+      transport
+    );
 
-  if (paid) {
-    driverName =
-      recordUser.employeeName;
-    driverId =
-      recordUser.employeeId;
-    isDriving = true;
+  const driverName =
+    roleInfo.driverName;
 
-  } else if (
-    transport === "有償運送"
-  ) {
-    const driver =
-      value_("startDriver");
+  const driverId =
+    roleInfo.driverId;
 
-    if (!driver) {
-      alert("運転手を選択してください。");
-      return;
-    }
-
-    if (driver === "自分") {
-      driverName =
-        recordUser.employeeName;
-      driverId =
-        recordUser.employeeId;
-      isDriving = true;
-    } else {
-      driverName = "他職員";
-    }
-  }
+  const isDriving =
+    roleInfo.isDriving;
 
   const ok =
     confirm(
@@ -900,7 +934,9 @@ async function registerInitialDeparture_() {
     driverId,
     isDriving,
     isPaidTransport:
-      transport === "有償運送"
+      roleInfo.isPaidTransport,
+    workRole:
+      roleInfo.workRole
   });
 
   saveActiveOuting_({
@@ -927,6 +963,8 @@ async function registerInitialDeparture_() {
     driverId,
     driverName,
     isDriving,
+    workRole:
+      roleInfo.workRole,
     localOnly: true
   });
 
@@ -934,7 +972,9 @@ async function registerInitialDeparture_() {
     "出発",
     {
       place,
-      transport
+      transport,
+      workRole:
+        roleInfo.workRole
     }
   );
 
@@ -991,38 +1031,19 @@ async function registerActivityOnlyRoute_() {
       ? "有償運送"
       : value_("startTransport");
 
-  let driverName = "";
-  let driverId = "";
-  let isDriving = false;
+  const roleInfo =
+    getTransportRole_(
+      transport
+    );
 
-  if (paid) {
-    driverName =
-      recordUser.employeeName;
-    driverId =
-      recordUser.employeeId;
-    isDriving = true;
+  const driverName =
+    roleInfo.driverName;
 
-  } else if (
-    transport === "有償運送"
-  ) {
-    const driver =
-      value_("startDriver");
+  const driverId =
+    roleInfo.driverId;
 
-    if (!driver) {
-      alert("運転手を選択してください。");
-      return;
-    }
-
-    if (driver === "自分") {
-      driverName =
-        recordUser.employeeName;
-      driverId =
-        recordUser.employeeId;
-      isDriving = true;
-    } else {
-      driverName = "他職員";
-    }
-  }
+  const isDriving =
+    roleInfo.isDriving;
 
   const ok =
     confirm(
@@ -1043,7 +1064,9 @@ async function registerActivityOnlyRoute_() {
     driverId,
     isDriving,
     isPaidTransport:
-      transport === "有償運送",
+      roleInfo.isPaidTransport,
+    workRole:
+      roleInfo.workRole,
     supportDetail:
       activity
   });
@@ -1056,6 +1079,8 @@ async function registerActivityOnlyRoute_() {
     {
       place,
       transport,
+      workRole:
+        roleInfo.workRole,
       actualAt
     }
   );
@@ -1591,6 +1616,17 @@ function showAtPlace_() {
   );
 }
 
+
+function toggleDriverField_(mode) {
+  /*
+   * v45以降は運転手選択を廃止。
+   * 有償運送・自家用車を選んだ本人を運転手として自動記録します。
+   * 古いHTMLキャッシュから呼ばれてもエラーにならないよう残します。
+   */
+  return;
+}
+
+
 function openDepartureScreen_() {
   const active =
     getActiveOuting_();
@@ -1636,29 +1672,19 @@ async function registerNextDeparture_() {
   const transport =
     value_("nextTransport");
 
-  let driverName = "";
-  let driverId = "";
-  let isDriving = false;
+  const roleInfo =
+    getTransportRole_(
+      transport
+    );
 
-  if (transport === "有償運送") {
-    const driver =
-      value_("nextDriver");
+  const driverName =
+    roleInfo.driverName;
 
-    if (!driver) {
-      alert("運転手を選択してください。");
-      return;
-    }
+  const driverId =
+    roleInfo.driverId;
 
-    if (driver === "自分") {
-      driverName =
-        recordUser.employeeName;
-      driverId =
-        recordUser.employeeId;
-      isDriving = true;
-    } else {
-      driverName = "他職員";
-    }
-  }
+  const isDriving =
+    roleInfo.isDriving;
 
   const ok =
     confirm(
@@ -1682,7 +1708,9 @@ async function registerNextDeparture_() {
     previousDriverId:
       active.driverId || "",
     isPaidTransport:
-      transport === "有償運送"
+      roleInfo.isPaidTransport,
+    workRole:
+      roleInfo.workRole
   });
 
   active.routeNumber =
@@ -1709,6 +1737,9 @@ async function registerNextDeparture_() {
   active.isDriving =
     isDriving;
 
+  active.workRole =
+    roleInfo.workRole;
+
   delete active.arrivalType;
 
   saveActiveOuting_(active);
@@ -1718,7 +1749,9 @@ async function registerNextDeparture_() {
     {
       place:
         active.currentPlace,
-      transport
+      transport,
+      workRole:
+        roleInfo.workRole
     }
   );
 

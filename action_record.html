@@ -49,26 +49,21 @@
 
         <div id="normalTransportFields">
           <label class="record-label" for="startTransport">移動手段</label>
-          <select id="startTransport" onchange="toggleDriverField_('start')">
+          <select id="startTransport">
             <option value="徒歩">徒歩</option>
             <option value="公共交通">公共交通</option>
             <option value="有償運送">有償運送</option>
             <option value="自家用車">自家用車</option>
             <option value="その他">その他</option>
           </select>
-
-          <div id="startDriverWrap" class="hidden">
-            <label class="record-label" for="startDriver">運転手</label>
-            <select id="startDriver">
-              <option value="">選択してください</option>
-              <option value="自分">自分</option>
-              <option value="他職員">他職員</option>
-            </select>
-          </div>
         </div>
 
         <div id="paidTransportNote" class="record-note hidden">
-          有償運送として登録します。運転手は自分として記録します。
+          有償運送として登録します。操作している本人を運転手として記録します。
+        </div>
+
+        <div class="record-note">
+          徒歩・公共交通は通常の支援として記録します。有償運送・自家用車は、この端末を操作している本人の運転区間として記録します。
         </div>
 
         <button id="startRegisterButton" class="record-primary" type="button" onclick="registerInitialDeparture_()">
@@ -228,7 +223,7 @@
         </p>
 
         <label class="record-label" for="nextTransport">移動手段</label>
-        <select id="nextTransport" onchange="toggleDriverField_('next')">
+        <select id="nextTransport">
           <option value="徒歩">徒歩</option>
           <option value="公共交通">公共交通</option>
           <option value="有償運送">有償運送</option>
@@ -236,13 +231,8 @@
           <option value="その他">その他</option>
         </select>
 
-        <div id="nextDriverWrap" class="hidden">
-          <label class="record-label" for="nextDriver">運転手</label>
-          <select id="nextDriver">
-            <option value="">選択してください</option>
-            <option value="自分">自分</option>
-            <option value="他職員">他職員</option>
-          </select>
+        <div class="record-note">
+          有償運送・自家用車を選んだ場合は、操作している本人を運転手として記録します。
         </div>
 
         <div class="record-button-row">
@@ -289,6 +279,6 @@
   </main>
 
   <script src="./common.js?v=20260811-historyfix-2"></script>
-  <script src="./action_record.js?v=20260814-departurefix-1"></script>
+  <script src="./action_record.js?v=20260814-selfdriverroles-1"></script>
 </body>
 </html>
