@@ -1059,18 +1059,17 @@ async function flushPendingActionRecordSessions_() {
     return;
   }
 
-  if (
-    readStaffActionQueue_()
-      .length > 0
-  ) {
-    return;
-  }
-
+  /*
+   * 通常操作が残っていても、行動記録まで完全に止めない。
+   * ただし同一シフトの開始/終了順序を壊さないよう、
+   * 行動記録セッション単位で独立して再送します。
+   */
   if (
     typeof navigator !==
       "undefined" &&
     navigator.onLine === false
   ) {
+    updateStaffActionSyncStatus_();
     return;
   }
 
@@ -1082,34 +1081,57 @@ async function flushPendingActionRecordSessions_() {
     return;
   }
 
-  actionRecordQueueFlushing =
-    true;
+  actionRecordQueueFlushing = true;
+
+  const failedSessions = [];
 
   try {
-    while (true) {
-      const current =
-        readPendingActionRecordSessions_();
+    for (const session of pending) {
+      try {
+        await syncOneActionRecordSession_(
+          session
+        );
 
-      if (!current.length) break;
+      } catch (error) {
+        console.warn(
+          "行動記録セッションは次回再送します",
+          session &&
+            session.sessionId,
+          error
+        );
 
-      await syncOneActionRecordSession_(
-        current[0]
-      );
-
-      writePendingActionRecordSessions_(
-        current.slice(1)
-      );
+        failedSessions.push(
+          {
+            ...session,
+            retryCount:
+              Number(
+                session.retryCount || 0
+              ) + 1,
+            lastRetryAt:
+              new Date()
+                .toISOString(),
+            lastError:
+              error &&
+              error.message
+                ? error.message
+                : String(
+                    error || ""
+                  )
+          }
+        );
+      }
     }
 
-  } catch (error) {
-    console.warn(
-      "行動記録の同期に失敗",
-      error
+    /*
+     * 成功したセッションだけ削除し、
+     * 失敗したものだけ残します。
+     */
+    writePendingActionRecordSessions_(
+      failedSessions
     );
 
   } finally {
-    actionRecordQueueFlushing =
-      false;
+    actionRecordQueueFlushing = false;
     updateStaffActionSyncStatus_();
   }
 }
@@ -1165,9 +1187,15 @@ function updateStaffActionSyncStatus_() {
 
   if (!el) return;
 
-  const count =
-    readStaffActionQueue_().length +
+  const staffActionCount =
+    readStaffActionQueue_().length;
+
+  const actionRecordCount =
     readPendingActionRecordSessions_().length;
+
+  const count =
+    staffActionCount +
+    actionRecordCount;
 
   el.classList.remove(
     "synced",
@@ -1179,20 +1207,93 @@ function updateStaffActionSyncStatus_() {
   if (count === 0) {
     el.classList.add("synced");
     el.textContent = "✓ 同期済み";
-  } else if (count <= 10) {
-    el.classList.add("pending");
-    el.textContent =
-      "↻ 未送信 " + count + "件";
-  } else if (count < 50) {
-    el.classList.add("warning");
-    el.textContent =
-      "⚠ 未送信 " + count + "件";
+    el.title = "";
   } else {
-    el.classList.add("danger");
-    el.textContent =
-      "⚠ 通信確認 未送信 " +
-      count +
-      "件";
+    const detail = [];
+
+    if (staffActionCount > 0) {
+      detail.push(
+        "操作" +
+        staffActionCount +
+        "件"
+      );
+    }
+
+    if (actionRecordCount > 0) {
+      detail.push(
+        "行動記録" +
+        actionRecordCount +
+        "件"
+      );
+    }
+
+    if (count <= 10) {
+      el.classList.add("pending");
+      el.textContent =
+        "↻ 未送信 " +
+        count +
+        "件（" +
+        detail.join("・") +
+        "）";
+    } else if (count < 50) {
+      el.classList.add("warning");
+      el.textContent =
+        "⚠ 未送信 " +
+        count +
+        "件（" +
+        detail.join("・") +
+        "）";
+    } else {
+      el.classList.add("danger");
+      el.textContent =
+        "⚠ 通信確認 未送信 " +
+        count +
+        "件（" +
+        detail.join("・") +
+        "）";
+    }
+
+    const staffQueue =
+      readStaffActionQueue_();
+
+    const actionSessions =
+      readPendingActionRecordSessions_();
+
+    const failedInfo = [];
+
+    staffQueue.forEach(item => {
+      if (
+        item &&
+        item.lastError
+      ) {
+        failedInfo.push(
+          "操作: " +
+          item.lastError
+        );
+      }
+    });
+
+    actionSessions.forEach(session => {
+      if (
+        session &&
+        session.lastError
+      ) {
+        failedInfo.push(
+          "行動記録: " +
+          session.lastError
+        );
+      }
+    });
+
+    el.title =
+      failedInfo.length
+        ? (
+            "タップすると今すぐ再送します\n" +
+            failedInfo
+              .slice(0, 5)
+              .join("\n")
+          )
+        : "タップすると今すぐ再送します";
   }
 }
 function enqueueStaffAction_(
@@ -1352,6 +1453,34 @@ async function sendQueuedStaffActionItem_(
       item.payload.sendId
     );
 
+    /*
+     * 複数人介助の未入力確認は、
+     * この本人の「終わりました」がGASへ届いた後に実行します。
+     * 通信不良で後日再送された場合も、送信成功した時点で実行されます。
+     */
+    if (
+      item.payload.actionType ===
+        "終わりました"
+    ) {
+      await finalizeUntouchedCoStaffAfterFinish_(
+        {
+          shiftId:
+            item.payload.shiftId,
+          clientName:
+            item.payload.clientName,
+          supportDate:
+            item.payload.supportDate,
+          service:
+            item.payload.service,
+          startTime:
+            item.payload.scheduledStart,
+          endTime:
+            item.payload.scheduledEnd
+        },
+        item.payload.deviceTime
+      );
+    }
+
     return {
       success: true,
       result:
@@ -1439,7 +1568,17 @@ async function flushStaffActionQueue_() {
         continue;
       }
 
-      break;
+      /*
+       * 通信失敗でも後続を止めません。
+       * 失敗した1件だけ端末に残し、
+       * 他の操作は送れるものから送ります。
+       */
+      console.warn(
+        "この操作は次回再送します",
+        item.payload.sendId
+      );
+
+      continue;
     }
 
   } finally {
@@ -1448,24 +1587,67 @@ async function flushStaffActionQueue_() {
 
     updateStaffActionSyncStatus_();
 
-    if (
-      readStaffActionQueue_()
-        .length === 0
-    ) {
-      flushPendingActionRecordSessions_()
-        .catch(
-          error =>
-            console.warn(
-              "行動記録の後続同期に失敗",
-              error
-            )
-        );
-    }
+    /*
+     * 通常操作に送信待ちが残っていても、
+     * 行動記録側で送れるセッションは送信します。
+     */
+    flushPendingActionRecordSessions_()
+      .catch(
+        error =>
+          console.warn(
+            "行動記録の後続同期に失敗",
+            error
+          )
+      );
   }
 }
 
+async function retryAllPendingSyncNow_() {
+  const el =
+    document.getElementById(
+      "staffActionSyncStatus"
+    );
+
+  if (el) {
+    el.textContent =
+      "↻ 再送しています…";
+  }
+
+  try {
+    await flushStaffActionQueue_();
+    await flushPendingActionRecordSessions_();
+  } catch (error) {
+    console.warn(
+      "手動再送に失敗",
+      error
+    );
+  } finally {
+    updateStaffActionSyncStatus_();
+  }
+}
+
+
 function startStaffActionQueueSync_() {
   updateStaffActionSyncStatus_();
+
+  const syncStatus =
+    document.getElementById(
+      "staffActionSyncStatus"
+    );
+
+  if (
+    syncStatus &&
+    !syncStatus.dataset.retryBound
+  ) {
+    syncStatus.dataset.retryBound = "1";
+    syncStatus.style.cursor = "pointer";
+    syncStatus.addEventListener(
+      "click",
+      () => {
+        retryAllPendingSyncNow_();
+      }
+    );
+  }
 
   if (
     staffActionQueueTimer
@@ -5142,16 +5324,6 @@ async function sendStaffAction(
       .then(
         async () => {
           updateStaffActionSyncStatus_();
-
-          if (
-            actionType ===
-              "終わりました"
-          ) {
-            await finalizeUntouchedCoStaffAfterFinish_(
-              shift,
-              actionDeviceTime
-            );
-          }
 
           try {
             await loadTodayStaffShifts(
