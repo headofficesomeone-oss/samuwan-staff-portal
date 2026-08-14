@@ -1288,12 +1288,12 @@ function updateStaffActionSyncStatus_() {
     el.title =
       failedInfo.length
         ? (
-            "タップすると今すぐ再送します\n" +
+            "タップすると今すぐ再送し、残った場合は詳細を表示します\n" +
             failedInfo
               .slice(0, 5)
               .join("\n")
           )
-        : "タップすると今すぐ再送します";
+        : "タップすると今すぐ再送し、残った場合は詳細を表示します";
   }
 }
 function enqueueStaffAction_(
@@ -1602,6 +1602,81 @@ async function flushStaffActionQueue_() {
   }
 }
 
+
+function getPendingSyncErrorDetails_() {
+  const lines = [];
+
+  const staffQueue =
+    readStaffActionQueue_();
+
+  staffQueue.forEach(
+    (item, index) => {
+      const payload =
+        item && item.payload
+          ? item.payload
+          : {};
+
+      lines.push(
+        [
+          "【操作 " + (index + 1) + "】",
+          payload.clientName || "",
+          payload.actionType || "",
+          item.lastError
+            ? "エラー: " + item.lastError
+            : "エラー内容: まだ取得できていません",
+          "再送回数: " +
+            Number(item.attempts || 0)
+        ]
+          .filter(Boolean)
+          .join("\n")
+      );
+    }
+  );
+
+  const sessions =
+    readPendingActionRecordSessions_();
+
+  sessions.forEach(
+    (session, index) => {
+      lines.push(
+        [
+          "【行動記録 " + (index + 1) + "】",
+          session.clientName || "",
+          session.service || "",
+          "シフトID: " +
+            (session.shiftId || ""),
+          session.lastError
+            ? "エラー: " + session.lastError
+            : "エラー内容: まだ取得できていません",
+          "再送回数: " +
+            Number(session.retryCount || 0)
+        ]
+          .filter(Boolean)
+          .join("\n")
+      );
+    }
+  );
+
+  return lines;
+}
+
+
+function showPendingSyncErrorDetails_() {
+  const lines =
+    getPendingSyncErrorDetails_();
+
+  if (!lines.length) {
+    alert("未送信データはありません。");
+    return;
+  }
+
+  alert(
+    "未送信データの詳細\n\n" +
+    lines.join("\n\n")
+  );
+}
+
+
 async function retryAllPendingSyncNow_() {
   const el =
     document.getElementById(
@@ -1623,6 +1698,14 @@ async function retryAllPendingSyncNow_() {
     );
   } finally {
     updateStaffActionSyncStatus_();
+
+    const remaining =
+      readStaffActionQueue_().length +
+      readPendingActionRecordSessions_().length;
+
+    if (remaining > 0) {
+      showPendingSyncErrorDetails_();
+    }
   }
 }
 
