@@ -1093,6 +1093,26 @@ async function registerActivityOnlyRoute_() {
   );
 }
 
+function resumeActionRecordFromHome_() {
+  /*
+   * 「このまま帰宅」を選んだ後でも、
+   * 気が変わった・選択ミス等で通常の移動行程へ戻せます。
+   * 行動記録の終了やGAS送信は行いません。
+   */
+  const active =
+    getActiveOuting_();
+
+  if (!active) {
+    alert(
+      "進行中の行動記録を確認できません。"
+    );
+    return;
+  }
+
+  showMoveScreen_();
+}
+
+
 function showMoveScreen_() {
   stopCamera_();
   switchInputMode_(
