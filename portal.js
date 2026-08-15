@@ -1292,8 +1292,29 @@ async function flushPendingActionRecordSessions_() {
          * これを永遠に「未送信」として残さず、
          * PC訂正予定の「要確認」へ退避します。
          */
+        const syncState =
+          session &&
+          session.syncState &&
+          typeof session.syncState ===
+            "object"
+            ? session.syncState
+            : null;
+
+        const hasCheckpoint =
+          !!(
+            syncState &&
+            (
+              Number(
+                syncState.nextEventIndex || 0
+              ) > 0 ||
+              syncState.outingResultId ||
+              syncState.routeId ||
+              syncState.actionRecordSynced
+            )
+          );
+
         if (
-          !session.syncState &&
+          !hasCheckpoint &&
           isLegacyActionRecordStateError_(
             error
           )
@@ -1420,7 +1441,7 @@ function updateStaffActionSyncStatus_() {
         reviewCount +
         "件";
       el.title =
-        "古い未送信データのうち、サーバー状態と一致しないものを要確認へ退避しています。";
+        "タップすると要確認データの詳細を表示します。";
     } else {
       el.classList.add("synced");
       el.textContent = "✓ 同期済み";
@@ -1958,6 +1979,18 @@ async function retryAllPendingSyncNow_() {
 function startStaffActionQueueSync_() {
   updateStaffActionSyncStatus_();
 
+  /*
+   * 起動直後にも既存の未送信を整理します。
+   * 古い状態不一致データは要確認へ退避され、
+   * 正常な未送信はそのまま再送されます。
+   */
+  setTimeout(
+    () => {
+      retryAllPendingSyncNow_();
+    },
+    800
+  );
+
   const syncStatus =
     document.getElementById(
       "staffActionSyncStatus"
@@ -1972,6 +2005,21 @@ function startStaffActionQueueSync_() {
     syncStatus.addEventListener(
       "click",
       () => {
+        const pendingCount =
+          readStaffActionQueue_().length +
+          readPendingActionRecordSessions_().length;
+
+        const reviewCount =
+          readActionRecordReview_().length;
+
+        if (
+          pendingCount === 0 &&
+          reviewCount > 0
+        ) {
+          showPendingSyncErrorDetails_();
+          return;
+        }
+
         retryAllPendingSyncNow_();
       }
     );
