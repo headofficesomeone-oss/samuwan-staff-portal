@@ -1315,6 +1315,95 @@ function hasActionRecordCheckpoint_(session) {
   );
 }
 
+
+function isPastSupportDate_(supportDate) {
+  const text =
+    String(
+      supportDate || ""
+    ).trim();
+
+  if (!text) {
+    return false;
+  }
+
+  const normalized =
+    text.replace(/\//g, "-");
+
+  const match =
+    normalized.match(
+      /^(\d{4})-(\d{1,2})-(\d{1,2})/
+    );
+
+  if (!match) {
+    return false;
+  }
+
+  const target =
+    [
+      match[1],
+      String(match[2]).padStart(2, "0"),
+      String(match[3]).padStart(2, "0")
+    ].join("-");
+
+  const today =
+    getTodayLocalDateText();
+
+  return target < today;
+}
+
+
+function shouldMoveOldPendingSessionToReview_(
+  session
+) {
+  if (!session) {
+    return false;
+  }
+
+  if (
+    hasActionRecordCheckpoint_(
+      session
+    )
+  ) {
+    return false;
+  }
+
+  const firstError =
+    String(
+      session.firstError || ""
+    );
+
+  const lastError =
+    String(
+      session.lastError || ""
+    );
+
+  if (
+    isLegacyActionRecordStateError_(
+      firstError
+    ) ||
+    isLegacyActionRecordStateError_(
+      lastError
+    )
+  ) {
+    return true;
+  }
+
+  /*
+   * 前日以前の古い未送信で、
+   * チェックポイントが一度も作られず、
+   * 5回以上試行済みなら無限再送を止めて要確認へ。
+   * 当日分は通信不良でも自動退避しません。
+   */
+  return (
+    isPastSupportDate_(
+      session.supportDate
+    ) &&
+    Number(
+      session.retryCount || 0
+    ) >= 5
+  );
+}
+
 async function flushPendingActionRecordSessions_(
   options = {}
 ) {
@@ -1348,20 +1437,22 @@ async function flushPendingActionRecordSessions_(
   try {
     for (const session of pending) {
       /*
-       * v51以前で一度すでに
-       * 「現在は待機中ではありません」等を受けた旧データは、
-       * その後ネットワークエラーに変わっていても
-       * 無限再送せず要確認へ退避します。
+       * 旧データの無限再送を止めます。
+       * SW000054のように前日以前で、
+       * チェックポイント無し・再送多数のものは要確認へ退避します。
        */
       if (
-        !hasActionRecordCheckpoint_(session) &&
-        isLegacyActionRecordStateError_(
-          session && session.lastError
+        shouldMoveOldPendingSessionToReview_(
+          session
         )
       ) {
         moveActionRecordSessionToReview_(
           session,
-          new Error(session.lastError)
+          new Error(
+            session.firstError ||
+            session.lastError ||
+            "旧未送信データのため要確認へ退避"
+          )
         );
         continue;
       }
@@ -1420,21 +1511,25 @@ async function flushPendingActionRecordSessions_(
                 session.retryCount || 0
               ) + 1;
 
+        const currentErrorMessage =
+          error && error.message
+            ? error.message
+            : String(error || "");
+
         failedSessions.push({
           ...session,
           retryCount:
             nextRetryCount,
           lastRetryAt:
             new Date().toISOString(),
+          firstError:
+            session.firstError ||
+            currentErrorMessage,
           lastError:
             previousWasStateError &&
             networkError
               ? previousError
-              : (
-                  error && error.message
-                    ? error.message
-                    : String(error || "")
-                ),
+              : currentErrorMessage,
           lastNetworkError:
             networkError
               ? (
@@ -1625,12 +1720,12 @@ function updateStaffActionSyncStatus_() {
     el.title =
       failedInfo.length
         ? (
-            "タップすると今すぐ再送し、残った場合は詳細を表示します\n" +
+            "タップすると未送信・要確認データの詳細を表示します\n" +
             failedInfo
               .slice(0, 5)
               .join("\n")
           )
-        : "タップすると今すぐ再送し、残った場合は詳細を表示します";
+        : "タップすると未送信・要確認データの詳細を表示します";
   }
 }
 function enqueueStaffAction_(
@@ -2061,15 +2156,12 @@ async function retryAllPendingSyncNow_() {
       error
     );
   } finally {
+    /*
+     * 再送後は表示だけ更新します。
+     * 自動的にalertを出さないことで、
+     * 「閉じた直後にまたエラー画面」のループを防ぎます。
+     */
     updateStaffActionSyncStatus_();
-
-    const remaining =
-      readStaffActionQueue_().length +
-      readPendingActionRecordSessions_().length;
-
-    if (remaining > 0) {
-      showPendingSyncErrorDetails_();
-    }
   }
 }
 
@@ -2124,15 +2216,17 @@ function startStaffActionQueueSync_() {
         const reviewCount =
           readActionRecordReview_().length;
 
+        /*
+         * タップは詳細確認だけにします。
+         * タップした瞬間に再送→alertを繰り返さないようにします。
+         * 再送自体はバックグラウンドとonline復帰時に行います。
+         */
         if (
-          pendingCount === 0 &&
+          pendingCount > 0 ||
           reviewCount > 0
         ) {
           showPendingSyncErrorDetails_();
-          return;
         }
-
-        retryAllPendingSyncNow_();
       }
     );
   }
