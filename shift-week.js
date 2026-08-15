@@ -36,6 +36,9 @@ let selectedStaffFilter = "";
 /* 現在選択している曜日フィルターです。空欄は全曜日です。 */
 let selectedWeekdayFilter = "";
 
+/* 一覧の並び替え */
+let selectedSortOrder = "dateTime";
+
 /*
   true のとき、各一覧行の下へ
   「支援内容・当日の指示・詳細注意・簡易メモ」を表示します。
@@ -73,39 +76,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadMasters();
 
   /*
-    起動時は「今日」が属する週を初期表示します。
+    基本シフトは通常、翌週分を作成するため、
+    起動時は翌週の月曜日を初期表示します。
   */
-  const today = new Date();
-  const thisWeekMonday = getMonday(today);
-  setWeekMonday(thisWeekMonday);
-
-  /*
-    曜日フィルターも今日の曜日へ合わせます。
-  */
-  setTodayWeekdayFilter_(today);
+  const nextWeekMonday = addDays(getMonday(new Date()), 7);
+  setWeekMonday(nextWeekMonday);
 
   /* 起動時はGASから最新状態を取得します。 */
   await loadCurrentWeek({ forceReload: true });
 });
-
-function setTodayWeekdayFilter_(date = new Date()) {
-  const weekdayNames = [
-    "日", "月", "火", "水", "木", "金", "土"
-  ];
-
-  const weekday =
-    weekdayNames[date.getDay()] || "";
-
-  const select =
-    document.getElementById("weekdayFilter");
-
-  selectedWeekdayFilter = weekday;
-
-  if (select) {
-    select.value = weekday;
-  }
-}
-
 
 function bindScreenEvents() {
   document
@@ -135,6 +114,37 @@ function bindScreenEvents() {
       openDetailShiftId = "";
       renderTable();
     });
+
+  document
+    .getElementById("sortOrder")
+    .addEventListener("change", event => {
+      selectedSortOrder = event.target.value || "dateTime";
+      renderTable();
+    });
+
+  document
+    .getElementById("closeDetailButton")
+    .addEventListener("click", closeShiftDetailModal);
+
+  document
+    .getElementById("cancelDetailButton")
+    .addEventListener("click", closeShiftDetailModal);
+
+  document
+    .querySelector("#shiftDetailModal .shift-modal-backdrop")
+    .addEventListener("click", closeShiftDetailModal);
+
+  document
+    .getElementById("shiftDetailForm")
+    .addEventListener("submit", saveShiftDetailModal);
+
+  document
+    .getElementById("detailDate")
+    .addEventListener("change", syncDetailWeekdayFromDate);
+
+  document
+    .getElementById("detailPaid")
+    .addEventListener("change", updateDetailPaidState);
 
   document
     .getElementById("instructionToggleButton")
@@ -558,7 +568,7 @@ function updateStaffFilterOptions() {
 
   const allOption = document.createElement("option");
   allOption.value = "";
-  allOption.textContent = "全員";
+  allOption.textContent = "担当者：全員";
   select.appendChild(allOption);
 
   staffChoices.forEach(name => {
@@ -686,20 +696,11 @@ async function createInitialWeek() {
   button.disabled = true;
   button.textContent = "作成中...";
 
-  const slowTimer = setTimeout(() => {
-    setMessage(
-      "作成に時間がかかっています。処理は継続中ですので、そのままお待ちください。"
-    );
-    button.textContent = "作成中…";
-  }, 30000);
-
   try {
     const result = await jsonpRequest(
       "week-create",
       { weekMonday },
-      "shiftWeekCreateCallback",
-      {},
-      120000
+      "shiftWeekCreateCallback"
     );
 
     setMessage(result.message || "初回作成が完了しました。");
@@ -707,45 +708,8 @@ async function createInitialWeek() {
     /* 作成後は、必ずGASから再取得します。 */
     await loadCurrentWeek({ forceReload: true });
   } catch (error) {
-    const message =
-      error && error.message
-        ? String(error.message)
-        : "";
-
-    if (
-      message.includes(
-        "GASの応答がタイムアウトしました"
-      )
-    ) {
-      setMessage(
-        "応答確認に時間がかかったため、作成結果を確認しています。"
-      );
-
-      try {
-        await loadCurrentWeek({
-          forceReload: true
-        });
-
-        if (currentWeekItems.length > 0) {
-          setMessage(
-            "基本シフトの作成を確認しました。"
-          );
-          return;
-        }
-      } catch (confirmError) {
-        console.warn(
-          "初回作成後の確認に失敗しました",
-          confirmError
-        );
-      }
-    }
-
-    showApiError(
-      error,
-      "基本シフトの初回作成に失敗しました"
-    );
+    showApiError(error, "基本シフトの初回作成に失敗しました");
   } finally {
-    clearTimeout(slowTimer);
     button.disabled = false;
     button.textContent = originalText;
   }
@@ -755,30 +719,85 @@ async function createInitialWeek() {
    一覧表示
    ============================================================= */
 
-function renderTable() {
-  const tbody = document.getElementById("shiftWeekBody");
-  const emptyArea = document.getElementById("emptyArea");
-  const tableScroll = document.querySelector(".table-scroll");
+function getSortedDisplayItems_() {
+  const items =
+    currentWeekItems
+      .filter(item =>
+        matchesStaffFilter(item) &&
+        matchesWeekdayFilter(item)
+      )
+      .slice();
 
-  tbody.innerHTML = "";
+  const dateKey = item =>
+    String(item.date || "");
 
-  const displayItems = currentWeekItems.filter(item => {
+  const timeKey = item =>
+    String(item.startTime || "");
+
+  items.sort((a, b) => {
+    if (selectedSortOrder === "dateStaffTime") {
+      return (
+        dateKey(a).localeCompare(dateKey(b)) ||
+        String(a.staff1 || "").localeCompare(
+          String(b.staff1 || ""),
+          "ja"
+        ) ||
+        timeKey(a).localeCompare(timeKey(b))
+      );
+    }
+
+    if (selectedSortOrder === "userDateTime") {
+      return (
+        String(a.user || "").localeCompare(
+          String(b.user || ""),
+          "ja"
+        ) ||
+        dateKey(a).localeCompare(dateKey(b)) ||
+        timeKey(a).localeCompare(timeKey(b))
+      );
+    }
+
     return (
-      matchesStaffFilter(item) &&
-      matchesWeekdayFilter(item)
+      dateKey(a).localeCompare(dateKey(b)) ||
+      timeKey(a).localeCompare(timeKey(b))
     );
   });
 
-  document.getElementById("recordCount").textContent =
-    `${displayItems.length}件`;
+  return items;
+}
+
+
+function renderTable() {
+  const tbody =
+    document.getElementById("shiftWeekBody");
+
+  const emptyArea =
+    document.getElementById("emptyArea");
+
+  const tableScroll =
+    document.querySelector(".table-scroll");
+
+  tbody.innerHTML = "";
+
+  const displayItems =
+    getSortedDisplayItems_();
+
+  document
+    .getElementById("recordCount")
+    .textContent =
+      `${displayItems.length}件`;
 
   if (displayItems.length === 0) {
     tableScroll.classList.add("hidden");
     emptyArea.classList.remove("hidden");
 
-    if (selectedStaffFilter && selectedWeekdayFilter) {
+    if (
+      selectedStaffFilter &&
+      selectedWeekdayFilter
+    ) {
       emptyArea.textContent =
-        `${selectedStaffFilter}さんの${selectedWeekdayFilter}曜日の基本シフトはありません。`;
+        `${selectedStaffFilter}さんの` +
+        `${selectedWeekdayFilter}曜日の基本シフトはありません。`;
     } else if (selectedStaffFilter) {
       emptyArea.textContent =
         `${selectedStaffFilter}さんが担当する基本シフトはありません。`;
@@ -791,96 +810,144 @@ function renderTable() {
     }
 
     updateInstructionToggleButton();
-
-    /* データがないときは上側スクロールバーも隠します。 */
     updateHorizontalScrollWidth();
     return;
   }
 
   tableScroll.classList.remove("hidden");
   emptyArea.classList.add("hidden");
-  emptyArea.textContent = "この週の基本シフトはまだありません。";
 
   displayItems.forEach(item => {
-    tbody.appendChild(createMainRow(item));
+    tbody.appendChild(
+      createMainRow(item)
+    );
 
     /*
-      利用者名から詳細を開いている行は、詳細欄を表示します。
-      詳細を開いていない行は、「指示」表示中だけ2段目を表示します。
-    */
-    if (openDetailShiftId === item.shiftId) {
-      tbody.appendChild(createDetailRow(item));
-    } else if (instructionRowsVisible) {
-      tbody.appendChild(createInstructionRow(item));
+     * 既存の「指示」一括表示機能は残します。
+     * 詳細編集はポップアップへ移しました。
+     */
+    if (instructionRowsVisible) {
+      tbody.appendChild(
+        createInstructionRow(item)
+      );
     }
   });
 
   updateInstructionToggleButton();
 
-  /*
-    行や詳細欄の描画が終わった後に、
-    上側スクロールバーの横幅を表全体へ合わせます。
-  */
-  requestAnimationFrame(updateHorizontalScrollWidth);
+  requestAnimationFrame(
+    updateHorizontalScrollWidth
+  );
 }
 
+
 function createMainRow(item) {
-  const row = document.createElement("tr");
+  const row =
+    document.createElement("tr");
+
   row.className = "main-row";
-  row.dataset.shiftId = item.shiftId;
+  row.dataset.shiftId =
+    item.shiftId;
+
+  const paid =
+    String(item.vehicle || "").trim()
+      ? "有"
+      : "";
 
   row.innerHTML = `
-    <td>
-      <button
-        type="button"
-        class="user-detail-button"
-        data-shift-id="${escapeAttribute(item.shiftId)}"
-      >
-        ${escapeHtml(item.user)}
-      </button>
+    <td class="center-cell">
+      ${escapeHtml(formatShortDate(item.date))}
     </td>
 
-    <td class="center-cell">${escapeHtml(formatShortDate(item.date))}</td>
-    <td class="center-cell">${escapeHtml(item.weekday)}</td>
-    <td class="center-cell">${escapeHtml(item.startTime)}</td>
-    <td class="center-cell">${escapeHtml(item.endTime)}</td>
-    <td class="center-cell">${escapeHtml(item.service)}</td>
-    <td class="center-cell">${escapeHtml(item.vehicle)}</td>
-    <td class="content-cell" title="${escapeAttribute(item.support || item.content)}">
+    <td class="center-cell weekday-cell">
+      ${escapeHtml(item.weekday)}
+    </td>
+
+    <td class="center-cell time-cell">
+      ${escapeHtml(item.startTime)}
+      <span class="time-separator">－</span>
+      ${escapeHtml(item.endTime)}
+    </td>
+
+    <td class="user-cell">
+      ${escapeHtml(item.user)}
+    </td>
+
+    <td class="service-cell">
+      ${escapeHtml(item.service)}
+    </td>
+
+    <td
+      class="content-cell"
+      title="${escapeAttribute(item.support || item.content)}"
+    >
       ${escapeHtml(item.support || item.content)}
     </td>
-    <td class="destination-cell" title="${escapeAttribute(item.destination)}">
-      ${escapeHtml(item.destination)}
-    </td>
-    <td class="note-cell" title="${escapeAttribute(item.note)}">
-      ${escapeHtml(item.note)}
-    </td>
+
     <td>${createStaffSelect(item, "staff1")}</td>
     <td>${createStaffSelect(item, "staff2")}</td>
     <td>${createStaffSelect(item, "staff3")}</td>
     <td>${createStaffSelect(item, "staff4")}</td>
-    <td class="center-cell">${escapeHtml(item.status)}</td>
-    <td class="center-cell">${escapeHtml(item.publishStatus)}</td>
+
+    <td class="center-cell paid-cell">
+      ${paid}
+    </td>
+
+    <td
+      class="vehicle-cell"
+      title="${escapeAttribute(item.vehicle)}"
+    >
+      ${escapeHtml(item.vehicle)}
+    </td>
+
+    <td
+      class="destination-cell"
+      title="${escapeAttribute(item.destination)}"
+    >
+      ${escapeHtml(item.destination)}
+    </td>
+
+    <td class="center-cell status-cell">
+      ${escapeHtml(item.status)}
+    </td>
+
+    <td class="center-cell detail-cell">
+      <button
+        type="button"
+        class="detail-open-button"
+        data-shift-id="${escapeAttribute(item.shiftId)}"
+      >
+        詳細
+      </button>
+    </td>
   `;
 
   row
-    .querySelector(".user-detail-button")
-    .addEventListener("click", async () => {
-      await toggleDetail(item.shiftId);
-    });
-
-  row.querySelectorAll(".staff-select").forEach(select => {
-    select.addEventListener("change", async event => {
-      await saveStaffChange(
-        item.shiftId,
-        event.target.dataset.field,
-        event.target.value
+    .querySelector(".detail-open-button")
+    .addEventListener("click", () => {
+      openShiftDetailModal(
+        item.shiftId
       );
     });
-  });
+
+  row
+    .querySelectorAll(".staff-select")
+    .forEach(select => {
+      select.addEventListener(
+        "change",
+        async event => {
+          await saveStaffChange(
+            item.shiftId,
+            event.target.dataset.field,
+            event.target.value
+          );
+        }
+      );
+    });
 
   return row;
 }
+
 
 function createStaffSelect(item, fieldName) {
   const currentValue = String(item[fieldName] || "").trim();
@@ -948,17 +1015,373 @@ function updateInstructionToggleButton() {
 
 
 async function toggleDetail(shiftId) {
-  if (openDetailShiftId) {
-    const saved = await saveOpenDetailIfChanged();
+  openShiftDetailModal(shiftId);
+}
 
-    if (!saved) return;
+
+
+/* =============================================================
+   詳細ポップアップ
+   ============================================================= */
+
+function getShiftItemById_(shiftId) {
+  return currentWeekItems.find(
+    item =>
+      String(item.shiftId || "") ===
+      String(shiftId || "")
+  ) || null;
+}
+
+
+function fillStaffSelect_(
+  select,
+  currentValue
+) {
+  select.innerHTML = "";
+
+  const choices =
+    [...staffChoices];
+
+  if (
+    currentValue &&
+    !choices.includes(currentValue)
+  ) {
+    choices.unshift(currentValue);
   }
 
-  openDetailShiftId =
-    openDetailShiftId === shiftId ? "" : shiftId;
+  ["", ...choices].forEach(name => {
+    const option =
+      document.createElement("option");
 
-  renderTable();
+    option.value = name;
+    option.textContent =
+      name || "未定";
+
+    select.appendChild(option);
+  });
+
+  select.value =
+    currentValue || "";
 }
+
+
+function openShiftDetailModal(
+  shiftId
+) {
+  const item =
+    getShiftItemById_(shiftId);
+
+  if (!item) return;
+
+  openDetailShiftId =
+    shiftId;
+
+  document
+    .getElementById("detailShiftId")
+    .value =
+      item.shiftId || "";
+
+  document
+    .getElementById("detailDate")
+    .value =
+      item.date || "";
+
+  document
+    .getElementById("detailWeekday")
+    .value =
+      item.weekday || "";
+
+  document
+    .getElementById("detailStartTime")
+    .value =
+      item.startTime || "";
+
+  document
+    .getElementById("detailEndTime")
+    .value =
+      item.endTime || "";
+
+  document
+    .getElementById("detailUser")
+    .value =
+      item.user || "";
+
+  document
+    .getElementById("detailService")
+    .value =
+      item.service || "";
+
+  document
+    .getElementById("detailContent")
+    .value =
+      item.content ||
+      item.support ||
+      "";
+
+  fillStaffSelect_(
+    document.getElementById("detailStaff1"),
+    item.staff1 || ""
+  );
+
+  fillStaffSelect_(
+    document.getElementById("detailStaff2"),
+    item.staff2 || ""
+  );
+
+  fillStaffSelect_(
+    document.getElementById("detailStaff3"),
+    item.staff3 || ""
+  );
+
+  fillStaffSelect_(
+    document.getElementById("detailStaff4"),
+    item.staff4 || ""
+  );
+
+  document
+    .getElementById("detailTransport")
+    .value =
+      item.transport || "";
+
+  document
+    .getElementById("detailDestination")
+    .value =
+      item.destination || "";
+
+  document
+    .getElementById("detailVehicle")
+    .value =
+      item.vehicle || "";
+
+  document
+    .getElementById("detailPaid")
+    .value =
+      String(item.vehicle || "").trim()
+        ? "有"
+        : "";
+
+  document
+    .getElementById("detailMeeting")
+    .value =
+      item.meeting || "";
+
+  document
+    .getElementById("detailMeetingPoint")
+    .value =
+      item.meetingPoint ||
+      item.meetingInfo ||
+      "";
+
+  document
+    .getElementById("detailSimpleMemo")
+    .value =
+      item.simpleMemo || "";
+
+  document
+    .getElementById("detailNote")
+    .value =
+      item.detailNote || "";
+
+  document
+    .getElementById("detailRemarks")
+    .value =
+      item.note || "";
+
+  updateDetailPaidState();
+
+  document
+    .getElementById("shiftDetailModal")
+    .classList.remove("hidden");
+
+  document.body.classList.add(
+    "shift-modal-open"
+  );
+}
+
+
+function closeShiftDetailModal() {
+  document
+    .getElementById("shiftDetailModal")
+    .classList.add("hidden");
+
+  document.body.classList.remove(
+    "shift-modal-open"
+  );
+
+  openDetailShiftId = "";
+}
+
+
+function syncDetailWeekdayFromDate() {
+  const date =
+    parseLocalDate(
+      document
+        .getElementById("detailDate")
+        .value
+    );
+
+  if (!date) return;
+
+  const labels =
+    ["日", "月", "火", "水", "木", "金", "土"];
+
+  document
+    .getElementById("detailWeekday")
+    .value =
+      labels[date.getDay()];
+}
+
+
+function updateDetailPaidState() {
+  const paid =
+    document
+      .getElementById("detailPaid")
+      .value;
+
+  const vehicle =
+    document
+      .getElementById("detailVehicle");
+
+  vehicle.disabled =
+    paid !== "有";
+
+  if (paid !== "有") {
+    vehicle.value = "";
+  }
+}
+
+
+async function saveShiftDetailModal(
+  event
+) {
+  event.preventDefault();
+
+  const shiftId =
+    document
+      .getElementById("detailShiftId")
+      .value;
+
+  const item =
+    getShiftItemById_(shiftId);
+
+  if (!item) {
+    alert(
+      "更新対象のシフトが見つかりません。"
+    );
+    return;
+  }
+
+  const changes = {
+    date:
+      document.getElementById("detailDate").value,
+    weekday:
+      document.getElementById("detailWeekday").value,
+    startTime:
+      document.getElementById("detailStartTime").value,
+    endTime:
+      document.getElementById("detailEndTime").value,
+    user:
+      document.getElementById("detailUser").value.trim(),
+    service:
+      document.getElementById("detailService").value.trim(),
+    content:
+      document.getElementById("detailContent").value.trim(),
+    staff1:
+      document.getElementById("detailStaff1").value,
+    staff2:
+      document.getElementById("detailStaff2").value,
+    staff3:
+      document.getElementById("detailStaff3").value,
+    staff4:
+      document.getElementById("detailStaff4").value,
+    transport:
+      document.getElementById("detailTransport").value,
+    destination:
+      document.getElementById("detailDestination").value.trim(),
+    vehicle:
+      document.getElementById("detailPaid").value === "有"
+        ? document.getElementById("detailVehicle").value.trim()
+        : "",
+    meeting:
+      document.getElementById("detailMeeting").value.trim(),
+    meetingPoint:
+      document.getElementById("detailMeetingPoint").value.trim(),
+    simpleMemo:
+      document.getElementById("detailSimpleMemo").value.trim(),
+    detailNote:
+      document.getElementById("detailNote").value.trim(),
+    note:
+      document.getElementById("detailRemarks").value.trim()
+  };
+
+  const actualChanges = {};
+
+  Object.entries(changes).forEach(
+    ([field, value]) => {
+      const oldValue =
+        String(item[field] ?? "");
+
+      if (
+        String(value ?? "") !==
+        oldValue
+      ) {
+        actualChanges[field] =
+          value;
+      }
+    }
+  );
+
+  if (
+    Object.keys(actualChanges)
+      .length === 0
+  ) {
+    closeShiftDetailModal();
+    return;
+  }
+
+  const saveButton =
+    document.getElementById(
+      "saveDetailButton"
+    );
+
+  const originalText =
+    saveButton.textContent;
+
+  saveButton.disabled = true;
+  saveButton.textContent =
+    "保存中...";
+
+  try {
+    await updateShiftWeek(
+      shiftId,
+      actualChanges
+    );
+
+    updateLocalItem(
+      shiftId,
+      actualChanges
+    );
+
+    setMessage(
+      "基本シフトを保存しました。"
+    );
+
+    closeShiftDetailModal();
+    renderTable();
+
+  } catch (error) {
+    showApiError(
+      error,
+      "基本シフトの保存に失敗しました"
+    );
+
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent =
+      originalText;
+  }
+}
+
 
 /* =============================================================
    詳細入力欄
@@ -970,7 +1393,7 @@ function createDetailRow(item) {
   row.dataset.shiftId = item.shiftId;
 
   const cell = document.createElement("td");
-  cell.colSpan = 16;
+  cell.colSpan = 15;
 
   cell.innerHTML = `
     <div class="detail-panel">
@@ -1025,7 +1448,7 @@ function createInstructionRow(item) {
   row.dataset.shiftId = item.shiftId;
 
   const cell = document.createElement("td");
-  cell.colSpan = 16;
+  cell.colSpan = 15;
 
   cell.innerHTML = `
     <div class="instruction-panel">
@@ -1401,8 +1824,7 @@ function jsonpRequest(
   action,
   payload = null,
   callbackPrefix = "callback",
-  extraParameters = {},
-  timeoutMs = 30000
+  extraParameters = {}
 ) {
   return new Promise((resolve, reject) => {
     const callbackName =
@@ -1429,7 +1851,7 @@ function jsonpRequest(
       finished = true;
       cleanup();
       reject(new ApiError("GASの応答がタイムアウトしました"));
-    }, timeoutMs);
+    }, 30000);
 
     window[callbackName] = result => {
       if (finished) return;

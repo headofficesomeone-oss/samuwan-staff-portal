@@ -3,615 +3,214 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>基本シフト表</title>
-
-  <link rel="stylesheet" href="shift-week.css">
+  <link rel="stylesheet" href="shift-week.css?v=compact-v1">
 </head>
-
 <body>
-  <!-- =========================================================
-       画面上部
-       ========================================================= -->
-  <header class="app-header">
+  <header class="app-header compact-header">
     <div class="header-title">
       <div class="app-name">訪問ケアぷーどる</div>
       <h1>基本シフト表</h1>
     </div>
-
     <div class="header-actions">
-      <button
-        id="reloadButton"
-        class="secondary-button"
-        type="button"
-      >
-        再読み込み
-      </button>
-
-			<button
-			  id="newShiftButton"
-			  class="primary-button"
-			  type="button"
-			>
-			  新規シフト追加
-			</button>
-
-      <button
-        id="createButton"
-        class="primary-button"
-        type="button"
-      >
-        初回作成
-      </button>
-
-      <a
-        class="nav-link"
-        href="./shift-master-v2.html"
-      >
-        シフト規定値
-      </a>
+      <button id="reloadButton" class="secondary-button" type="button">再読み込み</button>
+      <button id="createButton" class="secondary-button" type="button">初回作成</button>
+      <a class="nav-link" href="./shift-master-v2.html">シフト規定値</a>
     </div>
   </header>
 
-  <main class="page">
-    <!-- =======================================================
-         対象週の選択
-         ======================================================= -->
-    <section id="weekControlCard" class="control-card">
-      <div class="week-control-actions">
-        <button
-          id="collapseWeekControlsButton"
-          class="week-collapse-button"
-          type="button"
-        >
-          折りたたむ
-        </button>
-      </div>
+  <main class="page compact-page">
+    <section id="weekControlCard" class="compact-toolbar">
+      <button id="collapseWeekControlsButton" class="hidden" type="button">折りたたむ</button>
+      <button id="previousWeekButton" class="toolbar-button" type="button">◀ 前の週</button>
+      <input id="weekMonday" type="date">
+      <button id="currentWeekButton" class="toolbar-button" type="button">今週</button>
+      <button id="nextWeekButton" class="toolbar-button" type="button">次の週 ▶</button>
+      <strong id="weekRange" class="week-range"></strong>
 
-      <div class="week-navigation">
-        <div class="week-side week-side-left">
-          <button
-            id="previousWeekButton"
-            class="secondary-button large-week-button"
-            type="button"
-          >
-            前の週
-          </button>
-        </div>
+      <select id="staffFilter" class="toolbar-select">
+        <option value="">担当者：全員</option>
+      </select>
 
-        <div class="week-center">
-          <label for="weekMonday">対象週の月曜日</label>
+      <select id="weekdayFilter" class="toolbar-select compact-select">
+        <option value="">曜日：すべて</option>
+        <option value="月">月</option><option value="火">火</option>
+        <option value="水">水</option><option value="木">木</option>
+        <option value="金">金</option><option value="土">土</option>
+        <option value="日">日</option>
+      </select>
 
-          <div class="week-input-row">
-            <input id="weekMonday" type="date">
+      <select id="sortOrder" class="toolbar-select sort-select">
+        <option value="dateTime">並び替え：日付→時間</option>
+        <option value="dateStaffTime">日付→主担当→時間</option>
+        <option value="userDateTime">利用者→日付→時間</option>
+      </select>
 
-            <button
-              id="currentWeekButton"
-              class="secondary-button current-week-button"
-              type="button"
-            >
-              今週
-            </button>
-          </div>
+      <button id="instructionToggleButton" class="toolbar-button" type="button" aria-pressed="false">指示</button>
+      <button id="newShiftButton" class="primary-button compact-add-button" type="button">＋予定追加</button>
 
-          <strong id="weekRange"></strong>
-        </div>
-
-        <div class="week-side week-side-right">
-          <button
-            id="nextWeekButton"
-            class="secondary-button large-week-button"
-            type="button"
-          >
-            次の週
-          </button>
-        </div>
+      <div class="toolbar-summary">
+        <strong id="recordCount">0件</strong>
+        <span id="cacheStatus" class="cache-status"></span>
       </div>
     </section>
 
-    <!--
-      対象週エリアを折りたたんだときに表示する小さなバーです。
-      現在の対象期間だけは確認できるように残します。
-    -->
-    <section id="collapsedWeekBar" class="collapsed-week-bar hidden">
+    <section id="collapsedWeekBar" class="hidden">
       <strong id="collapsedWeekRange"></strong>
-
-      <button
-        id="expandWeekControlsButton"
-        class="secondary-button"
-        type="button"
-      >
-        表示する
-      </button>
+      <button id="expandWeekControlsButton" type="button">表示する</button>
     </section>
 
-    <!-- =======================================================
-         件数・処理メッセージ・端末保存状況
-         ======================================================= -->
-    <section class="summary-row">
-      <div class="summary-left">
-        <div class="record-summary">
-          <strong id="recordCount">0件</strong>
-          <span>の基本シフト</span>
-        </div>
+    <div id="messageArea" class="message-area hidden" role="status"></div>
 
-        <div class="filter-group">
-          <div class="staff-filter-area">
-            <label for="staffFilter">担当者</label>
-
-            <select id="staffFilter">
-              <option value="">全員</option>
-            </select>
-          </div>
-
-          <div class="weekday-filter-area">
-            <label for="weekdayFilter">曜日</label>
-
-            <select id="weekdayFilter">
-              <option value="">全曜日</option>
-              <option value="月">月</option>
-              <option value="火">火</option>
-              <option value="水">水</option>
-              <option value="木">木</option>
-              <option value="金">金</option>
-              <option value="土">土</option>
-              <option value="日">日</option>
-            </select>
-          </div>
-        </div>
-
-        <div
-          id="messageArea"
-          class="message-area hidden"
-          role="status"
-        ></div>
-      </div>
-
-      <div id="cacheStatus" class="cache-status"></div>
-    </section>
-
-    <!-- =======================================================
-         基本シフト一覧
-         ======================================================= -->
-    <section class="table-card">
-
-      <!-- 見出しの上に表示する横スクロールバー -->
+    <section class="table-card compact-table-card">
       <div id="topScroll" class="top-scroll" aria-label="表の横スクロール">
         <div id="topScrollInner" class="top-scroll-inner"></div>
       </div>
-
-      <!-- 表本体のスクロール領域 -->
       <div id="tableScroll" class="table-scroll">
-        <table class="shift-table">
+        <table class="shift-table compact-shift-table">
           <colgroup>
-            <col class="col-user">
-            <col class="col-date">
-            <col class="col-weekday">
-            <col class="col-time">
-            <col class="col-time">
-            <col class="col-service">
-            <col class="col-vehicle">
-            <col class="col-content">
-            <col class="col-destination">
-            <col class="col-note">
-            <col class="col-staff">
-            <col class="col-staff">
-            <col class="col-staff">
-            <col class="col-staff">
-            <col class="col-status">
-            <col class="col-publish">
+            <col class="col-date"><col class="col-weekday"><col class="col-time-range">
+            <col class="col-user"><col class="col-service"><col class="col-content">
+            <col class="col-staff"><col class="col-staff"><col class="col-staff"><col class="col-staff">
+            <col class="col-paid"><col class="col-vehicle"><col class="col-destination">
+            <col class="col-status"><col class="col-detail">
           </colgroup>
-
           <thead>
             <tr>
-              <th>
-                <div class="user-heading">
-                  <span>利用者</span>
-
-                  <button
-                    id="instructionToggleButton"
-                    class="instruction-toggle-button"
-                    type="button"
-                    aria-pressed="false"
-                  >
-                    指示
-                  </button>
-                </div>
-              </th>
               <th class="center-heading">日付</th>
-              <th class="center-heading">曜日</th>
-              <th class="center-heading">開始</th>
-              <th class="center-heading">終了</th>
-              <th class="center-heading">サービス</th>
-              <th class="center-heading">運送車両</th>
-              <th>支援内容</th>
-              <th>行き先</th>
-              <th>備考</th>
+              <th class="center-heading">曜</th>
+              <th class="center-heading">時間</th>
+              <th>利用者</th>
+              <th>サービス</th>
+              <th>内容</th>
               <th>主担当</th>
               <th>副担当</th>
               <th>担当3</th>
               <th>担当4</th>
+              <th class="center-heading">有償</th>
+              <th>車種</th>
+              <th>行き先</th>
               <th class="center-heading">状態</th>
-              <th class="center-heading">公開状態</th>
+              <th class="center-heading">詳細</th>
             </tr>
           </thead>
-
           <tbody id="shiftWeekBody"></tbody>
         </table>
       </div>
-
-      <div id="emptyArea" class="empty-area hidden">
-        この週の基本シフトはまだありません。
-      </div>
+      <div id="emptyArea" class="empty-area hidden">この週の基本シフトはまだありません。</div>
     </section>
   </main>
 
-	<!-- =========================================================
-	     新規シフト追加画面
-	     ========================================================= -->
-	<div
-	  id="newShiftModal"
-	  class="shift-modal hidden"
-	  role="dialog"
-	  aria-modal="true"
-	  aria-labelledby="newShiftModalTitle"
-	>
-	  <div class="shift-modal-backdrop"></div>
+  <!-- 詳細編集 -->
+  <div id="shiftDetailModal" class="shift-modal hidden" aria-hidden="true">
+    <div class="shift-modal-backdrop"></div>
+    <div class="shift-modal-dialog compact-detail-dialog">
+      <div class="shift-modal-header">
+        <h2>シフト詳細</h2>
+        <button id="closeDetailButton" class="modal-close-button" type="button">× 閉じる</button>
+      </div>
+      <form id="shiftDetailForm">
+        <input id="detailShiftId" type="hidden">
+        <div class="shift-modal-body detail-form-body">
+          <div class="detail-line detail-line-four">
+            <label>日付</label><input id="detailDate" type="date">
+            <label>曜日</label><input id="detailWeekday" type="text" readonly>
+            <label>開始</label><input id="detailStartTime" type="time">
+            <label>終了</label><input id="detailEndTime" type="time">
+          </div>
 
-	  <div class="shift-modal-card">
-	    <div class="shift-modal-header">
-	      <div>
-	        <div class="shift-modal-subtitle">
-	          基本シフト表から直接登録
-	        </div>
+          <div class="detail-line detail-line-user">
+            <label>利用者</label><input id="detailUser" type="text">
+            <label>サービス</label><input id="detailService" type="text">
+            <label>内容</label><input id="detailContent" type="text">
+          </div>
 
-	        <h2 id="newShiftModalTitle">
-	          新規シフト追加
-	        </h2>
-	      </div>
+          <div class="detail-line detail-line-staff">
+            <label>担当</label><select id="detailStaff1"></select>
+            <label>副</label><select id="detailStaff2"></select>
+            <label>3</label><select id="detailStaff3"></select>
+            <label>4</label><select id="detailStaff4"></select>
+          </div>
 
-	      <button
-	        id="closeNewShiftButton"
-	        class="shift-modal-close-button"
-	        type="button"
-	        aria-label="閉じる"
-	      >
-	        ×
-	      </button>
-	    </div>
+          <div class="detail-line detail-line-move">
+            <label>移動手段</label>
+            <select id="detailTransport">
+              <option value=""></option><option>徒歩</option><option>車</option>
+              <option>電車</option><option>バス</option><option>タクシー</option><option>その他</option>
+            </select>
+            <label>行き先</label><input id="detailDestination" type="text">
+            <label>有償</label>
+            <select id="detailPaid"><option value="">なし</option><option value="有">有</option></select>
+            <label>車種</label><input id="detailVehicle" type="text">
+          </div>
 
-	    <div class="shift-modal-notice">
-	      この登録内容は、基本シフトと依頼情報の両方へ反映されます。
-	      シフト規定値マスタには登録されません。
-	    </div>
+          <div class="detail-line detail-line-meet">
+            <label>待合せ</label><input id="detailMeeting" type="text">
+            <label>合流</label><input id="detailMeetingPoint" type="text">
+          </div>
 
-	    <form id="newShiftForm">
-	      <div class="new-shift-form-grid">
+          <div class="detail-line detail-line-full">
+            <label>簡易メモ</label><input id="detailSimpleMemo" type="text">
+          </div>
+          <div class="detail-line detail-line-full">
+            <label>詳細注意</label><textarea id="detailNote" rows="2"></textarea>
+          </div>
+          <div class="detail-line detail-line-full">
+            <label>備考</label><textarea id="detailRemarks" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="shift-modal-footer">
+          <button id="cancelDetailButton" class="secondary-button" type="button">取消</button>
+          <button id="saveDetailButton" class="primary-button" type="submit">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-	        <div class="new-shift-field">
-	          <label for="newShiftUser">
-	            利用者
-	            <span class="required-mark">必須</span>
-	          </label>
+  <!-- 既存の個別新規追加機能 -->
+  <div id="newShiftModal" class="shift-modal hidden" aria-hidden="true">
+    <div class="shift-modal-backdrop"></div>
+    <div class="shift-modal-dialog">
+      <div class="shift-modal-header">
+        <h2>予定追加</h2>
+        <button id="closeNewShiftButton" class="modal-close-button" type="button">× 閉じる</button>
+      </div>
+      <form id="newShiftForm">
+        <div class="shift-modal-body new-shift-grid">
+          <label>利用者</label><input id="newShiftUser" list="newShiftUserList" required>
+          <label>日付</label><input id="newShiftDate" type="date" required>
+          <label>開始</label><input id="newShiftStartTime" type="time" required>
+          <label>終了</label><input id="newShiftEndTime" type="time" required>
+          <label>サービス</label><input id="newShiftService" list="newShiftServiceList" required>
+          <label>車種</label><input id="newShiftVehicle">
+          <label>主担当</label><select id="newShiftStaff1"></select>
+          <label>副担当</label><select id="newShiftStaff2"></select>
+          <label>担当3</label><select id="newShiftStaff3"></select>
+          <label>担当4</label><select id="newShiftStaff4"></select>
+          <label>行き先</label><input id="newShiftDestination">
+          <label>待合せ</label><input id="newShiftMeeting">
+          <label>移動手段</label><input id="newShiftTransport">
+          <label>支援開始場所</label><input id="newShiftStartPlace">
+          <label>支援終了場所</label><input id="newShiftEndPlace">
+          <label>合流情報</label><input id="newShiftMeetingInfo">
+          <label>予約情報</label><input id="newShiftReservationInfo">
+          <label>支援内容</label><input id="newShiftSupport">
+          <label>当日の指示</label><input id="newShiftInstruction">
+          <label>詳細注意</label><textarea id="newShiftDetailNote"></textarea>
+          <label>簡易メモ</label><input id="newShiftSimpleMemo">
+          <label>備考</label><textarea id="newShiftNote"></textarea>
+          <div id="newShiftFormMessage" class="message-area hidden"></div>
+        </div>
+        <div class="shift-modal-footer">
+          <button id="cancelNewShiftButton" class="secondary-button" type="button">取消</button>
+          <button id="saveNewShiftButton" class="primary-button" type="submit">登録</button>
+        </div>
+      </form>
+      <datalist id="newShiftUserList"></datalist>
+      <datalist id="newShiftServiceList"></datalist>
+    </div>
+  </div>
 
-	          <input
-	            id="newShiftUser"
-	            name="user"
-	            type="text"
-	            list="newShiftUserList"
-	            autocomplete="off"
-	            required
-	          >
-
-	          <datalist id="newShiftUserList"></datalist>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftDate">
-	            日付
-	            <span class="required-mark">必須</span>
-	          </label>
-
-	          <input
-	            id="newShiftDate"
-	            name="date"
-	            type="date"
-	            required
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftStartTime">
-	            開始時刻
-	            <span class="required-mark">必須</span>
-	          </label>
-
-	          <input
-	            id="newShiftStartTime"
-	            name="startTime"
-	            type="time"
-	            step="300"
-	            required
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftEndTime">
-	            終了時刻
-	            <span class="required-mark">必須</span>
-	          </label>
-
-	          <input
-	            id="newShiftEndTime"
-	            name="endTime"
-	            type="time"
-	            step="300"
-	            required
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftService">
-	            サービス
-	            <span class="required-mark">必須</span>
-	          </label>
-
-	          <input
-	            id="newShiftService"
-	            name="service"
-	            type="text"
-	            list="newShiftServiceList"
-	            autocomplete="off"
-	            required
-	          >
-
-	          <datalist id="newShiftServiceList"></datalist>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftVehicle">
-	            有償運送車両
-	          </label>
-
-	          <input
-	            id="newShiftVehicle"
-	            name="vehicle"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftStaff1">
-	            主担当
-	          </label>
-
-	          <select
-	            id="newShiftStaff1"
-	            name="staff1"
-	          >
-	            <option value="">未定</option>
-	          </select>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftStaff2">
-	            副担当
-	          </label>
-
-	          <select
-	            id="newShiftStaff2"
-	            name="staff2"
-	          >
-	            <option value="">未定</option>
-	          </select>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftStaff3">
-	            担当3
-	          </label>
-
-	          <select
-	            id="newShiftStaff3"
-	            name="staff3"
-	          >
-	            <option value="">未定</option>
-	          </select>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftStaff4">
-	            担当4
-	          </label>
-
-	          <select
-	            id="newShiftStaff4"
-	            name="staff4"
-	          >
-	            <option value="">未定</option>
-	          </select>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftDestination">
-	            行き先
-	          </label>
-
-	          <input
-	            id="newShiftDestination"
-	            name="destination"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftMeeting">
-	            待合せ
-	          </label>
-
-	          <input
-	            id="newShiftMeeting"
-	            name="meeting"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftTransport">
-	            移動手段
-	          </label>
-
-	          <select
-	            id="newShiftTransport"
-	            name="transport"
-	          >
-	            <option value=""></option>
-	            <option value="徒歩">徒歩</option>
-	            <option value="車">車</option>
-	            <option value="電車">電車</option>
-	            <option value="バス">バス</option>
-	            <option value="タクシー">タクシー</option>
-	            <option value="その他">その他</option>
-	          </select>
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftStartPlace">
-	            支援開始場所
-	          </label>
-
-	          <input
-	            id="newShiftStartPlace"
-	            name="startPlace"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftEndPlace">
-	            支援終了場所
-	          </label>
-
-	          <input
-	            id="newShiftEndPlace"
-	            name="endPlace"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftMeetingInfo">
-	            合流情報
-	          </label>
-
-	          <input
-	            id="newShiftMeetingInfo"
-	            name="meetingInfo"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field">
-	          <label for="newShiftReservationInfo">
-	            予約情報
-	          </label>
-
-	          <input
-	            id="newShiftReservationInfo"
-	            name="reservationInfo"
-	            type="text"
-	          >
-	        </div>
-
-	        <div class="new-shift-field new-shift-field-wide">
-	          <label for="newShiftSupport">
-	            支援内容
-	          </label>
-
-	          <textarea
-	            id="newShiftSupport"
-	            name="support"
-	            rows="2"
-	          ></textarea>
-	        </div>
-
-	        <div class="new-shift-field new-shift-field-wide">
-	          <label for="newShiftInstruction">
-	            当日の指示
-	          </label>
-
-	          <textarea
-	            id="newShiftInstruction"
-	            name="instruction"
-	            rows="2"
-	          ></textarea>
-	        </div>
-
-	        <div class="new-shift-field new-shift-field-wide">
-	          <label for="newShiftDetailNote">
-	            詳細注意
-	          </label>
-
-	          <textarea
-	            id="newShiftDetailNote"
-	            name="detailNote"
-	            rows="2"
-	          ></textarea>
-	        </div>
-
-	        <div class="new-shift-field new-shift-field-wide">
-	          <label for="newShiftSimpleMemo">
-	            簡易表示メモ
-	          </label>
-
-	          <textarea
-	            id="newShiftSimpleMemo"
-	            name="simpleMemo"
-	            rows="2"
-	          ></textarea>
-	        </div>
-
-	        <div class="new-shift-field new-shift-field-full">
-	          <label for="newShiftNote">
-	            備考・依頼情報の特記事項
-	          </label>
-
-	          <textarea
-	            id="newShiftNote"
-	            name="note"
-	            rows="2"
-	          ></textarea>
-	        </div>
-
-	      </div>
-
-	      <div
-	        id="newShiftFormMessage"
-	        class="new-shift-form-message hidden"
-	        role="status"
-	      ></div>
-
-	      <div class="shift-modal-actions">
-	        <button
-	          id="cancelNewShiftButton"
-	          class="secondary-button"
-	          type="button"
-	        >
-	          キャンセル
-	        </button>
-
-	        <button
-	          id="saveNewShiftButton"
-	          class="primary-button"
-	          type="submit"
-	        >
-	          登録する
-	        </button>
-	      </div>
-	    </form>
-	  </div>
-	</div>
-
-  <script src="shift-week.js?v=20260812-1"></script>
+  <script src="shift-week.js?v=compact-v1"></script>
 </body>
 </html>
