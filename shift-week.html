@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>基本シフト表</title>
-  <link rel="stylesheet" href="shift-week.css?v=compact-v1">
+  <link rel="stylesheet" href="shift-week.css?v=compact-v2">
 </head>
 <body>
   <header class="app-header compact-header">
@@ -132,21 +132,50 @@
             <label>4</label><select id="detailStaff4"></select>
           </div>
 
-          <div class="detail-line detail-line-move">
+          <div class="detail-line detail-line-move-primary">
             <label>移動手段</label>
             <select id="detailTransport">
               <option value=""></option><option>徒歩</option><option>車</option>
               <option>電車</option><option>バス</option><option>タクシー</option><option>その他</option>
             </select>
-            <label>行き先</label><input id="detailDestination" type="text">
-            <label>有償</label>
-            <select id="detailPaid"><option value="">なし</option><option value="有">有</option></select>
-            <label>車種</label><input id="detailVehicle" type="text">
+
+            <label>行き先</label>
+            <input id="detailDestination" type="text">
+
+            <label>待合せ</label>
+            <input id="detailMeeting" type="text">
           </div>
 
-          <div class="detail-line detail-line-meet">
-            <label>待合せ</label><input id="detailMeeting" type="text">
-            <label>合流</label><input id="detailMeetingPoint" type="text">
+          <div class="detail-line detail-line-transport">
+            <label>有償</label>
+            <select id="detailTransportType">
+              <option value=""></option>
+              <option value="有償">有償</option>
+              <option value="送迎">送迎</option>
+            </select>
+
+            <label>車種</label>
+            <input id="detailVehicle" type="text">
+
+            <label>運転手</label>
+            <select id="detailDriverNo">
+              <option value=""></option>
+              <option value="1">1</option><option value="2">2</option>
+              <option value="3">3</option><option value="4">4</option>
+            </select>
+
+            <label>送迎</label>
+            <select id="detailPickupStaffNo">
+              <option value=""></option>
+              <option value="1">1</option><option value="2">2</option>
+              <option value="3">3</option><option value="4">4</option>
+            </select>
+
+            <label>送迎行先</label>
+            <input id="detailPickupDestination" type="text">
+
+            <label>合流</label>
+            <input id="detailMeetingPoint" type="text">
           </div>
 
           <div class="detail-line detail-line-full">
@@ -211,6 +240,6 @@
     </div>
   </div>
 
-  <script src="shift-week.js?v=compact-v1"></script>
+  <script src="shift-week.js?v=compact-v2"></script>
 </body>
 </html>
