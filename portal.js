@@ -572,6 +572,104 @@ let todayStaffShifts = [];
 const ACTION_RECORD_PENDING_KEY =
   "staffPortalPendingActionRecordSessionsV1";
 
+const ACTION_RECORD_REVIEW_KEY =
+  "staffPortalActionRecordReviewV1";
+
+function readActionRecordReview_() {
+  try {
+    const parsed =
+      JSON.parse(
+        localStorage.getItem(
+          ACTION_RECORD_REVIEW_KEY
+        ) || "[]"
+      );
+
+    return Array.isArray(parsed)
+      ? parsed
+      : [];
+
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeActionRecordReview_(list) {
+  localStorage.setItem(
+    ACTION_RECORD_REVIEW_KEY,
+    JSON.stringify(
+      Array.isArray(list)
+        ? list.slice(-100)
+        : []
+    )
+  );
+
+  updateStaffActionSyncStatus_();
+}
+
+function moveActionRecordSessionToReview_(
+  session,
+  error
+) {
+  const list =
+    readActionRecordReview_();
+
+  const item = {
+    ...(session || {}),
+    reviewAt:
+      new Date().toISOString(),
+    reviewReason:
+      error && error.message
+        ? error.message
+        : String(error || ""),
+    reviewStatus:
+      "要確認"
+  };
+
+  const key =
+    String(
+      item.sessionId ||
+      item.shiftId ||
+      ""
+    );
+
+  const filtered =
+    list.filter(existing =>
+      String(
+        existing.sessionId ||
+        existing.shiftId ||
+        ""
+      ) !== key
+    );
+
+  filtered.push(item);
+
+  writeActionRecordReview_(
+    filtered
+  );
+}
+
+function isLegacyActionRecordStateError_(error) {
+  const message =
+    String(
+      error && error.message
+        ? error.message
+        : error || ""
+    );
+
+  return (
+    message.includes(
+      "現在は待機中ではありません"
+    ) ||
+    message.includes(
+      "終了または取消済み"
+    ) ||
+    message.includes(
+      "組合せが一致しません"
+    )
+  );
+}
+
+
 const ACTION_RECORD_COMPLETED_KEY =
   "staffPortalCompletedActionRecordV1";
 
@@ -732,22 +830,122 @@ function actionRecordOperationId_() {
   );
 }
 
+
+function getActionRecordEventOperationId_(
+  session,
+  event,
+  index
+) {
+  if (event.operationId) {
+    return event.operationId;
+  }
+
+  const base =
+    String(
+      session.sessionId ||
+      session.shiftId ||
+      "SESSION"
+    )
+      .replace(
+        /[^A-Za-z0-9_-]/g,
+        ""
+      )
+      .slice(-40);
+
+  event.operationId =
+    "ARS-" +
+    base +
+    "-" +
+    String(index + 1)
+      .padStart(3, "0");
+
+  return event.operationId;
+}
+
+function persistPendingActionRecordSession_(
+  session
+) {
+  const current =
+    readPendingActionRecordSessions_();
+
+  const key =
+    String(
+      session.sessionId ||
+      session.shiftId ||
+      ""
+    );
+
+  const next =
+    current.map(item => {
+      const itemKey =
+        String(
+          item.sessionId ||
+          item.shiftId ||
+          ""
+        );
+
+      return itemKey === key
+        ? session
+        : item;
+    });
+
+  writePendingActionRecordSessions_(
+    next
+  );
+}
+
+
 async function syncOneActionRecordSession_(
   session
 ) {
   const clientId =
-    await resolveActionRecordClientId_(
-      session.clientName
+    session.syncState &&
+    session.syncState.clientId
+      ? session.syncState.clientId
+      : await resolveActionRecordClientId_(
+          session.clientName
+        );
+
+  session.syncState =
+    session.syncState || {};
+
+  session.syncState.clientId =
+    clientId;
+
+  let outingResultId =
+    session.syncState.outingResultId || "";
+
+  let routeId =
+    session.syncState.routeId || "";
+
+  let previousDriverId =
+    session.syncState.previousDriverId || "";
+
+  let nextEventIndex =
+    Number(
+      session.syncState.nextEventIndex || 0
     );
 
-  let outingResultId = "";
-  let routeId = "";
-  let previousDriverId = "";
+  const events =
+    Array.isArray(session.events)
+      ? session.events
+      : [];
 
   for (
-    const event of
-      session.events || []
+    let index = nextEventIndex;
+    index < events.length;
+    index++
   ) {
+    const event =
+      events[index] || {};
+
+    const operationId =
+      getActionRecordEventOperationId_(
+        session,
+        event,
+        index
+      );
+
     if (event.type === "start") {
       const result =
         await callActionRecordApi_(
@@ -795,7 +993,7 @@ async function syncOneActionRecordSession_(
               registerType:
                 "ポータル",
               operationId:
-                actionRecordOperationId_()
+                operationId
             }
           }
         );
@@ -811,18 +1009,19 @@ async function syncOneActionRecordSession_(
       }
 
       outingResultId =
-        result.outingResultId;
+        result.outingResultId ||
+        outingResultId;
 
       routeId =
-        result.routeId;
+        result.routeId ||
+        routeId;
 
       previousDriverId =
         event.driverId || "";
 
-      continue;
-    }
-
-    if (event.type === "arrival") {
+    } else if (
+      event.type === "arrival"
+    ) {
       const result =
         await callActionRecordApi_(
           "outing-arrive",
@@ -846,7 +1045,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                actionRecordOperationId_()
+                operationId
             }
           }
         );
@@ -861,10 +1060,7 @@ async function syncOneActionRecordSession_(
         );
       }
 
-      continue;
-    }
-
-    if (
+    } else if (
       event.type ===
         "nextDeparture"
     ) {
@@ -901,7 +1097,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                actionRecordOperationId_()
+                operationId
             }
           }
         );
@@ -917,15 +1113,15 @@ async function syncOneActionRecordSession_(
       }
 
       routeId =
-        result.routeId;
+        result.routeId ||
+        routeId;
 
       previousDriverId =
         event.driverId || "";
 
-      continue;
-    }
-
-    if (event.type === "home") {
+    } else if (
+      event.type === "home"
+    ) {
       const result =
         await callActionRecordApi_(
           "outing-arrive",
@@ -950,7 +1146,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                actionRecordOperationId_()
+                operationId
             }
           }
         );
@@ -965,10 +1161,7 @@ async function syncOneActionRecordSession_(
         );
       }
 
-      continue;
-    }
-
-    if (
+    } else if (
       event.type === "finishCurrent" ||
       event.type === "forceFinish"
     ) {
@@ -985,7 +1178,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                actionRecordOperationId_()
+                operationId
             }
           }
         );
@@ -1000,58 +1193,58 @@ async function syncOneActionRecordSession_(
         );
       }
     }
-  }
 
-  let history = [];
+    /*
+     * 1イベント成功するたびにチェックポイントを保存。
+     * 次回再送は成功済みイベントを繰り返しません。
+     */
+    session.syncState = {
+      ...session.syncState,
+      outingResultId:
+        outingResultId,
+      routeId:
+        routeId,
+      previousDriverId:
+        previousDriverId,
+      nextEventIndex:
+        index + 1,
+      lastSyncedAt:
+        new Date().toISOString()
+    };
 
-  try {
-    history =
-      JSON.parse(
-        localStorage.getItem(
-          "staffPortalLocalActionHistoryV1"
-        ) || "[]"
-      );
-  } catch (error) {}
-
-  const historyIds =
-    new Set(
-      session.historyEventIds || []
+    persistPendingActionRecordSession_(
+      session
     );
-
-  for (const event of history) {
-    if (
-      !historyIds.has(event.id)
-    ) {
-      continue;
-    }
-
-    const result =
-      await postGas({
-        action:
-          "recordPortalHistoryEvent",
-        event
-      });
-
-    if (
-      !result ||
-      result.success !== true
-    ) {
-      throw new Error(
-        result?.message ||
-        "行動履歴を同期できませんでした"
-      );
-    }
-
-    event.syncPending =
-      false;
   }
 
-  localStorage.setItem(
-    "staffPortalLocalActionHistoryV1",
-    JSON.stringify(
-      history.slice(-400)
-    )
+  /*
+   * ポータル履歴のサーバー保存は、
+   * 現在のSTAFF_PORTAL GASに
+   * recordPortalHistoryEventが未実装でも
+   * 行動記録本体の同期を失敗扱いにしません。
+   *
+   * ローカル履歴は端末に残るため、
+   * 後で履歴APIを整備した際に救済できます。
+   */
+  session.syncState = {
+    ...session.syncState,
+    actionRecordSynced:
+      true,
+    completedAt:
+      new Date().toISOString()
+  };
+
+  persistPendingActionRecordSession_(
+    session
   );
+
+  return {
+    success: true,
+    outingResultId:
+      outingResultId,
+    routeId:
+      routeId
+  };
 }
 
 async function flushPendingActionRecordSessions_() {
@@ -1059,11 +1252,6 @@ async function flushPendingActionRecordSessions_() {
     return;
   }
 
-  /*
-   * 通常操作が残っていても、行動記録まで完全に止めない。
-   * ただし同一シフトの開始/終了順序を壊さないよう、
-   * 行動記録セッション単位で独立して再送します。
-   */
   if (
     typeof navigator !==
       "undefined" &&
@@ -1081,24 +1269,42 @@ async function flushPendingActionRecordSessions_() {
     return;
   }
 
-  actionRecordQueueFlushing = true;
+  actionRecordQueueFlushing =
+    true;
 
   const failedSessions = [];
 
   try {
-    for (const session of pending) {
+    for (
+      const session of pending
+    ) {
       try {
         await syncOneActionRecordSession_(
           session
         );
 
       } catch (error) {
-        console.warn(
-          "行動記録セッションは次回再送します",
-          session &&
-            session.sessionId,
-          error
-        );
+        /*
+         * v49以前のセッションで途中までサーバー登録済みなのに
+         * チェックポイントが無いものは、
+         * 再送すると「現在は待機中ではありません」等になることがあります。
+         *
+         * これを永遠に「未送信」として残さず、
+         * PC訂正予定の「要確認」へ退避します。
+         */
+        if (
+          !session.syncState &&
+          isLegacyActionRecordStateError_(
+            error
+          )
+        ) {
+          moveActionRecordSessionToReview_(
+            session,
+            error
+          );
+
+          continue;
+        }
 
         failedSessions.push(
           {
@@ -1122,16 +1328,14 @@ async function flushPendingActionRecordSessions_() {
       }
     }
 
-    /*
-     * 成功したセッションだけ削除し、
-     * 失敗したものだけ残します。
-     */
     writePendingActionRecordSessions_(
       failedSessions
     );
 
   } finally {
-    actionRecordQueueFlushing = false;
+    actionRecordQueueFlushing =
+      false;
+
     updateStaffActionSyncStatus_();
   }
 }
@@ -1197,6 +1401,10 @@ function updateStaffActionSyncStatus_() {
     staffActionCount +
     actionRecordCount;
 
+  const reviewCount =
+    readActionRecordReview_()
+      .length;
+
   el.classList.remove(
     "synced",
     "pending",
@@ -1205,9 +1413,19 @@ function updateStaffActionSyncStatus_() {
   );
 
   if (count === 0) {
-    el.classList.add("synced");
-    el.textContent = "✓ 同期済み";
-    el.title = "";
+    if (reviewCount > 0) {
+      el.classList.add("warning");
+      el.textContent =
+        "✓ 同期済み　要確認 " +
+        reviewCount +
+        "件";
+      el.title =
+        "古い未送信データのうち、サーバー状態と一致しないものを要確認へ退避しています。";
+    } else {
+      el.classList.add("synced");
+      el.textContent = "✓ 同期済み";
+      el.title = "";
+    }
   } else {
     const detail = [];
 
@@ -1650,6 +1868,33 @@ function getPendingSyncErrorDetails_() {
             : "エラー内容: まだ取得できていません",
           "再送回数: " +
             Number(session.retryCount || 0)
+        ]
+          .filter(Boolean)
+          .join("\n")
+      );
+    }
+  );
+
+  const reviews =
+    readActionRecordReview_();
+
+  reviews.forEach(
+    (session, index) => {
+      lines.push(
+        [
+          "【要確認 " +
+            (index + 1) +
+            "】",
+          session.clientName || "",
+          session.service || "",
+          "シフトID: " +
+            (session.shiftId || ""),
+          "理由: " +
+            (
+              session.reviewReason ||
+              "状態不一致"
+            ),
+          "PC訂正対象"
         ]
           .filter(Boolean)
           .join("\n")
