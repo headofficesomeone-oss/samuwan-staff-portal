@@ -233,50 +233,180 @@
     </div>
   </div>
 
-  <!-- 既存の個別新規追加機能 -->
+  <!-- 個別新規追加：詳細ポップアップと同じレイアウト -->
   <div id="newShiftModal" class="shift-modal hidden" aria-hidden="true">
     <div class="shift-modal-backdrop"></div>
-    <div class="shift-modal-dialog">
+    <div class="shift-modal-dialog compact-detail-dialog">
       <div class="shift-modal-header">
         <h2>予定追加</h2>
         <button id="closeNewShiftButton" class="modal-close-button" type="button">× 閉じる</button>
       </div>
+
       <form id="newShiftForm">
-        <div class="shift-modal-body new-shift-grid">
-          <label>利用者</label><input id="newShiftUser" list="newShiftUserList" required>
-          <label>日付</label><input id="newShiftDate" type="date" required>
-          <label>開始</label><input id="newShiftStartTime" type="time" required>
-          <label>終了</label><input id="newShiftEndTime" type="time" required>
-          <label>サービス</label><input id="newShiftService" list="newShiftServiceList" required>
-          <label>車種</label><input id="newShiftVehicle">
-          <label>主担当</label><select id="newShiftStaff1"></select>
-          <label>副担当</label><select id="newShiftStaff2"></select>
-          <label>担当3</label><select id="newShiftStaff3"></select>
-          <label>担当4</label><select id="newShiftStaff4"></select>
-          <label>行き先</label><input id="newShiftDestination">
-          <label>待合せ</label><input id="newShiftMeeting">
-          <label>移動手段</label><input id="newShiftTransport">
-          <label>支援開始場所</label><input id="newShiftStartPlace">
-          <label>支援終了場所</label><input id="newShiftEndPlace">
-          <label>合流情報</label><input id="newShiftMeetingInfo">
-          <label>予約情報</label><input id="newShiftReservationInfo">
-          <label>支援内容</label><input id="newShiftSupport">
-          <label>当日の指示</label><input id="newShiftInstruction">
-          <label>詳細注意</label><textarea id="newShiftDetailNote"></textarea>
-          <label>簡易メモ</label><input id="newShiftSimpleMemo">
-          <label>備考</label><textarea id="newShiftNote"></textarea>
+        <div class="shift-modal-body detail-form-body">
+
+          <div class="detail-line detail-line-four">
+            <label>日付</label>
+            <input id="newShiftDate" type="date" required>
+
+            <label>曜日</label>
+            <input id="newShiftWeekday" type="text" readonly>
+
+            <label>開始</label>
+            <input id="newShiftStartTime" type="time" required>
+
+            <label>終了</label>
+            <input id="newShiftEndTime" type="time" required>
+          </div>
+
+          <div class="detail-line detail-line-user">
+            <label>利用者</label>
+            <input id="newShiftUser" list="newShiftUserList" required>
+
+            <label>サービス</label>
+            <input id="newShiftService" list="newShiftServiceList" required>
+
+            <label>内容</label>
+            <input id="newShiftContent" type="text">
+          </div>
+
+          <div class="detail-line detail-line-staff">
+            <label>担当</label>
+            <select id="newShiftStaff1"></select>
+
+            <label>副</label>
+            <select id="newShiftStaff2"></select>
+
+            <label>3</label>
+            <select id="newShiftStaff3"></select>
+
+            <label>4</label>
+            <select id="newShiftStaff4"></select>
+          </div>
+
+          <div class="detail-line detail-line-move">
+            <label>移動手段</label>
+            <select id="newShiftTransport">
+              <option value=""></option>
+              <option>徒歩</option>
+              <option>公共交通</option>
+              <option>有償運送</option>
+              <option>自家用車</option>
+              <option>その他</option>
+            </select>
+
+            <label>行き先</label>
+            <input id="newShiftDestination" type="text">
+
+            <label>待合せ</label>
+            <input id="newShiftMeeting" type="text">
+
+            <label>合流</label>
+            <input id="newShiftMeetingPoint" type="text">
+          </div>
+
+          <div class="transport-section">
+            <div class="transport-title">有償運送</div>
+
+            <div class="paid-direction-row">
+              <div class="direction-label">行き</div>
+              <label>時刻</label>
+              <input id="newShiftPaidGoTime" type="time">
+
+              <label>出発地</label>
+              <input id="newShiftPaidGoFrom" type="text">
+
+              <label>運転手</label>
+              <select id="newShiftPaidGoDriverNo">
+                <option value=""></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+
+              <label>車種</label>
+              <input id="newShiftPaidGoVehicle" type="text">
+            </div>
+
+            <div class="paid-direction-row">
+              <div class="direction-label">帰り</div>
+              <label>時刻</label>
+              <input id="newShiftPaidReturnTime" type="time">
+
+              <label>出発地</label>
+              <input id="newShiftPaidReturnFrom" type="text">
+
+              <label>運転手</label>
+              <select id="newShiftPaidReturnDriverNo">
+                <option value=""></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+
+              <label>車種</label>
+              <input id="newShiftPaidReturnVehicle" type="text">
+            </div>
+          </div>
+
+          <div class="transport-section pickup-inline-section">
+            <div class="pickup-inline-row">
+              <div class="pickup-title-inline">送迎</div>
+
+              <label>時刻</label>
+              <input id="newShiftPickupTime" type="time">
+
+              <label>出発地</label>
+              <input id="newShiftPickupFrom" type="text">
+
+              <label>到着地</label>
+              <input id="newShiftPickupTo" type="text">
+
+              <label>運転手</label>
+              <select id="newShiftPickupDriverNo">
+                <option value=""></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+
+              <label>車種</label>
+              <input id="newShiftPickupVehicle" type="text">
+            </div>
+          </div>
+
+          <div class="detail-line detail-line-full">
+            <label>簡易メモ</label>
+            <input id="newShiftSimpleMemo" type="text">
+          </div>
+
+          <div class="detail-line detail-line-full">
+            <label>詳細注意</label>
+            <textarea id="newShiftDetailNote" rows="2"></textarea>
+          </div>
+
+          <div class="detail-line detail-line-full">
+            <label>備考</label>
+            <textarea id="newShiftNote" rows="2"></textarea>
+          </div>
+
           <div id="newShiftFormMessage" class="message-area hidden"></div>
         </div>
+
         <div class="shift-modal-footer">
           <button id="cancelNewShiftButton" class="secondary-button" type="button">取消</button>
           <button id="saveNewShiftButton" class="primary-button" type="submit">登録</button>
         </div>
       </form>
+
       <datalist id="newShiftUserList"></datalist>
       <datalist id="newShiftServiceList"></datalist>
     </div>
   </div>
 
-  <script src="shift-week.js?v=compact-transport-v1"></script>
+  <script src="shift-week.js?v=compact-transport-v2"></script>
 </body>
 </html>

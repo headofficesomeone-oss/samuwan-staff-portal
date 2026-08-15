@@ -188,6 +188,10 @@ function bindScreenEvents() {
 	document
 	  .getElementById("newShiftForm")
 	  .addEventListener("submit", saveNewShiftFromForm);
+
+  document
+    .getElementById("newShiftDate")
+    .addEventListener("change", syncNewShiftWeekdayFromDate);
   
   document
     .getElementById("createButton")
@@ -2007,12 +2011,43 @@ function openNewShiftModal() {
   document.getElementById("newShiftDate").value =
     weekMonday || "";
 
+  syncNewShiftWeekdayFromDate();
+
   modal.classList.remove("hidden");
   document.body.classList.add("shift-modal-open");
 
   document
     .getElementById("newShiftUser")
     .focus();
+}
+
+
+
+function syncNewShiftWeekdayFromDate() {
+  const date =
+    parseLocalDate(
+      document
+        .getElementById("newShiftDate")
+        .value
+    );
+
+  const weekday =
+    document.getElementById(
+      "newShiftWeekday"
+    );
+
+  if (!weekday) return;
+
+  if (!date) {
+    weekday.value = "";
+    return;
+  }
+
+  const labels =
+    ["日", "月", "火", "水", "木", "金", "土"];
+
+  weekday.value =
+    labels[date.getDay()];
 }
 
 
@@ -2258,6 +2293,31 @@ async function saveNewShiftFromForm(event) {
  * 入力画面から登録内容を取得します。
  */
 function getNewShiftFormData() {
+  const content =
+    getNewShiftInputValue(
+      "newShiftContent"
+    );
+
+  const meetingPoint =
+    getNewShiftInputValue(
+      "newShiftMeetingPoint"
+    );
+
+  const paidGoVehicle =
+    getNewShiftInputValue(
+      "newShiftPaidGoVehicle"
+    );
+
+  const paidReturnVehicle =
+    getNewShiftInputValue(
+      "newShiftPaidReturnVehicle"
+    );
+
+  const pickupVehicle =
+    getNewShiftInputValue(
+      "newShiftPickupVehicle"
+    );
+
   return {
     weekMonday:
       document
@@ -2272,6 +2332,11 @@ function getNewShiftFormData() {
     date:
       getNewShiftInputValue(
         "newShiftDate"
+      ),
+
+    weekday:
+      getNewShiftInputValue(
+        "newShiftWeekday"
       ),
 
     startTime:
@@ -2289,10 +2354,8 @@ function getNewShiftFormData() {
         "newShiftService"
       ),
 
-    vehicle:
-      getNewShiftInputValue(
-        "newShiftVehicle"
-      ),
+    content:
+      content,
 
     staff1:
       getNewShiftInputValue(
@@ -2314,6 +2377,11 @@ function getNewShiftFormData() {
         "newShiftStaff4"
       ),
 
+    transport:
+      getNewShiftInputValue(
+        "newShiftTransport"
+      ),
+
     destination:
       getNewShiftInputValue(
         "newShiftDestination"
@@ -2324,39 +2392,71 @@ function getNewShiftFormData() {
         "newShiftMeeting"
       ),
 
-    transport:
+    meetingPoint:
+      meetingPoint,
+
+    paidGoTime:
       getNewShiftInputValue(
-        "newShiftTransport"
+        "newShiftPaidGoTime"
       ),
 
-    startPlace:
+    paidGoFrom:
       getNewShiftInputValue(
-        "newShiftStartPlace"
+        "newShiftPaidGoFrom"
       ),
 
-    endPlace:
+    paidGoDriverNo:
       getNewShiftInputValue(
-        "newShiftEndPlace"
+        "newShiftPaidGoDriverNo"
       ),
 
-    meetingInfo:
+    paidGoVehicle:
+      paidGoVehicle,
+
+    paidReturnTime:
       getNewShiftInputValue(
-        "newShiftMeetingInfo"
+        "newShiftPaidReturnTime"
       ),
 
-    reservationInfo:
+    paidReturnFrom:
       getNewShiftInputValue(
-        "newShiftReservationInfo"
+        "newShiftPaidReturnFrom"
       ),
 
-    support:
+    paidReturnDriverNo:
       getNewShiftInputValue(
-        "newShiftSupport"
+        "newShiftPaidReturnDriverNo"
       ),
 
-    instruction:
+    paidReturnVehicle:
+      paidReturnVehicle,
+
+    pickupTime:
       getNewShiftInputValue(
-        "newShiftInstruction"
+        "newShiftPickupTime"
+      ),
+
+    pickupFrom:
+      getNewShiftInputValue(
+        "newShiftPickupFrom"
+      ),
+
+    pickupTo:
+      getNewShiftInputValue(
+        "newShiftPickupTo"
+      ),
+
+    pickupDriverNo:
+      getNewShiftInputValue(
+        "newShiftPickupDriverNo"
+      ),
+
+    pickupVehicle:
+      pickupVehicle,
+
+    simpleMemo:
+      getNewShiftInputValue(
+        "newShiftSimpleMemo"
       ),
 
     detailNote:
@@ -2364,15 +2464,25 @@ function getNewShiftFormData() {
         "newShiftDetailNote"
       ),
 
-    simpleMemo:
-      getNewShiftInputValue(
-        "newShiftSimpleMemo"
-      ),
-
     note:
       getNewShiftInputValue(
         "newShiftNote"
-      )
+      ),
+
+    /*
+     * 旧DIRECT_CREATEとの互換用。
+     * 新レイアウトでは詳細ポップアップと項目を統一しています。
+     */
+    support:
+      content,
+
+    meetingInfo:
+      meetingPoint,
+
+    vehicle:
+      paidGoVehicle ||
+      paidReturnVehicle ||
+      pickupVehicle
   };
 }
 

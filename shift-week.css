@@ -101,3 +101,8 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}button,
   width:64px;
   min-width:64px;
 }
+
+#newShiftFormMessage{
+  margin:0;
+  width:100%;
+}
