@@ -1404,6 +1404,70 @@ function shouldMoveOldPendingSessionToReview_(
   );
 }
 
+
+async function checkCompletedStaffActionOnServer_(
+  session
+) {
+  if (
+    !session ||
+    !session.shiftId ||
+    !session.employeeId
+  ) {
+    return {
+      success: false,
+      completed: false,
+      reason: "確認情報不足"
+    };
+  }
+
+  try {
+    const result =
+      await postGas({
+        action:
+          "checkStaffActionCompleted",
+        shiftId:
+          session.shiftId,
+        employeeId:
+          session.employeeId,
+        employeeName:
+          session.employeeName || "",
+        clientName:
+          session.clientName || "",
+        supportDate:
+          session.supportDate || ""
+      });
+
+    return {
+      success:
+        !!(
+          result &&
+          result.success === true
+        ),
+      completed:
+        !!(
+          result &&
+          result.success === true &&
+          result.completed === true
+        ),
+      reason:
+        result && result.reason
+          ? String(result.reason)
+          : ""
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      completed: false,
+      reason:
+        error && error.message
+          ? error.message
+          : String(error || "")
+    };
+  }
+}
+
+
 async function flushPendingActionRecordSessions_(
   options = {}
 ) {
@@ -1436,6 +1500,30 @@ async function flushPendingActionRecordSessions_(
 
   try {
     for (const session of pending) {
+      /*
+       * まずサーバー側を確認します。
+       * STAFF_WORK_STATUSで同じシフトID + 従業員IDが
+       * すでに終了済みなら、端末の旧行動記録セッションは
+       * 再送する意味がないため未送信キューから整理します。
+       */
+      const completedCheck =
+        await checkCompletedStaffActionOnServer_(
+          session
+        );
+
+      if (
+        completedCheck.success &&
+        completedCheck.completed
+      ) {
+        console.info(
+          "サーバー側で終了済みのため未送信を整理:",
+          session.shiftId,
+          session.employeeId
+        );
+
+        continue;
+      }
+
       /*
        * 旧データの無限再送を止めます。
        * SW000054のように前日以前で、
@@ -2120,6 +2208,47 @@ function getPendingSyncErrorDetails_() {
 }
 
 
+
+async function cleanupResolvedActionRecordReviews_() {
+  const reviews =
+    readActionRecordReview_();
+
+  if (!reviews.length) {
+    return 0;
+  }
+
+  const unresolved = [];
+  let removed = 0;
+
+  for (const session of reviews) {
+    const check =
+      await checkCompletedStaffActionOnServer_(
+        session
+      );
+
+    if (
+      check.success &&
+      check.completed
+    ) {
+      removed++;
+      continue;
+    }
+
+    unresolved.push(
+      session
+    );
+  }
+
+  if (removed > 0) {
+    writeActionRecordReview_(
+      unresolved
+    );
+  }
+
+  return removed;
+}
+
+
 function showPendingSyncErrorDetails_() {
   const lines =
     getPendingSyncErrorDetails_();
@@ -2175,22 +2304,19 @@ function startStaffActionQueueSync_() {
    * 正常な未送信はそのまま再送されます。
    */
   setTimeout(
-    () => {
-      flushStaffActionQueue_()
-        .catch(error =>
-          console.warn(
-            "起動時の操作同期に失敗",
-            error
-          )
+    async () => {
+      try {
+        await flushStaffActionQueue_();
+        await flushPendingActionRecordSessions_();
+        await cleanupResolvedActionRecordReviews_();
+      } catch (error) {
+        console.warn(
+          "起動時の同期整理に失敗",
+          error
         );
-
-      flushPendingActionRecordSessions_()
-        .catch(error =>
-          console.warn(
-            "起動時の行動記録同期に失敗",
-            error
-          )
-        );
+      } finally {
+        updateStaffActionSyncStatus_();
+      }
     },
     800
   );
@@ -2208,7 +2334,18 @@ function startStaffActionQueueSync_() {
     syncStatus.style.cursor = "pointer";
     syncStatus.addEventListener(
       "click",
-      () => {
+      async () => {
+        try {
+          await cleanupResolvedActionRecordReviews_();
+        } catch (error) {
+          console.warn(
+            "要確認整理に失敗",
+            error
+          );
+        }
+
+        updateStaffActionSyncStatus_();
+
         const pendingCount =
           readStaffActionQueue_().length +
           readPendingActionRecordSessions_().length;
@@ -2216,11 +2353,6 @@ function startStaffActionQueueSync_() {
         const reviewCount =
           readActionRecordReview_().length;
 
-        /*
-         * タップは詳細確認だけにします。
-         * タップした瞬間に再送→alertを繰り返さないようにします。
-         * 再送自体はバックグラウンドとonline復帰時に行います。
-         */
         if (
           pendingCount > 0 ||
           reviewCount > 0
