@@ -143,8 +143,8 @@ function bindScreenEvents() {
     .addEventListener("change", syncDetailWeekdayFromDate);
 
   document
-    .getElementById("detailTransportType")
-    .addEventListener("change", updateDetailTransportState);
+    .getElementById("detailPaid")
+    .addEventListener("change", updateDetailPaidState);
 
   document
     .getElementById("instructionToggleButton")
@@ -1154,29 +1154,11 @@ function openShiftDetailModal(
       item.vehicle || "";
 
   document
-    .getElementById("detailTransportType")
+    .getElementById("detailPaid")
     .value =
-      item.transportType ||
-      (
-        String(item.vehicle || "").trim()
-          ? "有償"
-          : ""
-      );
-
-  document
-    .getElementById("detailDriverNo")
-    .value =
-      String(item.driverNo || "");
-
-  document
-    .getElementById("detailPickupStaffNo")
-    .value =
-      String(item.pickupStaffNo || "");
-
-  document
-    .getElementById("detailPickupDestination")
-    .value =
-      item.pickupDestination || "";
+      String(item.vehicle || "").trim()
+        ? "有"
+        : "";
 
   document
     .getElementById("detailMeeting")
@@ -1205,7 +1187,7 @@ function openShiftDetailModal(
     .value =
       item.note || "";
 
-  updateDetailTransportState();
+  updateDetailPaidState();
 
   document
     .getElementById("shiftDetailModal")
@@ -1250,32 +1232,22 @@ function syncDetailWeekdayFromDate() {
 }
 
 
-function updateDetailTransportState() {
-  const transportType =
+function updateDetailPaidState() {
+  const paid =
     document
-      .getElementById("detailTransportType")
+      .getElementById("detailPaid")
       .value;
 
-  const enabled =
-    transportType === "有償" ||
-    transportType === "送迎";
+  const vehicle =
+    document
+      .getElementById("detailVehicle");
 
-  [
-    "detailVehicle",
-    "detailDriverNo",
-    "detailPickupStaffNo",
-    "detailPickupDestination"
-  ].forEach(id => {
-    const element =
-      document.getElementById(id);
+  vehicle.disabled =
+    paid !== "有";
 
-    element.disabled =
-      !enabled;
-
-    if (!enabled) {
-      element.value = "";
-    }
-  });
+  if (paid !== "有") {
+    vehicle.value = "";
+  }
 }
 
 
@@ -1326,16 +1298,10 @@ async function saveShiftDetailModal(
       document.getElementById("detailTransport").value,
     destination:
       document.getElementById("detailDestination").value.trim(),
-    transportType:
-      document.getElementById("detailTransportType").value,
     vehicle:
-      document.getElementById("detailVehicle").value.trim(),
-    driverNo:
-      document.getElementById("detailDriverNo").value,
-    pickupStaffNo:
-      document.getElementById("detailPickupStaffNo").value,
-    pickupDestination:
-      document.getElementById("detailPickupDestination").value.trim(),
+      document.getElementById("detailPaid").value === "有"
+        ? document.getElementById("detailVehicle").value.trim()
+        : "",
     meeting:
       document.getElementById("detailMeeting").value.trim(),
     meetingPoint:
