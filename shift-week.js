@@ -143,10 +143,6 @@ function bindScreenEvents() {
     .addEventListener("change", syncDetailWeekdayFromDate);
 
   document
-    .getElementById("detailPaid")
-    .addEventListener("change", updateDetailPaidState);
-
-  document
     .getElementById("instructionToggleButton")
     .addEventListener("click", async () => {
       await toggleInstructionRows();
@@ -849,10 +845,37 @@ function createMainRow(item) {
   row.dataset.shiftId =
     item.shiftId;
 
+  const hasPaidTransport =
+    [
+      item.paidGoTime,
+      item.paidGoFrom,
+      item.paidGoDriverNo,
+      item.paidGoVehicle,
+      item.paidReturnTime,
+      item.paidReturnFrom,
+      item.paidReturnDriverNo,
+      item.paidReturnVehicle,
+      item.vehicle
+    ].some(value => String(value || "").trim());
+
   const paid =
-    String(item.vehicle || "").trim()
+    hasPaidTransport
       ? "有"
       : "";
+
+  const vehicleSummaryValues =
+    [
+      item.paidGoVehicle,
+      item.paidReturnVehicle,
+      item.pickupVehicle,
+      item.vehicle
+    ]
+      .map(value => String(value || "").trim())
+      .filter(Boolean);
+
+  const vehicleSummary =
+    [...new Set(vehicleSummaryValues)]
+      .join(" / ");
 
   row.innerHTML = `
     <td class="center-cell">
@@ -895,9 +918,9 @@ function createMainRow(item) {
 
     <td
       class="vehicle-cell"
-      title="${escapeAttribute(item.vehicle)}"
+      title="${escapeAttribute(vehicleSummary)}"
     >
-      ${escapeHtml(item.vehicle)}
+      ${escapeHtml(vehicleSummary)}
     </td>
 
     <td
@@ -1149,18 +1172,6 @@ function openShiftDetailModal(
       item.destination || "";
 
   document
-    .getElementById("detailVehicle")
-    .value =
-      item.vehicle || "";
-
-  document
-    .getElementById("detailPaid")
-    .value =
-      String(item.vehicle || "").trim()
-        ? "有"
-        : "";
-
-  document
     .getElementById("detailMeeting")
     .value =
       item.meeting || "";
@@ -1171,6 +1182,35 @@ function openShiftDetailModal(
       item.meetingPoint ||
       item.meetingInfo ||
       "";
+
+  document.getElementById("detailPaidGoTime").value =
+    item.paidGoTime || "";
+  document.getElementById("detailPaidGoFrom").value =
+    item.paidGoFrom || "";
+  document.getElementById("detailPaidGoDriverNo").value =
+    String(item.paidGoDriverNo || "");
+  document.getElementById("detailPaidGoVehicle").value =
+    item.paidGoVehicle || "";
+
+  document.getElementById("detailPaidReturnTime").value =
+    item.paidReturnTime || "";
+  document.getElementById("detailPaidReturnFrom").value =
+    item.paidReturnFrom || "";
+  document.getElementById("detailPaidReturnDriverNo").value =
+    String(item.paidReturnDriverNo || "");
+  document.getElementById("detailPaidReturnVehicle").value =
+    item.paidReturnVehicle || "";
+
+  document.getElementById("detailPickupTime").value =
+    item.pickupTime || "";
+  document.getElementById("detailPickupFrom").value =
+    item.pickupFrom || "";
+  document.getElementById("detailPickupTo").value =
+    item.pickupTo || "";
+  document.getElementById("detailPickupDriverNo").value =
+    String(item.pickupDriverNo || "");
+  document.getElementById("detailPickupVehicle").value =
+    item.pickupVehicle || "";
 
   document
     .getElementById("detailSimpleMemo")
@@ -1186,8 +1226,6 @@ function openShiftDetailModal(
     .getElementById("detailRemarks")
     .value =
       item.note || "";
-
-  updateDetailPaidState();
 
   document
     .getElementById("shiftDetailModal")
@@ -1231,24 +1269,6 @@ function syncDetailWeekdayFromDate() {
       labels[date.getDay()];
 }
 
-
-function updateDetailPaidState() {
-  const paid =
-    document
-      .getElementById("detailPaid")
-      .value;
-
-  const vehicle =
-    document
-      .getElementById("detailVehicle");
-
-  vehicle.disabled =
-    paid !== "有";
-
-  if (paid !== "有") {
-    vehicle.value = "";
-  }
-}
 
 
 async function saveShiftDetailModal(
@@ -1298,14 +1318,39 @@ async function saveShiftDetailModal(
       document.getElementById("detailTransport").value,
     destination:
       document.getElementById("detailDestination").value.trim(),
-    vehicle:
-      document.getElementById("detailPaid").value === "有"
-        ? document.getElementById("detailVehicle").value.trim()
-        : "",
     meeting:
       document.getElementById("detailMeeting").value.trim(),
     meetingPoint:
       document.getElementById("detailMeetingPoint").value.trim(),
+
+    paidGoTime:
+      document.getElementById("detailPaidGoTime").value,
+    paidGoFrom:
+      document.getElementById("detailPaidGoFrom").value.trim(),
+    paidGoDriverNo:
+      document.getElementById("detailPaidGoDriverNo").value,
+    paidGoVehicle:
+      document.getElementById("detailPaidGoVehicle").value.trim(),
+
+    paidReturnTime:
+      document.getElementById("detailPaidReturnTime").value,
+    paidReturnFrom:
+      document.getElementById("detailPaidReturnFrom").value.trim(),
+    paidReturnDriverNo:
+      document.getElementById("detailPaidReturnDriverNo").value,
+    paidReturnVehicle:
+      document.getElementById("detailPaidReturnVehicle").value.trim(),
+
+    pickupTime:
+      document.getElementById("detailPickupTime").value,
+    pickupFrom:
+      document.getElementById("detailPickupFrom").value.trim(),
+    pickupTo:
+      document.getElementById("detailPickupTo").value.trim(),
+    pickupDriverNo:
+      document.getElementById("detailPickupDriverNo").value,
+    pickupVehicle:
+      document.getElementById("detailPickupVehicle").value.trim(),
     simpleMemo:
       document.getElementById("detailSimpleMemo").value.trim(),
     detailNote:

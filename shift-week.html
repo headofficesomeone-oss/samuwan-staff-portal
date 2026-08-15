@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>基本シフト表</title>
-  <link rel="stylesheet" href="shift-week.css?v=compact-v1">
+  <link rel="stylesheet" href="shift-week.css?v=compact-transport-v1">
 </head>
 <body>
   <header class="app-header compact-header">
@@ -135,18 +135,84 @@
           <div class="detail-line detail-line-move">
             <label>移動手段</label>
             <select id="detailTransport">
-              <option value=""></option><option>徒歩</option><option>車</option>
-              <option>電車</option><option>バス</option><option>タクシー</option><option>その他</option>
+              <option value=""></option>
+              <option>徒歩</option>
+              <option>公共交通</option>
+              <option>有償運送</option>
+              <option>自家用車</option>
+              <option>その他</option>
             </select>
-            <label>行き先</label><input id="detailDestination" type="text">
-            <label>有償</label>
-            <select id="detailPaid"><option value="">なし</option><option value="有">有</option></select>
-            <label>車種</label><input id="detailVehicle" type="text">
+
+            <label>行き先</label>
+            <input id="detailDestination" type="text">
+
+            <label>待合せ</label>
+            <input id="detailMeeting" type="text">
+
+            <label>合流</label>
+            <input id="detailMeetingPoint" type="text">
           </div>
 
-          <div class="detail-line detail-line-meet">
-            <label>待合せ</label><input id="detailMeeting" type="text">
-            <label>合流</label><input id="detailMeetingPoint" type="text">
+          <div class="transport-section">
+            <div class="transport-title">有償運送</div>
+
+            <div class="paid-direction-row">
+              <div class="direction-label">行き</div>
+              <label>時刻</label>
+              <input id="detailPaidGoTime" type="time">
+              <label>出発地</label>
+              <input id="detailPaidGoFrom" type="text">
+              <label>運転手</label>
+              <select id="detailPaidGoDriverNo">
+                <option value=""></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+              <label>車種</label>
+              <input id="detailPaidGoVehicle" type="text">
+            </div>
+
+            <div class="paid-direction-row">
+              <div class="direction-label">帰り</div>
+              <label>時刻</label>
+              <input id="detailPaidReturnTime" type="time">
+              <label>出発地</label>
+              <input id="detailPaidReturnFrom" type="text">
+              <label>運転手</label>
+              <select id="detailPaidReturnDriverNo">
+                <option value=""></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+              <label>車種</label>
+              <input id="detailPaidReturnVehicle" type="text">
+            </div>
+          </div>
+
+          <div class="transport-section pickup-inline-section">
+            <div class="pickup-inline-row">
+              <div class="pickup-title-inline">送迎</div>
+              <label>時刻</label>
+              <input id="detailPickupTime" type="time">
+              <label>出発地</label>
+              <input id="detailPickupFrom" type="text">
+              <label>到着地</label>
+              <input id="detailPickupTo" type="text">
+              <label>運転手</label>
+              <select id="detailPickupDriverNo">
+                <option value=""></option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+              <label>車種</label>
+              <input id="detailPickupVehicle" type="text">
+            </div>
           </div>
 
           <div class="detail-line detail-line-full">
@@ -211,6 +277,6 @@
     </div>
   </div>
 
-  <script src="shift-week.js?v=compact-v1"></script>
+  <script src="shift-week.js?v=compact-transport-v1"></script>
 </body>
 </html>
