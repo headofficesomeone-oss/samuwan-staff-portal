@@ -1247,19 +1247,91 @@ async function syncOneActionRecordSession_(
   };
 }
 
-async function flushPendingActionRecordSessions_() {
+
+function isActionRecordNetworkError_(error) {
+  const message = String(
+    error && error.message
+      ? error.message
+      : error || ""
+  ).toLowerCase();
+
+  return (
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("load failed") ||
+    message.includes("通信") ||
+    message.includes("network request failed")
+  );
+}
+
+function getActionRecordRetryDelayMs_(session) {
+  const retryCount = Number(
+    session && session.retryCount || 0
+  );
+
+  if (retryCount <= 0) return 0;
+  if (retryCount === 1) return 30000;
+  if (retryCount === 2) return 60000;
+  if (retryCount === 3) return 120000;
+  if (retryCount === 4) return 300000;
+  return 600000;
+}
+
+function isActionRecordRetryDue_(session) {
+  if (!session || !session.lastRetryAt) {
+    return true;
+  }
+
+  const last = new Date(
+    session.lastRetryAt
+  ).getTime();
+
+  if (!Number.isFinite(last)) {
+    return true;
+  }
+
+  return (
+    Date.now() - last >=
+    getActionRecordRetryDelayMs_(session)
+  );
+}
+
+function hasActionRecordCheckpoint_(session) {
+  const syncState =
+    session &&
+    session.syncState &&
+    typeof session.syncState === "object"
+      ? session.syncState
+      : null;
+
+  return !!(
+    syncState &&
+    (
+      Number(syncState.nextEventIndex || 0) > 0 ||
+      syncState.outingResultId ||
+      syncState.routeId ||
+      syncState.actionRecordSynced
+    )
+  );
+}
+
+async function flushPendingActionRecordSessions_(
+  options = {}
+) {
   if (actionRecordQueueFlushing) {
     return;
   }
 
   if (
-    typeof navigator !==
-      "undefined" &&
+    typeof navigator !== "undefined" &&
     navigator.onLine === false
   ) {
     updateStaffActionSyncStatus_();
     return;
   }
+
+  const force =
+    options.force === true;
 
   const pending =
     readPendingActionRecordSessions_();
@@ -1269,83 +1341,111 @@ async function flushPendingActionRecordSessions_() {
     return;
   }
 
-  actionRecordQueueFlushing =
-    true;
+  actionRecordQueueFlushing = true;
 
   const failedSessions = [];
 
   try {
-    for (
-      const session of pending
-    ) {
+    for (const session of pending) {
+      /*
+       * v51以前で一度すでに
+       * 「現在は待機中ではありません」等を受けた旧データは、
+       * その後ネットワークエラーに変わっていても
+       * 無限再送せず要確認へ退避します。
+       */
+      if (
+        !hasActionRecordCheckpoint_(session) &&
+        isLegacyActionRecordStateError_(
+          session && session.lastError
+        )
+      ) {
+        moveActionRecordSessionToReview_(
+          session,
+          new Error(session.lastError)
+        );
+        continue;
+      }
+
+      /*
+       * 自動再送はバックオフ時間が来たものだけ。
+       * ユーザーが未送信表示をタップした時だけ force=true で即再送。
+       */
+      if (
+        !force &&
+        !isActionRecordRetryDue_(session)
+      ) {
+        failedSessions.push(session);
+        continue;
+      }
+
       try {
         await syncOneActionRecordSession_(
           session
         );
 
       } catch (error) {
-        /*
-         * v49以前のセッションで途中までサーバー登録済みなのに
-         * チェックポイントが無いものは、
-         * 再送すると「現在は待機中ではありません」等になることがあります。
-         *
-         * これを永遠に「未送信」として残さず、
-         * PC訂正予定の「要確認」へ退避します。
-         */
-        const syncState =
-          session &&
-          session.syncState &&
-          typeof session.syncState ===
-            "object"
-            ? session.syncState
-            : null;
-
-        const hasCheckpoint =
-          !!(
-            syncState &&
-            (
-              Number(
-                syncState.nextEventIndex || 0
-              ) > 0 ||
-              syncState.outingResultId ||
-              syncState.routeId ||
-              syncState.actionRecordSynced
-            )
-          );
-
         if (
-          !hasCheckpoint &&
-          isLegacyActionRecordStateError_(
-            error
-          )
+          !hasActionRecordCheckpoint_(session) &&
+          isLegacyActionRecordStateError_(error)
         ) {
           moveActionRecordSessionToReview_(
             session,
             error
           );
-
           continue;
         }
 
-        failedSessions.push(
-          {
-            ...session,
-            retryCount:
-              Number(
+        const networkError =
+          isActionRecordNetworkError_(error);
+
+        const previousError =
+          String(
+            session.lastError || ""
+          );
+
+        const previousWasStateError =
+          isLegacyActionRecordStateError_(
+            previousError
+          );
+
+        const nextRetryCount =
+          networkError
+            ? Math.max(
+                1,
+                Number(
+                  session.retryCount || 0
+                )
+              )
+            : Number(
                 session.retryCount || 0
-              ) + 1,
-            lastRetryAt:
-              new Date()
-                .toISOString(),
-            lastError:
-              error &&
-              error.message
-                ? error.message
-                : String(
-                    error || ""
-                  )
-          }
-        );
+              ) + 1;
+
+        failedSessions.push({
+          ...session,
+          retryCount:
+            nextRetryCount,
+          lastRetryAt:
+            new Date().toISOString(),
+          lastError:
+            previousWasStateError &&
+            networkError
+              ? previousError
+              : (
+                  error && error.message
+                    ? error.message
+                    : String(error || "")
+                ),
+          lastNetworkError:
+            networkError
+              ? (
+                  error && error.message
+                    ? error.message
+                    : String(error || "")
+                )
+              : (
+                  session.lastNetworkError || ""
+                )
+        });
       }
     }
 
@@ -1354,9 +1454,7 @@ async function flushPendingActionRecordSessions_() {
     );
 
   } finally {
-    actionRecordQueueFlushing =
-      false;
-
+    actionRecordQueueFlushing = false;
     updateStaffActionSyncStatus_();
   }
 }
@@ -1956,7 +2054,7 @@ async function retryAllPendingSyncNow_() {
 
   try {
     await flushStaffActionQueue_();
-    await flushPendingActionRecordSessions_();
+    await flushPendingActionRecordSessions_({ force: true });
   } catch (error) {
     console.warn(
       "手動再送に失敗",
@@ -1986,7 +2084,21 @@ function startStaffActionQueueSync_() {
    */
   setTimeout(
     () => {
-      retryAllPendingSyncNow_();
+      flushStaffActionQueue_()
+        .catch(error =>
+          console.warn(
+            "起動時の操作同期に失敗",
+            error
+          )
+        );
+
+      flushPendingActionRecordSessions_()
+        .catch(error =>
+          console.warn(
+            "起動時の行動記録同期に失敗",
+            error
+          )
+        );
     },
     800
   );
@@ -2058,6 +2170,16 @@ window.addEventListener(
             error
           )
       );
+
+    flushPendingActionRecordSessions_({
+      force: true
+    }).catch(
+      error =>
+        console.warn(
+          "通信復旧後の行動記録再送失敗",
+          error
+        )
+    );
   }
 );
 
@@ -6554,22 +6676,3 @@ document.addEventListener(
   }
 );
 
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-    setTimeout(
-      () => {
-        flushPendingActionRecordSessions_()
-          .catch(
-            error =>
-              console.warn(
-                "起動時の行動記録同期に失敗",
-                error
-              )
-          );
-      },
-      100
-    );
-  }
-);
