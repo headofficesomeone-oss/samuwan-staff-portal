@@ -106,3 +106,23 @@ button,input,select,textarea{font:inherit}.hidden{display:none!important}button,
   margin:0;
   width:100%;
 }
+
+.col-no,
+.sequence-cell {
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  text-align: center;
+}
+
+.col-date,
+.date-cell {
+  width: 58px;
+  min-width: 58px;
+}
+
+.col-time,
+.time-cell {
+  width: 105px;
+  min-width: 105px;
+}

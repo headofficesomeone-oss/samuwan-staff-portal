@@ -817,9 +817,9 @@ function renderTable() {
   tableScroll.classList.remove("hidden");
   emptyArea.classList.add("hidden");
 
-  displayItems.forEach(item => {
+  displayItems.forEach((item, index) => {
     tbody.appendChild(
-      createMainRow(item)
+      createMainRow(item, index + 1)
     );
 
     /*
@@ -841,7 +841,7 @@ function renderTable() {
 }
 
 
-function createMainRow(item) {
+function createMainRow(item, rowNumber) {
   const row =
     document.createElement("tr");
 
@@ -881,6 +881,10 @@ function createMainRow(item) {
       .join(" / ");
 
   row.innerHTML = `
+	  <td class="sequence-cell">
+		  ${rowNumber}
+		</td>
+		
     <td class="center-cell">
       ${escapeHtml(formatShortDate(item.date))}
     </td>
