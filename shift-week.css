@@ -1,128 +1,811 @@
-*{box-sizing:border-box}
-:root{--green:#2fa85a;--green-dark:#238747;--green-light:#eaf7ef;--border:#cfd9d3;--text:#263238;--muted:#687780;--danger:#c9453d;--background:#f3f5f7}
-body{margin:0;min-width:1080px;font-family:"Yu Gothic UI","Meiryo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--background);font-size:13px}
-button,input,select,textarea{font:inherit}.hidden{display:none!important}button,select{cursor:pointer}
-.app-header{height:50px;padding:0 14px;background:#fff;border-bottom:1px solid #ccd5db;display:flex;align-items:center;justify-content:space-between}
-.header-title{display:flex;align-items:center;gap:12px}.app-name{color:var(--green);font-size:13px;font-weight:800}.app-header h1{margin:0;font-size:18px}
-.header-actions{display:flex;gap:6px}.secondary-button,.primary-button,.nav-link,.toolbar-button{min-height:29px;border-radius:4px;padding:0 9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.secondary-button,.toolbar-button{border:1px solid #b8c4cb;background:#fff;color:var(--text)}.primary-button{border:1px solid var(--green);background:var(--green);color:#fff}.nav-link{border:1px solid var(--green);background:#fff;color:var(--green-dark)}
-.compact-page{padding:0}.compact-toolbar{background:#fff;border-bottom:1px solid #d8e0e5;padding:6px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:sticky;top:50px;z-index:15}
-.compact-toolbar input,.toolbar-select{height:29px;border:1px solid #bcc8cf;border-radius:4px;background:#fff;padding:2px 6px}.week-range{font-weight:700;margin:0 4px}.compact-select{width:105px}.sort-select{width:190px}.compact-add-button{height:29px}.toolbar-summary{margin-left:auto;display:flex;gap:10px;align-items:center}.cache-status{font-size:11px;color:var(--muted)}
-.message-area{margin:6px 10px 0;padding:5px 8px;border-radius:4px;color:var(--green-dark);background:var(--green-light);font-size:12px;font-weight:700}.message-area.error{color:var(--danger);background:#fff1f0}
-.table-card{margin:7px 8px;background:#fff;border:1px solid #cbd5db;overflow:hidden}.top-scroll{width:100%;height:14px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid #e0e6e2}.top-scroll-inner{height:1px}.table-scroll{height:calc(100vh - 126px);overflow:auto}
-.shift-table{width:100%;min-width:1370px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:12.5px}.shift-table thead{position:sticky;top:0;z-index:3}
-.shift-table th,.shift-table td{border-right:1px solid #d9e0e4;border-bottom:1px solid #d9e0e4;white-space:nowrap}.shift-table th{height:27px;padding:1px 3px;background:#eaf1f5;color:#344f5d;text-align:left;font-weight:700}.shift-table td{height:25px;padding:1px 3px;background:#fff;vertical-align:middle;line-height:1.08}.shift-table tbody tr.main-row:hover td{background:#f2f8ff}
-.center-heading,.center-cell{text-align:center!important}.time-cell{font-variant-numeric:tabular-nums}.time-separator{padding:0 2px}.weekday-cell:nth-child(2){font-weight:600}.user-cell{font-weight:700}.service-cell{font-weight:600}
-.content-cell,.destination-cell,.vehicle-cell,.user-cell,.service-cell{overflow:hidden;text-overflow:ellipsis}.staff-select{width:100%;height:23px;border:1px solid #ccd6dc;border-radius:3px;background:#fff;padding:0 2px;font-size:12px}
-.detail-open-button{height:21px;border:1px solid #9fb1bc;border-radius:3px;background:#fff;padding:0 5px;font-size:11px}.paid-cell,.status-cell,.detail-cell{padding-left:0!important;padding-right:0!important}
-.col-date{width:54px}.col-weekday{width:34px}.col-time-range{width:102px}.col-user{width:95px}.col-service{width:94px}.col-content{width:116px}.col-staff{width:104px}.col-paid{width:43px}.col-vehicle{width:56px}.col-destination{width:154px}.col-status{width:50px}.col-detail{width:44px}
-.empty-area{padding:40px 20px;text-align:center;color:var(--muted);font-weight:700}
-.instruction-row td{height:auto;padding:0;background:#fbfdfb}.instruction-panel{padding:7px 10px}.instruction-row-layout{display:grid;grid-template-columns:40px minmax(0,1fr);gap:6px}.instruction-flow-icon{display:flex;align-items:center;justify-content:center}.instruction-flow-svg{width:38px;height:32px}.instruction-row-fields{display:grid;grid-template-columns:1fr 1.3fr 1.3fr 1fr;gap:6px}.detail-field label{display:block;font-size:10px;color:#65727b;font-weight:700}.detail-field textarea,.detail-field input,.detail-field select{width:100%;height:28px;border:1px solid #ccd6dc;border-radius:3px;padding:3px 5px;font-size:11px}.detail-field textarea{resize:vertical}
-.shift-modal{position:fixed;inset:0;z-index:100}.shift-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.42)}.shift-modal-dialog{position:relative;margin:5vh auto;background:#fff;width:min(880px,95vw);max-height:90vh;overflow:auto;border-radius:8px;box-shadow:0 14px 44px rgba(0,0,0,.28)}.compact-detail-dialog{width:min(900px,96vw)}
-.shift-modal-header{padding:9px 13px;border-bottom:1px solid #d6dee3;display:flex;align-items:center;justify-content:space-between}.shift-modal-header h2{margin:0;font-size:16px}.modal-close-button{border:1px solid #bcc8cf;background:#fff;border-radius:4px;padding:4px 8px}.shift-modal-body{padding:11px 13px}.shift-modal-footer{padding:9px 13px;border-top:1px solid #d6dee3;display:flex;justify-content:flex-end;gap:6px}.shift-modal-open{overflow:hidden}
-.detail-form-body{display:grid;gap:7px}.detail-line{display:grid;gap:7px 8px;align-items:center}.detail-line label{text-align:right;white-space:nowrap;font-weight:600;color:#56666f}.detail-line input,.detail-line select,.detail-line textarea{width:100%;min-width:0;border:1px solid #bdc8ce;border-radius:4px;padding:5px 6px}.detail-line textarea{resize:vertical}
-.detail-line-four{grid-template-columns:58px 1fr 58px 1fr 58px 1fr 58px 1fr}.detail-line-user{grid-template-columns:58px 1fr 58px 1fr 58px 1fr 58px 1fr}.detail-line-user #detailContent{grid-column:6 / 9}.detail-line-staff{grid-template-columns:58px 1fr 58px 1fr 58px 1fr 58px 1fr}.detail-line-move{grid-template-columns:58px 1fr 58px 1fr 58px 1fr 58px 1fr}.detail-line-full{grid-template-columns:58px 1fr;align-items:start}.detail-line-full label{padding-top:5px}
-.new-shift-grid{display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:7px 9px;align-items:center}.new-shift-grid label{text-align:right;font-weight:600}.new-shift-grid input,.new-shift-grid select,.new-shift-grid textarea{width:100%;border:1px solid #bdc8ce;border-radius:4px;padding:5px 6px}.new-shift-grid .message-area{grid-column:1/5;margin:0}
-@media(max-width:900px){body{min-width:900px}}
+/* =========================================================
+   共通
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --green: #2fa85a;
+  --green-dark: #238747;
+  --green-light: #eaf7ef;
+  --border: #cfd9d3;
+  --text: #263238;
+  --muted: #687780;
+  --danger: #c9453d;
+  --background: #f3f5f7;
+}
+
+body {
+  margin: 0;
+  min-width: 1080px;
+  font-family:
+    "Yu Gothic UI",
+    "Meiryo",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: var(--text);
+  background: var(--background);
+  font-size: 13px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+select {
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
 
 
-.transport-section{
-  border:1px solid #d5dde2;
-  border-radius:6px;
-  background:#fafcfd;
-  padding:8px 10px;
+/* =========================================================
+   ヘッダー
+   ========================================================= */
+
+.app-header {
+  height: 50px;
+  padding: 0 14px;
+  background: #fff;
+  border-bottom: 1px solid #ccd5db;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.transport-title{
-  margin-bottom:6px;
-  color:#3f5966;
-  font-size:12px;
-  font-weight:700;
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.paid-direction-row{
-  display:grid;
+
+.app-name {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+
+/* =========================================================
+   共通ボタン
+   ========================================================= */
+
+.secondary-button,
+.primary-button,
+.nav-link,
+.toolbar-button {
+  min-height: 29px;
+  border-radius: 4px;
+  padding: 0 9px;
+  font-weight: 700;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  text-decoration: none;
+}
+
+.secondary-button,
+.toolbar-button {
+  border: 1px solid #b8c4cb;
+  background: #fff;
+  color: var(--text);
+}
+
+.primary-button {
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.nav-link {
+  border: 1px solid var(--green);
+  background: #fff;
+  color: var(--green-dark);
+}
+
+
+/* =========================================================
+   ページ・ツールバー
+   ========================================================= */
+
+.compact-page {
+  padding: 0;
+}
+
+.compact-toolbar {
+  background: #fff;
+  border-bottom: 1px solid #d8e0e5;
+  padding: 6px 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  position: sticky;
+  top: 50px;
+  z-index: 15;
+}
+
+.compact-toolbar input,
+.toolbar-select {
+  height: 29px;
+  border: 1px solid #bcc8cf;
+  border-radius: 4px;
+  background: #fff;
+  padding: 2px 6px;
+}
+
+.week-range {
+  font-weight: 700;
+  margin: 0 4px;
+}
+
+.compact-select {
+  width: 105px;
+}
+
+.sort-select {
+  width: 190px;
+}
+
+.compact-add-button {
+  height: 29px;
+}
+
+.toolbar-summary {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cache-status {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+
+/* =========================================================
+   メッセージ
+   ========================================================= */
+
+.message-area {
+  margin: 6px 10px 0;
+  padding: 5px 8px;
+  border-radius: 4px;
+
+  color: var(--green-dark);
+  background: var(--green-light);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.message-area.error {
+  color: var(--danger);
+  background: #fff1f0;
+}
+
+
+/* =========================================================
+   一覧テーブル
+   ========================================================= */
+
+.table-card {
+  margin: 7px 8px;
+  background: #fff;
+  border: 1px solid #cbd5db;
+  overflow: hidden;
+}
+
+.top-scroll {
+  width: 100%;
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid #e0e6e2;
+}
+
+.top-scroll-inner {
+  height: 1px;
+}
+
+.table-scroll {
+  height: calc(100vh - 126px);
+  overflow: auto;
+}
+
+.shift-table {
+  width: 100%;
+  min-width: 1370px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12.5px;
+}
+
+.shift-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.shift-table th,
+.shift-table td {
+  border-right: 1px solid #d9e0e4;
+  border-bottom: 1px solid #d9e0e4;
+  white-space: nowrap;
+}
+
+.shift-table th {
+  height: 27px;
+  padding: 1px 3px;
+  background: #eaf1f5;
+  color: #344f5d;
+  text-align: left;
+  font-weight: 700;
+}
+
+.shift-table td {
+  height: 25px;
+  padding: 1px 3px;
+  background: #fff;
+  vertical-align: middle;
+  line-height: 1.08;
+}
+
+.shift-table tbody tr.main-row:hover td {
+  background: #f2f8ff;
+}
+
+
+/* =========================================================
+   一覧テーブル：文字・セル
+   ========================================================= */
+
+.center-heading,
+.center-cell {
+  text-align: center !important;
+}
+
+.time-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.time-separator {
+  padding: 0 2px;
+}
+
+.weekday-cell:nth-child(2) {
+  font-weight: 600;
+}
+
+.user-cell {
+  font-weight: 700;
+}
+
+.service-cell {
+  font-weight: 600;
+}
+
+.content-cell,
+.destination-cell,
+.vehicle-cell,
+.user-cell,
+.service-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.paid-cell,
+.status-cell,
+.detail-cell {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+
+/* =========================================================
+   一覧テーブル：列幅
+   ========================================================= */
+
+/* ここにNo.列を追加するなら、この並びで管理すると見やすいです */
+.col-no {
+  width: 28px;
+}
+
+.col-date {
+  width: 50px;
+}
+
+.col-weekday {
+  width: 34px;
+}
+
+.col-time-range {
+  width: 96px;
+}
+
+.col-user {
+  width: 95px;
+}
+
+.col-service {
+  width: 94px;
+}
+
+.col-content {
+  width: 116px;
+}
+
+.col-staff {
+  width: 104px;
+}
+
+.col-paid {
+  width: 43px;
+}
+
+.col-vehicle {
+  width: 56px;
+}
+
+.col-destination {
+  width: 154px;
+}
+
+.col-status {
+  width: 50px;
+}
+
+.col-detail {
+  width: 44px;
+}
+
+.sequence-cell {
+  width: 28px;
+  min-width: 28px;
+  max-width: 28px;
+  text-align: center;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+
+/* =========================================================
+   一覧：担当プルダウン・詳細ボタン
+   ========================================================= */
+
+.staff-select {
+  width: 100%;
+  height: 23px;
+  border: 1px solid #ccd6dc;
+  border-radius: 3px;
+  background: #fff;
+  padding: 0 2px;
+  font-size: 12px;
+}
+
+.detail-open-button {
+  height: 21px;
+  border: 1px solid #9fb1bc;
+  border-radius: 3px;
+  background: #fff;
+  padding: 0 5px;
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   データなし表示
+   ========================================================= */
+
+.empty-area {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   指示行
+   ========================================================= */
+
+.instruction-row td {
+  height: auto;
+  padding: 0;
+  background: #fbfdfb;
+}
+
+.instruction-panel {
+  padding: 7px 10px;
+}
+
+.instruction-row-layout {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.instruction-flow-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instruction-flow-svg {
+  width: 38px;
+  height: 32px;
+}
+
+.instruction-row-fields {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1.3fr 1fr;
+  gap: 6px;
+}
+
+.detail-field label {
+  display: block;
+  font-size: 10px;
+  color: #65727b;
+  font-weight: 700;
+}
+
+.detail-field textarea,
+.detail-field input,
+.detail-field select {
+  width: 100%;
+  height: 28px;
+  border: 1px solid #ccd6dc;
+  border-radius: 3px;
+  padding: 3px 5px;
+  font-size: 11px;
+}
+
+.detail-field textarea {
+  resize: vertical;
+}
+
+
+/* =========================================================
+   モーダル共通
+   ========================================================= */
+
+.shift-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.shift-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .42);
+}
+
+.shift-modal-dialog {
+  position: relative;
+  margin: 5vh auto;
+  background: #fff;
+  width: min(880px, 95vw);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 8px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, .28);
+}
+
+.compact-detail-dialog {
+  width: min(900px, 96vw);
+}
+
+.shift-modal-header {
+  padding: 9px 13px;
+  border-bottom: 1px solid #d6dee3;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shift-modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.modal-close-button {
+  border: 1px solid #bcc8cf;
+  background: #fff;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.shift-modal-body {
+  padding: 11px 13px;
+}
+
+.shift-modal-footer {
+  padding: 9px 13px;
+  border-top: 1px solid #d6dee3;
+
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.shift-modal-open {
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   詳細・新規追加フォーム共通
+   ========================================================= */
+
+.detail-form-body {
+  display: grid;
+  gap: 7px;
+}
+
+.detail-line {
+  display: grid;
+  gap: 7px 8px;
+  align-items: center;
+}
+
+.detail-line label {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #56666f;
+}
+
+.detail-line input,
+.detail-line select,
+.detail-line textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #bdc8ce;
+  border-radius: 4px;
+  padding: 5px 6px;
+}
+
+.detail-line textarea {
+  resize: vertical;
+}
+
+
+/* =========================================================
+   詳細フォーム各行
+   ========================================================= */
+
+.detail-line-four {
+  grid-template-columns:
+    58px 1fr
+    58px 1fr
+    58px 1fr
+    58px 1fr;
+}
+
+.detail-line-user {
+  grid-template-columns:
+    58px 1fr
+    58px 1fr
+    58px 1fr
+    58px 1fr;
+}
+
+.detail-line-user #detailContent {
+  grid-column: 6 / 9;
+}
+
+.detail-line-staff {
+  grid-template-columns:
+    58px 1fr
+    58px 1fr
+    58px 1fr
+    58px 1fr;
+}
+
+.detail-line-move {
+  grid-template-columns:
+    58px 1fr
+    58px 1fr
+    58px 1fr
+    58px 1fr;
+}
+
+.detail-line-full {
+  grid-template-columns: 58px 1fr;
+  align-items: start;
+}
+
+.detail-line-full label {
+  padding-top: 5px;
+}
+
+
+/* =========================================================
+   旧新規追加フォーム
+   ========================================================= */
+
+.new-shift-grid {
+  display: grid;
+  grid-template-columns:
+    110px 1fr
+    110px 1fr;
+  gap: 7px 9px;
+  align-items: center;
+}
+
+.new-shift-grid label {
+  text-align: right;
+  font-weight: 600;
+}
+
+.new-shift-grid input,
+.new-shift-grid select,
+.new-shift-grid textarea {
+  width: 100%;
+  border: 1px solid #bdc8ce;
+  border-radius: 4px;
+  padding: 5px 6px;
+}
+
+.new-shift-grid .message-area {
+  grid-column: 1 / 5;
+}
+
+
+/* =========================================================
+   有償運送・送迎
+   ========================================================= */
+
+.transport-section {
+  border: 1px solid #d5dde2;
+  border-radius: 6px;
+  background: #fafcfd;
+  padding: 8px 10px;
+}
+
+.transport-title {
+  margin-bottom: 6px;
+  color: #3f5966;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+/* 有償運送：行き・帰り */
+.paid-direction-row {
+  display: grid;
+
   grid-template-columns:
     42px
     42px 92px
-    52px minmax(105px,.65fr)
+    52px minmax(105px, .65fr)
     58px 64px
     42px 96px;
-  gap:3px 4px;
-  align-items:center;
-  margin-top:6px;
-  white-space:nowrap;
+
+  gap: 3px 4px;
+  align-items: center;
+  margin-top: 6px;
+  white-space: nowrap;
 }
-.paid-direction-row:first-of-type{margin-top:0}
-.pickup-inline-section{padding-top:7px;padding-bottom:7px}
-.pickup-inline-row{
-  display:grid;
+
+.paid-direction-row:first-of-type {
+  margin-top: 0;
+}
+
+
+/* 送迎 */
+.pickup-inline-section {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.pickup-inline-row {
+  display: grid;
+
   grid-template-columns:
     42px
     42px 92px
-    52px minmax(115px,.85fr)
-    52px minmax(115px,.85fr)
+    52px minmax(115px, .85fr)
+    52px minmax(115px, .85fr)
     58px 64px
     42px 96px;
-  gap:3px 4px;
-  align-items:center;
-  white-space:nowrap;
+
+  gap: 3px 4px;
+  align-items: center;
+  white-space: nowrap;
 }
+
+
+/* 有償・送迎 共通ラベル */
 .direction-label,
-.pickup-title-inline{
-  color:#3f5966;
-  font-weight:700;
-  text-align:left;
-  white-space:nowrap;
+.pickup-title-inline {
+  color: #3f5966;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
 }
+
 .paid-direction-row label,
-.pickup-inline-row label{
-  color:#56666f;
-  font-weight:600;
-  text-align:right;
-  white-space:nowrap;
+.pickup-inline-row label {
+  color: #56666f;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
 }
+
+
+/* 有償・送迎 共通入力欄 */
 .paid-direction-row input,
 .paid-direction-row select,
 .pickup-inline-row input,
-.pickup-inline-row select{
-  width:100%;
-  min-width:0;
-  height:30px;
-  border:1px solid #bdc8ce;
-  border-radius:4px;
-  padding:4px 5px;
+.pickup-inline-row select {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+
+  border: 1px solid #bdc8ce;
+  border-radius: 4px;
+  padding: 4px 5px;
 }
+
 .paid-direction-row input[type="time"],
-.pickup-inline-row input[type="time"]{
-  width:92px;
-  min-width:92px;
+.pickup-inline-row input[type="time"] {
+  width: 92px;
+  min-width: 92px;
 }
+
 .paid-direction-row select,
-.pickup-inline-row select{
-  width:64px;
-  min-width:64px;
+.pickup-inline-row select {
+  width: 64px;
+  min-width: 64px;
 }
 
-#newShiftFormMessage{
-  margin:0;
-  width:100%;
+
+/* =========================================================
+   新規追加メッセージ
+   ========================================================= */
+
+#newShiftFormMessage {
+  margin: 0;
+  width: 100%;
 }
 
-.col-no,
-.sequence-cell {
-  width: 34px;
-  min-width: 34px;
-  max-width: 34px;
-  text-align: center;
-}
 
-.col-date,
-.date-cell {
-  width: 58px;
-  min-width: 58px;
-}
+/* =========================================================
+   レスポンシブ
+   ========================================================= */
 
-.col-time,
-.time-cell {
-  width: 105px;
-  min-width: 105px;
+@media (max-width: 900px) {
+  body {
+    min-width: 900px;
+  }
 }
