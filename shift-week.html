@@ -49,6 +49,11 @@
       <button id="instructionToggleButton" class="toolbar-button" type="button" aria-pressed="false">指示</button>
       <button id="newShiftButton" class="primary-button compact-add-button" type="button">＋予定追加</button>
 
+      <button id="savePendingButton" class="toolbar-button pending-save-button hidden" type="button">
+        変更を保存
+      </button>
+      <span id="pendingChangeCount" class="pending-change-count hidden"></span>
+
       <div class="toolbar-summary">
         <strong id="recordCount">0件</strong>
         <span id="cacheStatus" class="cache-status"></span>
@@ -432,6 +437,6 @@
     </div>
   </div>
 
-  <script src="shift-week.js?v=layout-cancel-v4"></script>
+  <script src="shift-week.js?v=pending-conflict-v5"></script>
 </body>
 </html>

@@ -27,6 +27,7 @@ const SHIFT_WEEK_CACHE_LIMIT = 3;
 const WEEK_CONTROL_COLLAPSE_KEY = "shiftWeekControlsCollapsed";
 
 let currentWeekItems = [];
+let currentLoadedWeekMonday = "";
 let staffChoices = [];
 let openDetailShiftId = "";
 
@@ -44,6 +45,12 @@ let selectedSortOrder = "dateTime";
   「支援内容・当日の指示・詳細注意・簡易メモ」を表示します。
 */
 let instructionRowsVisible = false;
+
+/*
+ * 中止／予定の未保存変更です。
+ * key: shiftId
+ */
+const pendingStatusChanges = new Map();
 
 /* true のとき、対象週の大きな操作エリアを折りたたみます。 */
 let weekControlsCollapsed = false;
@@ -159,6 +166,8 @@ function bindScreenEvents() {
   document
     .getElementById("currentWeekButton")
     .addEventListener("click", async () => {
+      if (!confirmDiscardPendingStatusChanges_()) return;
+
       setWeekMonday(getMonday(new Date()));
       await loadCurrentWeek();
     });
@@ -193,7 +202,19 @@ function bindScreenEvents() {
     .getElementById("newShiftDate")
     .addEventListener("change", syncNewShiftWeekdayFromDate);
   
+  
   document
+    .getElementById("savePendingButton")
+    .addEventListener("click", savePendingStatusChanges_);
+
+  window.addEventListener("beforeunload", event => {
+    if (pendingStatusChanges.size === 0) return;
+
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
+document
     .getElementById("createButton")
     .addEventListener("click", createInitialWeek);
 
@@ -203,6 +224,13 @@ function bindScreenEvents() {
       const selectedDate = parseLocalDate(event.target.value);
 
       if (!selectedDate) return;
+
+      if (!confirmDiscardPendingStatusChanges_()) {
+        if (currentLoadedWeekMonday) {
+          event.target.value = currentLoadedWeekMonday;
+        }
+        return;
+      }
 
       setWeekMonday(getMonday(selectedDate));
       await loadCurrentWeek();
@@ -343,6 +371,10 @@ async function moveWeek(days) {
   );
 
   if (!current) return;
+
+  if (!confirmDiscardPendingStatusChanges_()) {
+    return;
+  }
 
   setWeekMonday(addDays(current, days));
   await loadCurrentWeek();
@@ -624,6 +656,7 @@ async function loadCurrentWeek({ forceReload = false } = {}) {
 
   if (!weekMonday) return;
 
+  currentLoadedWeekMonday = weekMonday;
   openDetailShiftId = "";
 
   if (!forceReload) {
@@ -810,6 +843,7 @@ function renderTable() {
     }
 
     updateInstructionToggleButton();
+    updatePendingSaveUi_();
     updateHorizontalScrollWidth();
     return;
   }
@@ -834,6 +868,7 @@ function renderTable() {
   });
 
   updateInstructionToggleButton();
+  updatePendingSaveUi_();
 
   requestAnimationFrame(
     updateHorizontalScrollWidth
@@ -848,6 +883,13 @@ function createMainRow(item, rowNumber) {
   row.className = "main-row";
   row.dataset.shiftId =
     item.shiftId;
+
+  const effectiveStatus =
+    getEffectiveStatus_(item);
+
+  if (pendingStatusChanges.has(item.shiftId)) {
+    row.classList.add("pending-change");
+  }
 
   const hasPaidTransport =
     [
@@ -891,7 +933,7 @@ function createMainRow(item, rowNumber) {
         type="checkbox"
         data-shift-id="${escapeAttribute(item.shiftId)}"
         aria-label="中止"
-        ${String(item.status || "").trim() === "中止" ? "checked" : ""}
+        ${effectiveStatus === "中止" ? "checked" : ""}
       >
     </td>
 		
@@ -948,7 +990,7 @@ function createMainRow(item, rowNumber) {
     </td>
 
     <td class="center-cell status-cell">
-      ${escapeHtml(item.status)}
+      ${escapeHtml(effectiveStatus)}
     </td>
 
     <td class="center-cell detail-cell">
@@ -976,58 +1018,35 @@ function createMainRow(item, rowNumber) {
   if (cancelCheckbox) {
     cancelCheckbox.addEventListener(
       "change",
-      async event => {
+      event => {
         const checkbox = event.target;
-        const previousStatus =
-          String(item.status || "").trim() ||
-          "予定";
 
         const nextStatus =
           checkbox.checked
             ? "中止"
             : "予定";
 
-        checkbox.disabled = true;
+        queuePendingStatusChange_(
+          item,
+          nextStatus
+        );
 
-        try {
-          await updateShiftWeek(
-            item.shiftId,
-            { status: nextStatus }
-          );
+        const statusCell =
+          row.querySelector(".status-cell");
 
-          updateLocalItem(
-            item.shiftId,
-            { status: nextStatus }
-          );
-
-          item.status = nextStatus;
-
-          const statusCell =
-            row.querySelector(".status-cell");
-
-          if (statusCell) {
-            statusCell.textContent =
-              nextStatus;
-          }
-
-          setMessage(
-            nextStatus === "中止"
-              ? "シフトを中止にしました。"
-              : "シフトを予定に戻しました。"
-          );
-
-        } catch (error) {
-          checkbox.checked =
-            previousStatus === "中止";
-
-          showApiError(
-            error,
-            "中止状態の保存に失敗しました"
-          );
-
-        } finally {
-          checkbox.disabled = false;
+        if (statusCell) {
+          statusCell.textContent =
+            nextStatus;
         }
+
+        row.classList.toggle(
+          "pending-change",
+          pendingStatusChanges.has(
+            item.shiftId
+          )
+        );
+
+        updatePendingSaveUi_();
       }
     );
   }
@@ -1863,14 +1882,34 @@ async function saveChangedInstructionRows() {
 
 
 async function updateShiftWeek(shiftId, changes) {
-  return jsonpRequest(
-    "week-update",
-    {
-      shiftId,
-      changes
-    },
-    "shiftWeekUpdateCallback"
-  );
+  const item =
+    getShiftItemById_(shiftId);
+
+  const result =
+    await jsonpRequest(
+      "week-update",
+      {
+        shiftId,
+        changes,
+        expectedUpdatedAt:
+          item && item.updatedAt
+            ? item.updatedAt
+            : ""
+      },
+      "shiftWeekUpdateCallback"
+    );
+
+  if (result && result.conflict) {
+    throw new ApiError(
+      "このシフトは他の人が先に更新しています。再読み込みして最新内容を確認してください。"
+    );
+  }
+
+  if (item && result && result.updatedAt) {
+    item.updatedAt = result.updatedAt;
+  }
+
+  return result;
 }
 
 function updateLocalItem(shiftId, changes) {
@@ -1886,6 +1925,236 @@ function updateLocalItem(shiftId, changes) {
   saveWeekCache(weekMonday, currentWeekItems);
   updateCacheStatus(getCachedWeek(weekMonday));
 }
+
+
+/* =============================================================
+   中止／予定：未保存変更
+   ============================================================= */
+
+function getEffectiveStatus_(item) {
+  const shiftId =
+    String(item.shiftId || "");
+
+  const pending =
+    pendingStatusChanges.get(shiftId);
+
+  if (pending) {
+    return pending.status;
+  }
+
+  return (
+    String(item.status || "").trim() ||
+    "予定"
+  );
+}
+
+
+function queuePendingStatusChange_(item, nextStatus) {
+  const shiftId =
+    String(item.shiftId || "");
+
+  if (!shiftId) return;
+
+  const existing =
+    pendingStatusChanges.get(shiftId);
+
+  const originalStatus =
+    existing
+      ? existing.originalStatus
+      : (
+          String(item.status || "").trim() ||
+          "予定"
+        );
+
+  if (nextStatus === originalStatus) {
+    pendingStatusChanges.delete(shiftId);
+    return;
+  }
+
+  pendingStatusChanges.set(
+    shiftId,
+    {
+      shiftId,
+      status: nextStatus,
+      originalStatus,
+      expectedUpdatedAt:
+        existing
+          ? existing.expectedUpdatedAt
+          : String(item.updatedAt || "")
+    }
+  );
+}
+
+
+function updatePendingSaveUi_() {
+  const button =
+    document.getElementById(
+      "savePendingButton"
+    );
+
+  const countArea =
+    document.getElementById(
+      "pendingChangeCount"
+    );
+
+  if (!button || !countArea) return;
+
+  const count =
+    pendingStatusChanges.size;
+
+  button.classList.toggle(
+    "hidden",
+    count === 0
+  );
+
+  countArea.classList.toggle(
+    "hidden",
+    count === 0
+  );
+
+  button.textContent =
+    count > 0
+      ? `変更を保存（${count}件）`
+      : "変更を保存";
+
+  countArea.textContent =
+    count > 0
+      ? "● 未保存"
+      : "";
+}
+
+
+function confirmDiscardPendingStatusChanges_() {
+  if (pendingStatusChanges.size === 0) {
+    return true;
+  }
+
+  const confirmed =
+    window.confirm(
+      "未保存の中止／予定変更があります。\n" +
+      "保存せずに週を移動すると変更は破棄されます。\n\n" +
+      "変更を破棄して移動しますか？"
+    );
+
+  if (!confirmed) return false;
+
+  pendingStatusChanges.clear();
+  updatePendingSaveUi_();
+  return true;
+}
+
+
+async function savePendingStatusChanges_() {
+  if (pendingStatusChanges.size === 0) {
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "savePendingButton"
+    );
+
+  button.disabled = true;
+  button.textContent = "保存中...";
+
+  const updates =
+    Array.from(
+      pendingStatusChanges.values()
+    ).map(change => ({
+      shiftId: change.shiftId,
+      changes: {
+        status: change.status
+      },
+      expectedUpdatedAt:
+        change.expectedUpdatedAt || ""
+    }));
+
+  try {
+    const result =
+      await jsonpRequest(
+        "week-batch-update",
+        { updates },
+        "shiftWeekBatchUpdateCallback"
+      );
+
+    if (result && result.conflict) {
+      const ids =
+        (result.conflicts || [])
+          .map(item => item.shiftId)
+          .filter(Boolean)
+          .join("、");
+
+      alert(
+        "保存していません。\n\n" +
+        "他の人が先に更新したシフトがあります。" +
+        (ids ? "\n対象：" + ids : "") +
+        "\n\n再読み込みして最新内容を確認してください。"
+      );
+
+      return;
+    }
+
+    const saved =
+      result && Array.isArray(result.saved)
+        ? result.saved
+        : [];
+
+    saved.forEach(savedItem => {
+      const item =
+        getShiftItemById_(
+          savedItem.shiftId
+        );
+
+      const pending =
+        pendingStatusChanges.get(
+          savedItem.shiftId
+        );
+
+      if (!item || !pending) return;
+
+      item.status =
+        pending.status;
+
+      if (savedItem.updatedAt) {
+        item.updatedAt =
+          savedItem.updatedAt;
+      }
+    });
+
+    pendingStatusChanges.clear();
+
+    const weekMonday =
+      document.getElementById(
+        "weekMonday"
+      ).value;
+
+    saveWeekCache(
+      weekMonday,
+      currentWeekItems
+    );
+
+    updateCacheStatus(
+      getCachedWeek(weekMonday)
+    );
+
+    setMessage(
+      `${saved.length}件の中止／予定変更を保存しました。`
+    );
+
+    renderTable();
+
+  } catch (error) {
+    showApiError(
+      error,
+      "中止／予定変更の保存に失敗しました"
+    );
+
+  } finally {
+    button.disabled = false;
+    updatePendingSaveUi_();
+  }
+}
+
 
 /* =============================================================
    表示補助

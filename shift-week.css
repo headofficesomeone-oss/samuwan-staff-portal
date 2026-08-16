@@ -829,3 +829,29 @@ select {
   vertical-align: middle;
   cursor: pointer;
 }
+
+
+/* =========================================================
+   未保存変更
+   ========================================================= */
+
+.pending-save-button {
+  border-color: #d19a00;
+  background: #fff8df;
+  color: #725400;
+}
+
+.pending-change-count {
+  color: #8a6500;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.shift-table tbody tr.main-row.pending-change td {
+  background: #fffbea;
+}
+
+.shift-table tbody tr.main-row.pending-change:hover td {
+  background: #fff6d6;
+}
