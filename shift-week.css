@@ -333,7 +333,6 @@ select {
    一覧テーブル：列幅
    ========================================================= */
 
-/* ここにNo.列を追加するなら、この並びで管理すると見やすいです */
 .col-no {
   width: 28px;
 }
@@ -343,15 +342,16 @@ select {
 }
 
 .col-weekday {
-  width: 34px;
+  width: 30px;
 }
 
 .col-time-range {
-  width: 96px;
+  width: 94px;
 }
 
+/* 利用者と担当者はほぼ同じ幅 */
 .col-user {
-  width: 95px;
+  width: 100px;
 }
 
 .col-service {
@@ -363,37 +363,35 @@ select {
 }
 
 .col-staff {
-  width: 104px;
+  width: 100px;
 }
 
 .col-paid {
-  width: 43px;
+  width: 38px;
 }
 
 .col-vehicle {
-  width: 56px;
+  width: 60px;
 }
 
 .col-destination {
-  width: 154px;
+  width: 150px;
 }
 
 .col-status {
-  width: 50px;
+  width: 46px;
 }
 
 .col-detail {
-  width: 44px;
+  width: 46px;
 }
 
 .sequence-cell {
-  width: 28px;
-  min-width: 28px;
-  max-width: 28px;
   text-align: center;
   padding-left: 2px !important;
   padding-right: 2px !important;
 }
+
 
 
 /* =========================================================
