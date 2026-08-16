@@ -334,19 +334,27 @@ select {
    ========================================================= */
 
 .col-no {
-  width: 28px;
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
 }
 
 .col-date {
-  width: 50px;
+  width: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
 }
 
 .col-weekday {
-  width: 30px;
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
 }
 
 .col-time-range {
-  width: 94px;
+  width: 96px !important;
+  min-width: 96px !important;
+  max-width: 96px !important;
 }
 
 /* óòópé“Ç∆íSìñé“ÇÕÇŸÇ⁄ìØÇ∂ïù */
