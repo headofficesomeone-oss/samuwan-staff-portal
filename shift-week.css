@@ -333,31 +333,28 @@ select {
    一覧テーブル：列幅
    ========================================================= */
 
+.sequence-cell,
+.date-cell,
+.weekday-cell {
+  text-align: center;
+}
+
 .col-no {
-  width: 28px !important;
-  min-width: 28px !important;
-  max-width: 28px !important;
+  width: 28px;
 }
 
 .col-date {
-  width: 50px !important;
-  min-width: 50px !important;
-  max-width: 50px !important;
+  width: 50px;
 }
 
 .col-weekday {
-  width: 32px !important;
-  min-width: 32px !important;
-  max-width: 32px !important;
+  width: 30px;
 }
 
 .col-time-range {
-  width: 96px !important;
-  min-width: 96px !important;
-  max-width: 96px !important;
+  width: 96px;
 }
 
-/* 利用者と担当者はほぼ同じ幅 */
 .col-user {
   width: 100px;
 }
@@ -392,27 +389,6 @@ select {
 
 .col-detail {
   width: 46px;
-}
-
-.sequence-cell {
-  text-align: center;
-  padding-left: 2px !important;
-  padding-right: 2px !important;
-}
-
-
-
-.sequence-cell {
-  width: 28px;
-  text-align: center;
-}
-
-.date-cell {
-  width: 50px;
-}
-
-.weekday-cell {
-  width: 32px;
 }
 
 
