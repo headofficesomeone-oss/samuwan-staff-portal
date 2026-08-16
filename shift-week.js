@@ -884,6 +884,16 @@ function createMainRow(item, rowNumber) {
 	  <td class="sequence-cell">
 		  ${rowNumber}
 		</td>
+
+    <td class="can-cell center-cell">
+      <input
+        class="cancel-checkbox"
+        type="checkbox"
+        data-shift-id="${escapeAttribute(item.shiftId)}"
+        aria-label="中止"
+        ${String(item.status || "").trim() === "中止" ? "checked" : ""}
+      >
+    </td>
 		
     <td class="center-cell">
       ${escapeHtml(formatShortDate(item.date))}
@@ -959,6 +969,68 @@ function createMainRow(item, rowNumber) {
         item.shiftId
       );
     });
+
+  const cancelCheckbox =
+    row.querySelector(".cancel-checkbox");
+
+  if (cancelCheckbox) {
+    cancelCheckbox.addEventListener(
+      "change",
+      async event => {
+        const checkbox = event.target;
+        const previousStatus =
+          String(item.status || "").trim() ||
+          "予定";
+
+        const nextStatus =
+          checkbox.checked
+            ? "中止"
+            : "予定";
+
+        checkbox.disabled = true;
+
+        try {
+          await updateShiftWeek(
+            item.shiftId,
+            { status: nextStatus }
+          );
+
+          updateLocalItem(
+            item.shiftId,
+            { status: nextStatus }
+          );
+
+          item.status = nextStatus;
+
+          const statusCell =
+            row.querySelector(".status-cell");
+
+          if (statusCell) {
+            statusCell.textContent =
+              nextStatus;
+          }
+
+          setMessage(
+            nextStatus === "中止"
+              ? "シフトを中止にしました。"
+              : "シフトを予定に戻しました。"
+          );
+
+        } catch (error) {
+          checkbox.checked =
+            previousStatus === "中止";
+
+          showApiError(
+            error,
+            "中止状態の保存に失敗しました"
+          );
+
+        } finally {
+          checkbox.disabled = false;
+        }
+      }
+    );
+  }
 
   row
     .querySelectorAll(".staff-select")
