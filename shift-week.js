@@ -859,7 +859,6 @@ function createMainRow(item) {
       item.paidReturnFrom,
       item.paidReturnDriverNo,
       item.paidReturnVehicle,
-      item.vehicle
     ].some(value => String(value || "").trim());
 
   const paid =
@@ -2493,8 +2492,7 @@ function getNewShiftFormData() {
 
     vehicle:
       paidGoVehicle ||
-      paidReturnVehicle ||
-      pickupVehicle
+      paidReturnVehicle
   };
 }
 
