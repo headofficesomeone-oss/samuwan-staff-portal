@@ -887,6 +887,9 @@ function createMainRow(item, rowNumber) {
   const effectiveStatus =
     getEffectiveStatus_(item);
 
+  const canCancelToday =
+    isTodayShift_(item);
+
   if (pendingStatusChanges.has(item.shiftId)) {
     row.classList.add("pending-change");
   }
@@ -933,7 +936,9 @@ function createMainRow(item, rowNumber) {
         type="checkbox"
         data-shift-id="${escapeAttribute(item.shiftId)}"
         aria-label="中止"
+        title="${canCancelToday ? "当日中止" : "中止操作は当日の支援のみ可能です"}"
         ${effectiveStatus === "中止" ? "checked" : ""}
+        ${canCancelToday ? "" : "disabled"}
       >
     </td>
 		
@@ -1020,6 +1025,17 @@ function createMainRow(item, rowNumber) {
       "change",
       event => {
         const checkbox = event.target;
+
+        if (!isTodayShift_(item)) {
+          checkbox.checked =
+            getEffectiveStatus_(item) === "中止";
+
+          setMessage(
+            "中止チェックは当日の支援のみ変更できます。",
+            true
+          );
+          return;
+        }
 
         const nextStatus =
           checkbox.checked
@@ -1930,6 +1946,56 @@ function updateLocalItem(shiftId, changes) {
 /* =============================================================
    中止／予定：未保存変更
    ============================================================= */
+
+function getShiftDateKey_(value) {
+  const text =
+    String(value || "").trim();
+
+  const match =
+    text.match(
+      /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/
+    );
+
+  if (match) {
+    return [
+      match[1],
+      String(Number(match[2])).padStart(2, "0"),
+      String(Number(match[3])).padStart(2, "0")
+    ].join("-");
+  }
+
+  const date = new Date(value);
+
+  if (isNaN(date.getTime())) {
+    return "";
+  }
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+
+function getTodayDateKey_() {
+  const today = new Date();
+
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+
+function isTodayShift_(item) {
+  return (
+    getShiftDateKey_(item && item.date) ===
+    getTodayDateKey_()
+  );
+}
+
 
 function getEffectiveStatus_(item) {
   const shiftId =
