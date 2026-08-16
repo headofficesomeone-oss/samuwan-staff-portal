@@ -1187,6 +1187,11 @@ function openShiftDetailModal(
       item.meetingInfo ||
       "";
 
+  document
+    .getElementById("detailReservationInfo")
+    .value =
+      item.reservationInfo || "";
+
   document.getElementById("detailPaidGoTime").value =
     item.paidGoTime || "";
   document.getElementById("detailPaidGoFrom").value =
@@ -1326,6 +1331,8 @@ async function saveShiftDetailModal(
       document.getElementById("detailMeeting").value.trim(),
     meetingPoint:
       document.getElementById("detailMeetingPoint").value.trim(),
+    reservationInfo:
+      document.getElementById("detailReservationInfo").value.trim(),
 
     paidGoTime:
       document.getElementById("detailPaidGoTime").value,
@@ -2394,6 +2401,11 @@ function getNewShiftFormData() {
 
     meetingPoint:
       meetingPoint,
+
+    reservationInfo:
+      getNewShiftInputValue(
+        "newShiftReservationInfo"
+      ),
 
     paidGoTime:
       getNewShiftInputValue(
