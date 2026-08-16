@@ -175,6 +175,10 @@ function bindScreenEvents() {
   document
     .getElementById("reloadButton")
     .addEventListener("click", async () => {
+      if (!confirmDiscardPendingStatusChanges_("再読み込み")) {
+        return;
+      }
+
       await loadCurrentWeek({ forceReload: true });
     });
 
@@ -2090,7 +2094,9 @@ function updatePendingSaveUi_() {
 }
 
 
-function confirmDiscardPendingStatusChanges_() {
+function confirmDiscardPendingStatusChanges_(
+  actionLabel = "週を移動"
+) {
   if (pendingStatusChanges.size === 0) {
     return true;
   }
@@ -2098,8 +2104,12 @@ function confirmDiscardPendingStatusChanges_() {
   const confirmed =
     window.confirm(
       "未保存の中止／予定変更があります。\n" +
-      "保存せずに週を移動すると変更は破棄されます。\n\n" +
-      "変更を破棄して移動しますか？"
+      "保存せずに" +
+      actionLabel +
+      "すると変更は破棄されます。\n\n" +
+      "変更を破棄して" +
+      actionLabel +
+      "しますか？"
     );
 
   if (!confirmed) return false;
