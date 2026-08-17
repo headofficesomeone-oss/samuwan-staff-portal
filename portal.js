@@ -572,104 +572,6 @@ let todayStaffShifts = [];
 const ACTION_RECORD_PENDING_KEY =
   "staffPortalPendingActionRecordSessionsV1";
 
-const ACTION_RECORD_REVIEW_KEY =
-  "staffPortalActionRecordReviewV1";
-
-function readActionRecordReview_() {
-  try {
-    const parsed =
-      JSON.parse(
-        localStorage.getItem(
-          ACTION_RECORD_REVIEW_KEY
-        ) || "[]"
-      );
-
-    return Array.isArray(parsed)
-      ? parsed
-      : [];
-
-  } catch (error) {
-    return [];
-  }
-}
-
-function writeActionRecordReview_(list) {
-  localStorage.setItem(
-    ACTION_RECORD_REVIEW_KEY,
-    JSON.stringify(
-      Array.isArray(list)
-        ? list.slice(-100)
-        : []
-    )
-  );
-
-  updateStaffActionSyncStatus_();
-}
-
-function moveActionRecordSessionToReview_(
-  session,
-  error
-) {
-  const list =
-    readActionRecordReview_();
-
-  const item = {
-    ...(session || {}),
-    reviewAt:
-      new Date().toISOString(),
-    reviewReason:
-      error && error.message
-        ? error.message
-        : String(error || ""),
-    reviewStatus:
-      "要確認"
-  };
-
-  const key =
-    String(
-      item.sessionId ||
-      item.shiftId ||
-      ""
-    );
-
-  const filtered =
-    list.filter(existing =>
-      String(
-        existing.sessionId ||
-        existing.shiftId ||
-        ""
-      ) !== key
-    );
-
-  filtered.push(item);
-
-  writeActionRecordReview_(
-    filtered
-  );
-}
-
-function isLegacyActionRecordStateError_(error) {
-  const message =
-    String(
-      error && error.message
-        ? error.message
-        : error || ""
-    );
-
-  return (
-    message.includes(
-      "現在は待機中ではありません"
-    ) ||
-    message.includes(
-      "終了または取消済み"
-    ) ||
-    message.includes(
-      "組合せが一致しません"
-    )
-  );
-}
-
-
 const ACTION_RECORD_COMPLETED_KEY =
   "staffPortalCompletedActionRecordV1";
 
@@ -830,122 +732,22 @@ function actionRecordOperationId_() {
   );
 }
 
-
-function getActionRecordEventOperationId_(
-  session,
-  event,
-  index
-) {
-  if (event.operationId) {
-    return event.operationId;
-  }
-
-  const base =
-    String(
-      session.sessionId ||
-      session.shiftId ||
-      "SESSION"
-    )
-      .replace(
-        /[^A-Za-z0-9_-]/g,
-        ""
-      )
-      .slice(-40);
-
-  event.operationId =
-    "ARS-" +
-    base +
-    "-" +
-    String(index + 1)
-      .padStart(3, "0");
-
-  return event.operationId;
-}
-
-function persistPendingActionRecordSession_(
-  session
-) {
-  const current =
-    readPendingActionRecordSessions_();
-
-  const key =
-    String(
-      session.sessionId ||
-      session.shiftId ||
-      ""
-    );
-
-  const next =
-    current.map(item => {
-      const itemKey =
-        String(
-          item.sessionId ||
-          item.shiftId ||
-          ""
-        );
-
-      return itemKey === key
-        ? session
-        : item;
-    });
-
-  writePendingActionRecordSessions_(
-    next
-  );
-}
-
-
 async function syncOneActionRecordSession_(
   session
 ) {
   const clientId =
-    session.syncState &&
-    session.syncState.clientId
-      ? session.syncState.clientId
-      : await resolveActionRecordClientId_(
-          session.clientName
-        );
-
-  session.syncState =
-    session.syncState || {};
-
-  session.syncState.clientId =
-    clientId;
-
-  let outingResultId =
-    session.syncState.outingResultId || "";
-
-  let routeId =
-    session.syncState.routeId || "";
-
-  let previousDriverId =
-    session.syncState.previousDriverId || "";
-
-  let nextEventIndex =
-    Number(
-      session.syncState.nextEventIndex || 0
+    await resolveActionRecordClientId_(
+      session.clientName
     );
 
-  const events =
-    Array.isArray(session.events)
-      ? session.events
-      : [];
+  let outingResultId = "";
+  let routeId = "";
+  let previousDriverId = "";
 
   for (
-    let index = nextEventIndex;
-    index < events.length;
-    index++
+    const event of
+      session.events || []
   ) {
-    const event =
-      events[index] || {};
-
-    const operationId =
-      getActionRecordEventOperationId_(
-        session,
-        event,
-        index
-      );
-
     if (event.type === "start") {
       const result =
         await callActionRecordApi_(
@@ -993,7 +795,7 @@ async function syncOneActionRecordSession_(
               registerType:
                 "ポータル",
               operationId:
-                operationId
+                actionRecordOperationId_()
             }
           }
         );
@@ -1009,19 +811,18 @@ async function syncOneActionRecordSession_(
       }
 
       outingResultId =
-        result.outingResultId ||
-        outingResultId;
+        result.outingResultId;
 
       routeId =
-        result.routeId ||
-        routeId;
+        result.routeId;
 
       previousDriverId =
         event.driverId || "";
 
-    } else if (
-      event.type === "arrival"
-    ) {
+      continue;
+    }
+
+    if (event.type === "arrival") {
       const result =
         await callActionRecordApi_(
           "outing-arrive",
@@ -1045,7 +846,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                operationId
+                actionRecordOperationId_()
             }
           }
         );
@@ -1060,7 +861,10 @@ async function syncOneActionRecordSession_(
         );
       }
 
-    } else if (
+      continue;
+    }
+
+    if (
       event.type ===
         "nextDeparture"
     ) {
@@ -1097,7 +901,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                operationId
+                actionRecordOperationId_()
             }
           }
         );
@@ -1113,15 +917,15 @@ async function syncOneActionRecordSession_(
       }
 
       routeId =
-        result.routeId ||
-        routeId;
+        result.routeId;
 
       previousDriverId =
         event.driverId || "";
 
-    } else if (
-      event.type === "home"
-    ) {
+      continue;
+    }
+
+    if (event.type === "home") {
       const result =
         await callActionRecordApi_(
           "outing-arrive",
@@ -1146,7 +950,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                operationId
+                actionRecordOperationId_()
             }
           }
         );
@@ -1161,7 +965,10 @@ async function syncOneActionRecordSession_(
         );
       }
 
-    } else if (
+      continue;
+    }
+
+    if (
       event.type === "finishCurrent" ||
       event.type === "forceFinish"
     ) {
@@ -1178,7 +985,7 @@ async function syncOneActionRecordSession_(
               operatorName:
                 session.employeeName,
               operationId:
-                operationId
+                actionRecordOperationId_()
             }
           }
         );
@@ -1193,298 +1000,79 @@ async function syncOneActionRecordSession_(
         );
       }
     }
-
-    /*
-     * 1イベント成功するたびにチェックポイントを保存。
-     * 次回再送は成功済みイベントを繰り返しません。
-     */
-    session.syncState = {
-      ...session.syncState,
-      outingResultId:
-        outingResultId,
-      routeId:
-        routeId,
-      previousDriverId:
-        previousDriverId,
-      nextEventIndex:
-        index + 1,
-      lastSyncedAt:
-        new Date().toISOString()
-    };
-
-    persistPendingActionRecordSession_(
-      session
-    );
   }
 
-  /*
-   * ポータル履歴のサーバー保存は、
-   * 現在のSTAFF_PORTAL GASに
-   * recordPortalHistoryEventが未実装でも
-   * 行動記録本体の同期を失敗扱いにしません。
-   *
-   * ローカル履歴は端末に残るため、
-   * 後で履歴APIを整備した際に救済できます。
-   */
-  session.syncState = {
-    ...session.syncState,
-    actionRecordSynced:
-      true,
-    completedAt:
-      new Date().toISOString()
-  };
-
-  persistPendingActionRecordSession_(
-    session
-  );
-
-  return {
-    success: true,
-    outingResultId:
-      outingResultId,
-    routeId:
-      routeId
-  };
-}
-
-
-function isActionRecordNetworkError_(error) {
-  const message = String(
-    error && error.message
-      ? error.message
-      : error || ""
-  ).toLowerCase();
-
-  return (
-    message.includes("failed to fetch") ||
-    message.includes("networkerror") ||
-    message.includes("load failed") ||
-    message.includes("通信") ||
-    message.includes("network request failed")
-  );
-}
-
-function getActionRecordRetryDelayMs_(session) {
-  const retryCount = Number(
-    session && session.retryCount || 0
-  );
-
-  if (retryCount <= 0) return 0;
-  if (retryCount === 1) return 30000;
-  if (retryCount === 2) return 60000;
-  if (retryCount === 3) return 120000;
-  if (retryCount === 4) return 300000;
-  return 600000;
-}
-
-function isActionRecordRetryDue_(session) {
-  if (!session || !session.lastRetryAt) {
-    return true;
-  }
-
-  const last = new Date(
-    session.lastRetryAt
-  ).getTime();
-
-  if (!Number.isFinite(last)) {
-    return true;
-  }
-
-  return (
-    Date.now() - last >=
-    getActionRecordRetryDelayMs_(session)
-  );
-}
-
-function hasActionRecordCheckpoint_(session) {
-  const syncState =
-    session &&
-    session.syncState &&
-    typeof session.syncState === "object"
-      ? session.syncState
-      : null;
-
-  return !!(
-    syncState &&
-    (
-      Number(syncState.nextEventIndex || 0) > 0 ||
-      syncState.outingResultId ||
-      syncState.routeId ||
-      syncState.actionRecordSynced
-    )
-  );
-}
-
-
-function isPastSupportDate_(supportDate) {
-  const text =
-    String(
-      supportDate || ""
-    ).trim();
-
-  if (!text) {
-    return false;
-  }
-
-  const normalized =
-    text.replace(/\//g, "-");
-
-  const match =
-    normalized.match(
-      /^(\d{4})-(\d{1,2})-(\d{1,2})/
-    );
-
-  if (!match) {
-    return false;
-  }
-
-  const target =
-    [
-      match[1],
-      String(match[2]).padStart(2, "0"),
-      String(match[3]).padStart(2, "0")
-    ].join("-");
-
-  const today =
-    getTodayLocalDateText();
-
-  return target < today;
-}
-
-
-function shouldMoveOldPendingSessionToReview_(
-  session
-) {
-  if (!session) {
-    return false;
-  }
-
-  if (
-    hasActionRecordCheckpoint_(
-      session
-    )
-  ) {
-    return false;
-  }
-
-  const firstError =
-    String(
-      session.firstError || ""
-    );
-
-  const lastError =
-    String(
-      session.lastError || ""
-    );
-
-  if (
-    isLegacyActionRecordStateError_(
-      firstError
-    ) ||
-    isLegacyActionRecordStateError_(
-      lastError
-    )
-  ) {
-    return true;
-  }
-
-  /*
-   * 前日以前の古い未送信で、
-   * チェックポイントが一度も作られず、
-   * 5回以上試行済みなら無限再送を止めて要確認へ。
-   * 当日分は通信不良でも自動退避しません。
-   */
-  return (
-    isPastSupportDate_(
-      session.supportDate
-    ) &&
-    Number(
-      session.retryCount || 0
-    ) >= 5
-  );
-}
-
-
-async function checkCompletedStaffActionOnServer_(
-  session
-) {
-  if (
-    !session ||
-    !session.shiftId ||
-    !session.employeeId
-  ) {
-    return {
-      success: false,
-      completed: false,
-      reason: "確認情報不足"
-    };
-  }
+  let history = [];
 
   try {
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          "staffPortalLocalActionHistoryV1"
+        ) || "[]"
+      );
+  } catch (error) {}
+
+  const historyIds =
+    new Set(
+      session.historyEventIds || []
+    );
+
+  for (const event of history) {
+    if (
+      !historyIds.has(event.id)
+    ) {
+      continue;
+    }
+
     const result =
       await postGas({
         action:
-          "checkStaffActionCompleted",
-        shiftId:
-          session.shiftId,
-        employeeId:
-          session.employeeId,
-        employeeName:
-          session.employeeName || "",
-        clientName:
-          session.clientName || "",
-        supportDate:
-          session.supportDate || ""
+          "recordPortalHistoryEvent",
+        event
       });
 
-    return {
-      success:
-        !!(
-          result &&
-          result.success === true
-        ),
-      completed:
-        !!(
-          result &&
-          result.success === true &&
-          result.completed === true
-        ),
-      reason:
-        result && result.reason
-          ? String(result.reason)
-          : ""
-    };
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result?.message ||
+        "行動履歴を同期できませんでした"
+      );
+    }
 
-  } catch (error) {
-    return {
-      success: false,
-      completed: false,
-      reason:
-        error && error.message
-          ? error.message
-          : String(error || "")
-    };
+    event.syncPending =
+      false;
   }
+
+  localStorage.setItem(
+    "staffPortalLocalActionHistoryV1",
+    JSON.stringify(
+      history.slice(-400)
+    )
+  );
 }
 
-
-async function flushPendingActionRecordSessions_(
-  options = {}
-) {
+async function flushPendingActionRecordSessions_() {
   if (actionRecordQueueFlushing) {
     return;
   }
 
   if (
-    typeof navigator !== "undefined" &&
-    navigator.onLine === false
+    readStaffActionQueue_()
+      .length > 0
   ) {
-    updateStaffActionSyncStatus_();
     return;
   }
 
-  const force =
-    options.force === true;
+  if (
+    typeof navigator !==
+      "undefined" &&
+    navigator.onLine === false
+  ) {
+    return;
+  }
 
   const pending =
     readPendingActionRecordSessions_();
@@ -1494,150 +1082,34 @@ async function flushPendingActionRecordSessions_(
     return;
   }
 
-  actionRecordQueueFlushing = true;
-
-  const failedSessions = [];
+  actionRecordQueueFlushing =
+    true;
 
   try {
-    for (const session of pending) {
-      /*
-       * まずサーバー側を確認します。
-       * STAFF_WORK_STATUSで同じシフトID + 従業員IDが
-       * すでに終了済みなら、端末の旧行動記録セッションは
-       * 再送する意味がないため未送信キューから整理します。
-       */
-      const completedCheck =
-        await checkCompletedStaffActionOnServer_(
-          session
-        );
+    while (true) {
+      const current =
+        readPendingActionRecordSessions_();
 
-      if (
-        completedCheck.success &&
-        completedCheck.completed
-      ) {
-        console.info(
-          "サーバー側で終了済みのため未送信を整理:",
-          session.shiftId,
-          session.employeeId
-        );
+      if (!current.length) break;
 
-        continue;
-      }
+      await syncOneActionRecordSession_(
+        current[0]
+      );
 
-      /*
-       * 旧データの無限再送を止めます。
-       * SW000054のように前日以前で、
-       * チェックポイント無し・再送多数のものは要確認へ退避します。
-       */
-      if (
-        shouldMoveOldPendingSessionToReview_(
-          session
-        )
-      ) {
-        moveActionRecordSessionToReview_(
-          session,
-          new Error(
-            session.firstError ||
-            session.lastError ||
-            "旧未送信データのため要確認へ退避"
-          )
-        );
-        continue;
-      }
-
-      /*
-       * 自動再送はバックオフ時間が来たものだけ。
-       * ユーザーが未送信表示をタップした時だけ force=true で即再送。
-       */
-      if (
-        !force &&
-        !isActionRecordRetryDue_(session)
-      ) {
-        failedSessions.push(session);
-        continue;
-      }
-
-      try {
-        await syncOneActionRecordSession_(
-          session
-        );
-
-      } catch (error) {
-        if (
-          !hasActionRecordCheckpoint_(session) &&
-          isLegacyActionRecordStateError_(error)
-        ) {
-          moveActionRecordSessionToReview_(
-            session,
-            error
-          );
-          continue;
-        }
-
-        const networkError =
-          isActionRecordNetworkError_(error);
-
-        const previousError =
-          String(
-            session.lastError || ""
-          );
-
-        const previousWasStateError =
-          isLegacyActionRecordStateError_(
-            previousError
-          );
-
-        const nextRetryCount =
-          networkError
-            ? Math.max(
-                1,
-                Number(
-                  session.retryCount || 0
-                )
-              )
-            : Number(
-                session.retryCount || 0
-              ) + 1;
-
-        const currentErrorMessage =
-          error && error.message
-            ? error.message
-            : String(error || "");
-
-        failedSessions.push({
-          ...session,
-          retryCount:
-            nextRetryCount,
-          lastRetryAt:
-            new Date().toISOString(),
-          firstError:
-            session.firstError ||
-            currentErrorMessage,
-          lastError:
-            previousWasStateError &&
-            networkError
-              ? previousError
-              : currentErrorMessage,
-          lastNetworkError:
-            networkError
-              ? (
-                  error && error.message
-                    ? error.message
-                    : String(error || "")
-                )
-              : (
-                  session.lastNetworkError || ""
-                )
-        });
-      }
+      writePendingActionRecordSessions_(
+        current.slice(1)
+      );
     }
 
-    writePendingActionRecordSessions_(
-      failedSessions
+  } catch (error) {
+    console.warn(
+      "行動記録の同期に失敗",
+      error
     );
 
   } finally {
-    actionRecordQueueFlushing = false;
+    actionRecordQueueFlushing =
+      false;
     updateStaffActionSyncStatus_();
   }
 }
@@ -1693,19 +1165,9 @@ function updateStaffActionSyncStatus_() {
 
   if (!el) return;
 
-  const staffActionCount =
-    readStaffActionQueue_().length;
-
-  const actionRecordCount =
-    readPendingActionRecordSessions_().length;
-
   const count =
-    staffActionCount +
-    actionRecordCount;
-
-  const reviewCount =
-    readActionRecordReview_()
-      .length;
+    readStaffActionQueue_().length +
+    readPendingActionRecordSessions_().length;
 
   el.classList.remove(
     "synced",
@@ -1715,105 +1177,22 @@ function updateStaffActionSyncStatus_() {
   );
 
   if (count === 0) {
-    if (reviewCount > 0) {
-      el.classList.add("warning");
-      el.textContent =
-        "✓ 同期済み　要確認 " +
-        reviewCount +
-        "件";
-      el.title =
-        "タップすると要確認データの詳細を表示します。";
-    } else {
-      el.classList.add("synced");
-      el.textContent = "✓ 同期済み";
-      el.title = "";
-    }
+    el.classList.add("synced");
+    el.textContent = "✓ 同期済み";
+  } else if (count <= 10) {
+    el.classList.add("pending");
+    el.textContent =
+      "↻ 未送信 " + count + "件";
+  } else if (count < 50) {
+    el.classList.add("warning");
+    el.textContent =
+      "⚠ 未送信 " + count + "件";
   } else {
-    const detail = [];
-
-    if (staffActionCount > 0) {
-      detail.push(
-        "操作" +
-        staffActionCount +
-        "件"
-      );
-    }
-
-    if (actionRecordCount > 0) {
-      detail.push(
-        "行動記録" +
-        actionRecordCount +
-        "件"
-      );
-    }
-
-    if (count <= 10) {
-      el.classList.add("pending");
-      el.textContent =
-        "↻ 未送信 " +
-        count +
-        "件（" +
-        detail.join("・") +
-        "）";
-    } else if (count < 50) {
-      el.classList.add("warning");
-      el.textContent =
-        "⚠ 未送信 " +
-        count +
-        "件（" +
-        detail.join("・") +
-        "）";
-    } else {
-      el.classList.add("danger");
-      el.textContent =
-        "⚠ 通信確認 未送信 " +
-        count +
-        "件（" +
-        detail.join("・") +
-        "）";
-    }
-
-    const staffQueue =
-      readStaffActionQueue_();
-
-    const actionSessions =
-      readPendingActionRecordSessions_();
-
-    const failedInfo = [];
-
-    staffQueue.forEach(item => {
-      if (
-        item &&
-        item.lastError
-      ) {
-        failedInfo.push(
-          "操作: " +
-          item.lastError
-        );
-      }
-    });
-
-    actionSessions.forEach(session => {
-      if (
-        session &&
-        session.lastError
-      ) {
-        failedInfo.push(
-          "行動記録: " +
-          session.lastError
-        );
-      }
-    });
-
-    el.title =
-      failedInfo.length
-        ? (
-            "タップすると未送信・要確認データの詳細を表示します\n" +
-            failedInfo
-              .slice(0, 5)
-              .join("\n")
-          )
-        : "タップすると未送信・要確認データの詳細を表示します";
+    el.classList.add("danger");
+    el.textContent =
+      "⚠ 通信確認 未送信 " +
+      count +
+      "件";
   }
 }
 function enqueueStaffAction_(
@@ -1973,34 +1352,6 @@ async function sendQueuedStaffActionItem_(
       item.payload.sendId
     );
 
-    /*
-     * 複数人介助の未入力確認は、
-     * この本人の「終わりました」がGASへ届いた後に実行します。
-     * 通信不良で後日再送された場合も、送信成功した時点で実行されます。
-     */
-    if (
-      item.payload.actionType ===
-        "終わりました"
-    ) {
-      await finalizeUntouchedCoStaffAfterFinish_(
-        {
-          shiftId:
-            item.payload.shiftId,
-          clientName:
-            item.payload.clientName,
-          supportDate:
-            item.payload.supportDate,
-          service:
-            item.payload.service,
-          startTime:
-            item.payload.scheduledStart,
-          endTime:
-            item.payload.scheduledEnd
-        },
-        item.payload.deviceTime
-      );
-    }
-
     return {
       success: true,
       result:
@@ -2088,17 +1439,7 @@ async function flushStaffActionQueue_() {
         continue;
       }
 
-      /*
-       * 通信失敗でも後続を止めません。
-       * 失敗した1件だけ端末に残し、
-       * 他の操作は送れるものから送ります。
-       */
-      console.warn(
-        "この操作は次回再送します",
-        item.payload.sendId
-      );
-
-      continue;
+      break;
     }
 
   } finally {
@@ -2107,261 +1448,24 @@ async function flushStaffActionQueue_() {
 
     updateStaffActionSyncStatus_();
 
-    /*
-     * 通常操作に送信待ちが残っていても、
-     * 行動記録側で送れるセッションは送信します。
-     */
-    flushPendingActionRecordSessions_()
-      .catch(
-        error =>
-          console.warn(
-            "行動記録の後続同期に失敗",
-            error
-          )
-      );
-  }
-}
-
-
-function getPendingSyncErrorDetails_() {
-  const lines = [];
-
-  const staffQueue =
-    readStaffActionQueue_();
-
-  staffQueue.forEach(
-    (item, index) => {
-      const payload =
-        item && item.payload
-          ? item.payload
-          : {};
-
-      lines.push(
-        [
-          "【操作 " + (index + 1) + "】",
-          payload.clientName || "",
-          payload.actionType || "",
-          item.lastError
-            ? "エラー: " + item.lastError
-            : "エラー内容: まだ取得できていません",
-          "再送回数: " +
-            Number(item.attempts || 0)
-        ]
-          .filter(Boolean)
-          .join("\n")
-      );
-    }
-  );
-
-  const sessions =
-    readPendingActionRecordSessions_();
-
-  sessions.forEach(
-    (session, index) => {
-      lines.push(
-        [
-          "【行動記録 " + (index + 1) + "】",
-          session.clientName || "",
-          session.service || "",
-          "シフトID: " +
-            (session.shiftId || ""),
-          session.lastError
-            ? "エラー: " + session.lastError
-            : "エラー内容: まだ取得できていません",
-          "再送回数: " +
-            Number(session.retryCount || 0)
-        ]
-          .filter(Boolean)
-          .join("\n")
-      );
-    }
-  );
-
-  const reviews =
-    readActionRecordReview_();
-
-  reviews.forEach(
-    (session, index) => {
-      lines.push(
-        [
-          "【要確認 " +
-            (index + 1) +
-            "】",
-          session.clientName || "",
-          session.service || "",
-          "シフトID: " +
-            (session.shiftId || ""),
-          "理由: " +
-            (
-              session.reviewReason ||
-              "状態不一致"
-            ),
-          "PC訂正対象"
-        ]
-          .filter(Boolean)
-          .join("\n")
-      );
-    }
-  );
-
-  return lines;
-}
-
-
-
-async function cleanupResolvedActionRecordReviews_() {
-  const reviews =
-    readActionRecordReview_();
-
-  if (!reviews.length) {
-    return 0;
-  }
-
-  const unresolved = [];
-  let removed = 0;
-
-  for (const session of reviews) {
-    const check =
-      await checkCompletedStaffActionOnServer_(
-        session
-      );
-
     if (
-      check.success &&
-      check.completed
+      readStaffActionQueue_()
+        .length === 0
     ) {
-      removed++;
-      continue;
+      flushPendingActionRecordSessions_()
+        .catch(
+          error =>
+            console.warn(
+              "行動記録の後続同期に失敗",
+              error
+            )
+        );
     }
-
-    unresolved.push(
-      session
-    );
-  }
-
-  if (removed > 0) {
-    writeActionRecordReview_(
-      unresolved
-    );
-  }
-
-  return removed;
-}
-
-
-function showPendingSyncErrorDetails_() {
-  const lines =
-    getPendingSyncErrorDetails_();
-
-  if (!lines.length) {
-    alert("未送信データはありません。");
-    return;
-  }
-
-  alert(
-    "未送信データの詳細\n\n" +
-    lines.join("\n\n")
-  );
-}
-
-
-async function retryAllPendingSyncNow_() {
-  const el =
-    document.getElementById(
-      "staffActionSyncStatus"
-    );
-
-  if (el) {
-    el.textContent =
-      "↻ 再送しています…";
-  }
-
-  try {
-    await flushStaffActionQueue_();
-    await flushPendingActionRecordSessions_({ force: true });
-  } catch (error) {
-    console.warn(
-      "手動再送に失敗",
-      error
-    );
-  } finally {
-    /*
-     * 再送後は表示だけ更新します。
-     * 自動的にalertを出さないことで、
-     * 「閉じた直後にまたエラー画面」のループを防ぎます。
-     */
-    updateStaffActionSyncStatus_();
   }
 }
-
 
 function startStaffActionQueueSync_() {
   updateStaffActionSyncStatus_();
-
-  /*
-   * 起動直後にも既存の未送信を整理します。
-   * 古い状態不一致データは要確認へ退避され、
-   * 正常な未送信はそのまま再送されます。
-   */
-  setTimeout(
-    async () => {
-      try {
-        await flushStaffActionQueue_();
-        await flushPendingActionRecordSessions_();
-        await cleanupResolvedActionRecordReviews_();
-      } catch (error) {
-        console.warn(
-          "起動時の同期整理に失敗",
-          error
-        );
-      } finally {
-        updateStaffActionSyncStatus_();
-      }
-    },
-    800
-  );
-
-  const syncStatus =
-    document.getElementById(
-      "staffActionSyncStatus"
-    );
-
-  if (
-    syncStatus &&
-    !syncStatus.dataset.retryBound
-  ) {
-    syncStatus.dataset.retryBound = "1";
-    syncStatus.style.cursor = "pointer";
-    syncStatus.addEventListener(
-      "click",
-      async () => {
-        try {
-          await cleanupResolvedActionRecordReviews_();
-        } catch (error) {
-          console.warn(
-            "要確認整理に失敗",
-            error
-          );
-        }
-
-        updateStaffActionSyncStatus_();
-
-        const pendingCount =
-          readStaffActionQueue_().length +
-          readPendingActionRecordSessions_().length;
-
-        const reviewCount =
-          readActionRecordReview_().length;
-
-        if (
-          pendingCount > 0 ||
-          reviewCount > 0
-        ) {
-          showPendingSyncErrorDetails_();
-        }
-      }
-    );
-  }
 
   if (
     staffActionQueueTimer
@@ -2396,16 +1500,6 @@ window.addEventListener(
             error
           )
       );
-
-    flushPendingActionRecordSessions_({
-      force: true
-    }).catch(
-      error =>
-        console.warn(
-          "通信復旧後の行動記録再送失敗",
-          error
-        )
-    );
   }
 );
 
@@ -2879,7 +1973,9 @@ async function loadTodayStaffShifts(forceRefresh = false) {
         : [];
 
     const newShifts =
-      result.shifts || [];
+      await mergeShiftWeekStatusFromBasicApi_(
+        result.shifts || []
+      );
 
     /*
      * 前回にはなかったシフトを確認します。
@@ -3183,6 +2279,14 @@ function updateSupportGuideByState_(
     setSupportGuideText_(
       shift.clientName +
       "さんを支援中です"
+    );
+    return;
+  }
+
+  if (state === "中止") {
+    setSupportGuideText_(
+      shift.clientName +
+      "さんの支援は中止になっています"
     );
     return;
   }
@@ -4057,8 +3161,26 @@ function updateSupportMainDisplay_(shift) {
   if (title) title.textContent = shift.service + "｜" + shift.clientName;
   if (meta) meta.textContent = shift.startTime + "〜" + shift.endTime;
   if (statePill) {
-    const st = shift.currentState || "未開始";
-    statePill.textContent = st === "未開始" ? "待機中" : (st === "移動中" ? "移動中" : (st === "支援中" ? "支援中" : "終了"));
+    const st =
+      shift.currentState ||
+      "未開始";
+
+    statePill.textContent =
+      st === "未開始"
+        ? "待機中"
+        : (
+            st === "移動中"
+              ? "移動中"
+              : (
+                  st === "支援中"
+                    ? "支援中"
+                    : (
+                        st === "中止"
+                          ? "中止"
+                          : "終了"
+                      )
+                )
+          );
   }
 }
 
@@ -5444,6 +4566,28 @@ function setStaffActionButtonsByState(currentState) {
   const actionRecordButton = document.getElementById("actionRecordButton");
   const homeReturnButton = document.getElementById("homeReturnButton");
 
+  /*
+   * 中止シフトを選択した後に別シフトへ移った場合に備え、
+   * 「向かいます」ボタンを毎回通常状態へ戻します。
+   */
+  if (moveButton) {
+    const moveLabel =
+      moveButton.querySelector(
+        "strong"
+      );
+
+    if (moveLabel) {
+      moveLabel.textContent =
+        "向かいます";
+    }
+
+    moveButton.onclick =
+      () =>
+        sendStaffAction(
+          "向かいます"
+        );
+  }
+
   [moveButton,enterButton,finishButton,continueButton,preCancelButton,cancelButton,actionRecordButton,homeReturnButton]
     .forEach(b => { if (b) { b.disabled = true; b.classList.add("hidden"); } });
 
@@ -5520,6 +4664,28 @@ updateSupportMainDisplay_(shift);
     case "未開始":
       if (moveButton) { moveButton.disabled = false; moveButton.classList.remove("hidden"); }
       if (preCancelButton) { preCancelButton.disabled = false; preCancelButton.classList.remove("hidden"); }
+      break;
+
+    case "中止":
+      if (moveButton) {
+        const moveLabel =
+          moveButton.querySelector(
+            "strong"
+          );
+
+        if (moveLabel) {
+          moveLabel.textContent =
+            "支援を再開";
+        }
+
+        moveButton.onclick =
+          resumeCancelledShiftFromPortal_;
+
+        moveButton.disabled = false;
+        moveButton.classList.remove(
+          "hidden"
+        );
+      }
       break;
 
     case "移動中":
@@ -6049,6 +5215,16 @@ async function sendStaffAction(
         async () => {
           updateStaffActionSyncStatus_();
 
+          if (
+            actionType ===
+              "終わりました"
+          ) {
+            await finalizeUntouchedCoStaffAfterFinish_(
+              shift,
+              actionDeviceTime
+            );
+          }
+
           try {
             await loadTodayStaffShifts(
               true
@@ -6462,6 +5638,465 @@ function setOfficeActionButtonsDisabled(
  */
 const SHIFT_WEEK_VERSION_API_URL =
   "https://script.google.com/macros/s/AKfycbwBQOZ5MjFRwQyKKYXLVpM5npEl9od34CQjoW9rWimQaphIf_sTK8_uIjxSVrMxvtGX/exec";
+
+
+/**
+ * 基本シフトGASをJSONPで呼び出します。
+ */
+function callShiftWeekApiJsonp_(
+  action,
+  {
+    payload = null,
+    query = {}
+  } = {}
+) {
+  return new Promise(
+    (resolve, reject) => {
+      const callbackName =
+        "shiftWeekPortalCallback_" +
+        Date.now() +
+        "_" +
+        Math.floor(
+          Math.random() * 100000
+        );
+
+      const script =
+        document.createElement(
+          "script"
+        );
+
+      let finished = false;
+
+      const cleanup = () => {
+        delete window[callbackName];
+
+        if (script.parentNode) {
+          script.parentNode.removeChild(
+            script
+          );
+        }
+      };
+
+      const timer =
+        setTimeout(() => {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+
+          reject(
+            new Error(
+              "基本シフトの通信がタイムアウトしました。"
+            )
+          );
+        }, 10000);
+
+      window[callbackName] =
+        result => {
+          if (finished) return;
+
+          finished = true;
+          clearTimeout(timer);
+          cleanup();
+
+          if (
+            !result ||
+            result.success !== true
+          ) {
+            reject(
+              new Error(
+                result?.message ||
+                "基本シフトの処理に失敗しました。"
+              )
+            );
+            return;
+          }
+
+          resolve(result);
+        };
+
+      const params =
+        new URLSearchParams();
+
+      params.set(
+        "action",
+        action
+      );
+
+      params.set(
+        "callback",
+        callbackName
+      );
+
+      if (payload !== null) {
+        params.set(
+          "payload",
+          JSON.stringify(payload)
+        );
+      }
+
+      Object.entries(
+        query || {}
+      ).forEach(
+        ([key, value]) => {
+          if (
+            value !== null &&
+            value !== undefined &&
+            value !== ""
+          ) {
+            params.set(
+              key,
+              String(value)
+            );
+          }
+        }
+      );
+
+      params.set(
+        "_",
+        Date.now()
+      );
+
+      script.src =
+        SHIFT_WEEK_VERSION_API_URL +
+        "?" +
+        params.toString();
+
+      script.onerror = () => {
+        if (finished) return;
+
+        finished = true;
+        clearTimeout(timer);
+        cleanup();
+
+        reject(
+          new Error(
+            "基本シフトGASへ接続できませんでした。"
+          )
+        );
+      };
+
+      document.body.appendChild(
+        script
+      );
+    }
+  );
+}
+
+
+/**
+ * 今日を含む週の月曜日を yyyy-MM-dd で返します。
+ */
+function getCurrentWeekMondayText_() {
+  const today =
+    new Date();
+
+  const day =
+    today.getDay();
+
+  const diff =
+    day === 0
+      ? -6
+      : 1 - day;
+
+  const monday =
+    new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + diff
+    );
+
+  return [
+    monday.getFullYear(),
+    String(
+      monday.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      monday.getDate()
+    ).padStart(2, "0")
+  ].join("-");
+}
+
+
+/**
+ * 基本シフト表の「状態」を本日の職員シフトへ重ねます。
+ *
+ * SHIFT_WEEK が「中止」の場合は、
+ * STAFF_ACTION側の状態より「中止」を優先します。
+ */
+async function mergeShiftWeekStatusFromBasicApi_(
+  shifts
+) {
+  const list =
+    Array.isArray(shifts)
+      ? shifts.map(
+          shift => ({
+            ...shift,
+            workState:
+              String(
+                shift.currentState ||
+                "未開始"
+              ).trim()
+          })
+        )
+      : [];
+
+  if (!list.length) {
+    return list;
+  }
+
+  try {
+    const result =
+      await callShiftWeekApiJsonp_(
+        "week-list",
+        {
+          query: {
+            weekMonday:
+              getCurrentWeekMondayText_()
+          }
+        }
+      );
+
+    const shiftWeekItems =
+      Array.isArray(result.data)
+        ? result.data
+        : [];
+
+    const byId =
+      new Map(
+        shiftWeekItems.map(
+          item => [
+            String(
+              item.shiftId || ""
+            ).trim(),
+            item
+          ]
+        )
+      );
+
+    list.forEach(
+      shift => {
+        const basic =
+          byId.get(
+            String(
+              shift.shiftId || ""
+            ).trim()
+          );
+
+        if (!basic) {
+          return;
+        }
+
+        shift.shiftStatus =
+          String(
+            basic.status || ""
+          ).trim();
+
+        shift.shiftUpdatedAt =
+          String(
+            basic.updatedAt || ""
+          ).trim();
+
+        if (
+          shift.shiftStatus ===
+          "中止"
+        ) {
+          shift.currentState =
+            "中止";
+        }
+      }
+    );
+
+  } catch (error) {
+    /*
+     * 基本シフト状態だけ取れなくても、
+     * 従来の本日の支援表示は継続します。
+     */
+    console.warn(
+      "基本シフト状態の取得に失敗しました",
+      error
+    );
+  }
+
+  return list;
+}
+
+
+/**
+ * 中止済みの当日シフトをスマホから「予定」へ戻します。
+ */
+async function resumeCancelledShiftFromPortal_() {
+  const shift =
+    getSelectedTodayShift();
+
+  if (!shift) {
+    alert(
+      "支援を選択してください。"
+    );
+    return;
+  }
+
+  if (
+    String(
+      shift.shiftStatus ||
+      shift.currentState ||
+      ""
+    ).trim() !== "中止"
+  ) {
+    alert(
+      "この支援は中止状態ではありません。"
+    );
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      shift.clientName +
+      "\n" +
+      shift.startTime +
+      "～" +
+      shift.endTime +
+      "\n\n" +
+      "この支援は「中止」になっています。\n" +
+      "支援を再開しますか？"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  setStaffActionButtonsDisabled(
+    true
+  );
+
+  try {
+    /*
+     * 保存直前に基本シフトを取り直し、
+     * 最新の更新日時を使って競合チェックします。
+     */
+    const weekResult =
+      await callShiftWeekApiJsonp_(
+        "week-list",
+        {
+          query: {
+            weekMonday:
+              getCurrentWeekMondayText_()
+          }
+        }
+      );
+
+    const currentItem =
+      (
+        Array.isArray(
+          weekResult.data
+        )
+          ? weekResult.data
+          : []
+      ).find(
+        item =>
+          String(
+            item.shiftId || ""
+          ).trim() ===
+          String(
+            shift.shiftId || ""
+          ).trim()
+      );
+
+    if (!currentItem) {
+      throw new Error(
+        "基本シフトを確認できませんでした。"
+      );
+    }
+
+    if (
+      String(
+        currentItem.status || ""
+      ).trim() !== "中止"
+    ) {
+      await loadTodayStaffShifts(
+        true
+      );
+
+      alert(
+        "この支援はすでに中止解除されています。"
+      );
+      return;
+    }
+
+    const result =
+      await callShiftWeekApiJsonp_(
+        "week-update",
+        {
+          payload: {
+            shiftId:
+              shift.shiftId,
+
+            changes: {
+              status: "予定"
+            },
+
+            expectedUpdatedAt:
+              String(
+                currentItem.updatedAt ||
+                ""
+              )
+          }
+        }
+      );
+
+    if (
+      result &&
+      result.conflict
+    ) {
+      throw new Error(
+        "他の人が先にこのシフトを更新しています。" +
+        "最新状態を読み込み直してください。"
+      );
+    }
+
+    /*
+     * 古い中止キャッシュを即座に消します。
+     */
+    try {
+      localStorage.removeItem(
+        TODAY_STAFF_SHIFT_CACHE_KEY
+      );
+    } catch (error) {}
+
+    await loadTodayStaffShifts(
+      true
+    );
+
+    alert(
+      "中止を解除しました。\n" +
+      "通常どおり支援を開始できます。"
+    );
+
+  } catch (error) {
+    console.error(
+      "中止解除エラー",
+      error
+    );
+
+    alert(
+      "中止を解除できませんでした。\n" +
+      error.message
+    );
+
+  } finally {
+    const selected =
+      getSelectedTodayShift();
+
+    setStaffActionButtonsByState(
+      selected
+        ? (
+            selected.currentState ||
+            "未開始"
+          )
+        : ""
+    );
+  }
+}
 
 
 /*
@@ -6902,3 +6537,22 @@ document.addEventListener(
   }
 );
 
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    setTimeout(
+      () => {
+        flushPendingActionRecordSessions_()
+          .catch(
+            error =>
+              console.warn(
+                "起動時の行動記録同期に失敗",
+                error
+              )
+          );
+      },
+      100
+    );
+  }
+);
