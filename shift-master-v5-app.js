@@ -31,6 +31,21 @@ let selectedIndex = -1;
 let editMode = "new";
 
 
+const pendingListChanges =
+  new Map();
+
+
+const LIST_EDITABLE_FIELDS = [
+  "weekday",
+  "service",
+  "staff1",
+  "staff2",
+  "staff3",
+  "staff4",
+  "transport"
+];
+
+
 const WEEKDAY_ORDER = {
   "月": 1,
   "火": 2,
@@ -929,7 +944,264 @@ function escapeHtml(
 
 
 /* =============================================================
-   9-A. 一覧用プルダウン
+   9-A. 一覧の未保存変更
+   ============================================================= */
+
+function getPendingListKey(
+  item
+) {
+  if (
+    item &&
+    Number(
+      item.sourceRow
+    ) >= 2
+  ) {
+    return (
+      "row:" +
+      Number(
+        item.sourceRow
+      )
+    );
+  }
+
+  return (
+    "id:" +
+    String(
+      item &&
+      item.id ||
+      ""
+    ) +
+    ":" +
+    String(
+      item &&
+      item.historyId ||
+      ""
+    )
+  );
+}
+
+
+function getListEditableSnapshot(
+  item
+) {
+  const snapshot = {};
+
+  LIST_EDITABLE_FIELDS
+    .forEach(
+      fieldName => {
+        snapshot[
+          fieldName
+        ] =
+          item &&
+          item[
+            fieldName
+          ] !== null &&
+          item[
+            fieldName
+          ] !== undefined
+            ? String(
+                item[
+                  fieldName
+                ]
+              )
+            : "";
+      }
+    );
+
+  return snapshot;
+}
+
+
+function isSameListEditableValues(
+  a,
+  b
+) {
+  return LIST_EDITABLE_FIELDS
+    .every(
+      fieldName =>
+        String(
+          a &&
+          a[
+            fieldName
+          ] ||
+          ""
+        ) ===
+        String(
+          b &&
+          b[
+            fieldName
+          ] ||
+          ""
+        )
+    );
+}
+
+
+function updatePendingListUi() {
+  const count =
+    pendingListChanges.size;
+
+  const saveButton =
+    document.getElementById(
+      "saveListChangesButton"
+    );
+
+  const indicator =
+    document.getElementById(
+      "unsavedIndicator"
+    );
+
+  if (saveButton) {
+    saveButton.textContent =
+      "変更を保存（" +
+      count +
+      "件）";
+
+    saveButton.classList.toggle(
+      "hidden",
+      count === 0
+    );
+  }
+
+  if (indicator) {
+    indicator.classList.toggle(
+      "hidden",
+      count === 0
+    );
+  }
+}
+
+
+function reapplyPendingListChanges() {
+  if (
+    pendingListChanges.size === 0
+  ) {
+    return;
+  }
+
+  pendingListChanges
+    .forEach(
+      pending => {
+        const target =
+          shiftData.find(
+            item =>
+              getPendingListKey(
+                item
+              ) ===
+              pending.key
+          );
+
+        if (!target) {
+          return;
+        }
+
+        LIST_EDITABLE_FIELDS
+          .forEach(
+            fieldName => {
+              target[
+                fieldName
+              ] =
+                pending.data[
+                  fieldName
+                ];
+            }
+          );
+      }
+    );
+}
+
+
+function registerPendingListChange(
+  item,
+  fieldName,
+  newValue
+) {
+  const key =
+    getPendingListKey(
+      item
+    );
+
+  let pending =
+    pendingListChanges.get(
+      key
+    );
+
+  if (!pending) {
+    pending = {
+      key:
+        key,
+
+      sourceRow:
+        Number(
+          item.sourceRow ||
+          0
+        ),
+
+      original:
+        getListEditableSnapshot(
+          item
+        ),
+
+      data:
+        {
+          ...item
+        }
+    };
+
+    pendingListChanges.set(
+      key,
+      pending
+    );
+  }
+
+  item[
+    fieldName
+  ] =
+    newValue;
+
+  pending.data = {
+    ...item
+  };
+
+  const currentSnapshot =
+    getListEditableSnapshot(
+      item
+    );
+
+  if (
+    isSameListEditableValues(
+      currentSnapshot,
+      pending.original
+    )
+  ) {
+    pendingListChanges.delete(
+      key
+    );
+  }
+
+  updatePendingListUi();
+}
+
+
+function clearPendingForItem(
+  item
+) {
+  if (!item) {
+    return;
+  }
+
+  pendingListChanges.delete(
+    getPendingListKey(
+      item
+    )
+  );
+
+  updatePendingListUi();
+}
+
+
+/* =============================================================
+   9-B. 一覧用プルダウン
    ============================================================= */
 
 function optionHtml(
@@ -1047,7 +1319,7 @@ function getListStaffValues() {
 }
 
 
-async function handleListSelectChange(
+function handleListSelectChange(
   select
 ) {
   const index =
@@ -1067,30 +1339,17 @@ async function handleListSelectChange(
     ) ||
     index < 0 ||
     index >= shiftData.length ||
-    !fieldName
+    !LIST_EDITABLE_FIELDS.includes(
+      fieldName
+    )
   ) {
     return;
   }
-
 
   const item =
     shiftData[
       index
     ];
-
-  const oldValue =
-    item[
-      fieldName
-    ] === null ||
-    item[
-      fieldName
-    ] === undefined
-      ? ""
-      : String(
-          item[
-            fieldName
-          ]
-        );
 
   const newValue =
     String(
@@ -1098,29 +1357,69 @@ async function handleListSelectChange(
       ""
     );
 
-
-  if (
-    oldValue ===
+  registerPendingListChange(
+    item,
+    fieldName,
     newValue
+  );
+
+  renderTable();
+}
+
+
+/* =============================================================
+   9-C. 一覧変更の一括保存
+   ============================================================= */
+
+async function savePendingListChanges() {
+  if (
+    pendingListChanges.size === 0
   ) {
     return;
   }
 
+  const saveButton =
+    document.getElementById(
+      "saveListChangesButton"
+    );
 
-  const updatedItem = {
-    ...item,
-    [fieldName]:
-      newValue
-  };
+  const entries =
+    Array.from(
+      pendingListChanges.values()
+    );
 
+  if (saveButton) {
+    saveButton.disabled =
+      true;
 
-  select.disabled =
-    true;
+    saveButton.textContent =
+      "保存中...";
+  }
 
+  setLoadingStatus(
+    "保存中..."
+  );
 
   try {
+    for (
+      const pending
+      of entries
+    ) {
+      const currentItem =
+        shiftData.find(
+          item =>
+            getPendingListKey(
+              item
+            ) ===
+            pending.key
+        );
 
-    const result =
+      if (!currentItem) {
+        throw new ApiError(
+          "保存対象の規定値を一覧から確認できませんでした"
+        );
+      }
+
       await jsonpRequest(
         "save",
         {
@@ -1128,41 +1427,59 @@ async function handleListSelectChange(
             "update",
 
           sourceRow:
-            item.sourceRow ||
+            pending.sourceRow ||
+            currentItem.sourceRow ||
             0,
 
           data:
-            updatedItem
+            {
+              ...currentItem
+            }
         },
-        "shiftMasterInlineSaveCallback"
+        "shiftMasterListSaveCallback"
       );
 
+      pendingListChanges.delete(
+        pending.key
+      );
+    }
 
     await reloadAllData();
 
-
     showMessage(
-      result.message ||
-      "変更を保存しました"
+      entries.length +
+      "件の変更を保存しました"
     );
-
 
   } catch (
     error
   ) {
-
-    select.disabled =
-      false;
-
-    select.value =
-      oldValue;
-
+    try {
+      await reloadAllData();
+    } catch (
+      reloadError
+    ) {
+      console.error(
+        reloadError
+      );
+    }
 
     showApiError(
       error,
       "一覧の変更を保存できませんでした"
     );
 
+  } finally {
+    setLoadingStatus(
+      ""
+    );
+
+    if (saveButton) {
+      saveButton.disabled =
+        false;
+    }
+
+    updatePendingListUi();
   }
 }
 
@@ -1231,6 +1548,19 @@ function renderTable() {
         document.createElement(
           "tr"
         );
+
+
+      if (
+        pendingListChanges.has(
+          getPendingListKey(
+            item
+          )
+        )
+      ) {
+        row.classList.add(
+          "pending-row"
+        );
+      }
 
 
       if (
@@ -2933,6 +3263,18 @@ async function saveCurrent() {
   }
 
 
+  const pendingSourceItem =
+    (
+      editMode ===
+      "update" &&
+      selectedIndex >= 0
+    )
+      ? shiftData[
+          selectedIndex
+        ]
+      : null;
+
+
   const button =
     document.getElementById(
       "saveButton"
@@ -2952,6 +3294,11 @@ async function saveCurrent() {
       await saveShiftDataToGas(
         data
       );
+
+
+    clearPendingForItem(
+      pendingSourceItem
+    );
 
 
     await reloadAllData();
@@ -3117,6 +3464,11 @@ async function disableCurrent() {
           );
 
 
+    clearPendingForItem(
+      item
+    );
+
+
     await reloadAllData();
 
 
@@ -3192,11 +3544,16 @@ async function reloadAllData() {
   await loadShiftDataFromGas();
 
 
+  reapplyPendingListChanges();
+
+
   updateFilterOptions();
 
   updateUserSelectOptions();
 
   renderTable();
+
+  updatePendingListUi();
 
 
   setLoadingStatus(
@@ -3206,7 +3563,28 @@ async function reloadAllData() {
 
 
 /* =============================================================
-   25. 初期化
+   25. 未保存のままページを離れる場合
+   ============================================================= */
+
+window.addEventListener(
+  "beforeunload",
+  event => {
+    if (
+      pendingListChanges.size === 0
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    event.returnValue =
+      "";
+  }
+);
+
+
+/* =============================================================
+   26. 初期化
    ============================================================= */
 
 document.addEventListener(
@@ -3220,6 +3598,16 @@ document.addEventListener(
       .addEventListener(
         "click",
         openNewDetail
+      );
+
+
+    document
+      .getElementById(
+        "saveListChangesButton"
+      )
+      .addEventListener(
+        "click",
+        savePendingListChanges
       );
 
 
@@ -3338,6 +3726,8 @@ document.addEventListener(
       updateFilterOptions();
 
       renderTable();
+
+      updatePendingListUi();
 
 
       setLoadingStatus(

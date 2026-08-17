@@ -1135,3 +1135,34 @@ select {
 
   padding-right: 2px !important;
 }
+
+
+/* =========================================================
+   19. 一覧の未保存変更
+   ========================================================= */
+
+.pending-save-button {
+  min-height: 29px;
+  border: 1px solid #d7a72e;
+  background: #fff8df;
+  color: #805d00;
+}
+
+.pending-save-button:hover {
+  background: #fff2bf;
+}
+
+.unsaved-indicator {
+  color: #9a6b00;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pending-row td {
+  background: #fffaf0;
+}
+
+.pending-row:hover td {
+  background: #fff6df !important;
+}
