@@ -1973,9 +1973,7 @@ async function loadTodayStaffShifts(forceRefresh = false) {
         : [];
 
     const newShifts =
-      await mergeShiftWeekStatusFromBasicApi_(
-        result.shifts || []
-      );
+      result.shifts || [];
 
     /*
      * 前回にはなかったシフトを確認します。
@@ -2403,6 +2401,11 @@ function setTodayShiftOptions(shifts) {
         shift.currentState ||
         "未開始";
 
+      const roleLabel =
+        String(
+          shift.roleLabel || ""
+        ).trim();
+
       option.textContent =
         shift.startTime +
         "～" +
@@ -2413,7 +2416,12 @@ function setTodayShiftOptions(shifts) {
         shift.service +
         "　【" +
         state +
-        "】";
+        "】" +
+        (
+          roleLabel
+            ? "【" + roleLabel + "】"
+            : ""
+        );
 
       select.appendChild(
         option
@@ -5970,93 +5978,27 @@ async function resumeCancelledShiftFromPortal_() {
   );
 
   try {
-    /*
-     * 保存直前に基本シフトを取り直し、
-     * 最新の更新日時を使って競合チェックします。
-     */
-    const weekResult =
-      await callShiftWeekApiJsonp_(
-        "week-list",
-        {
-          query: {
-            weekMonday:
-              getCurrentWeekMondayText_()
-          }
-        }
-      );
-
-    const currentItem =
-      (
-        Array.isArray(
-          weekResult.data
-        )
-          ? weekResult.data
-          : []
-      ).find(
-        item =>
-          String(
-            item.shiftId || ""
-          ).trim() ===
-          String(
-            shift.shiftId || ""
-          ).trim()
-      );
-
-    if (!currentItem) {
-      throw new Error(
-        "基本シフトを確認できませんでした。"
-      );
-    }
-
-    if (
-      String(
-        currentItem.status || ""
-      ).trim() !== "中止"
-    ) {
-      await loadTodayStaffShifts(
-        true
-      );
-
-      alert(
-        "この支援はすでに中止解除されています。"
-      );
-      return;
-    }
-
     const result =
       await callShiftWeekApiJsonp_(
-        "week-update",
+        "week-resume-cancelled",
         {
           payload: {
             shiftId:
               shift.shiftId,
 
-            changes: {
-              status: "予定"
-            },
+            employeeId:
+              currentUser
+                ? currentUser.employeeId
+                : "",
 
-            expectedUpdatedAt:
-              String(
-                currentItem.updatedAt ||
-                ""
-              )
+            employeeName:
+              currentUser
+                ? currentUser.employeeName
+                : ""
           }
         }
       );
 
-    if (
-      result &&
-      result.conflict
-    ) {
-      throw new Error(
-        "他の人が先にこのシフトを更新しています。" +
-        "最新状態を読み込み直してください。"
-      );
-    }
-
-    /*
-     * 古い中止キャッシュを即座に消します。
-     */
     try {
       localStorage.removeItem(
         TODAY_STAFF_SHIFT_CACHE_KEY
@@ -6068,8 +6010,8 @@ async function resumeCancelledShiftFromPortal_() {
     );
 
     alert(
-      "中止を解除しました。\n" +
-      "通常どおり支援を開始できます。"
+      result.message ||
+      "中止を解除しました。"
     );
 
   } catch (error) {
