@@ -1,0 +1,1050 @@
+/*
+============================================================
+シフト規定値 V4
+shift-master-v4-style.css
+
+【主な調整場所】
+
+4. 一覧ツールバー
+5. 一覧テーブル
+6. 一覧の列幅
+8. 詳細ポップアップ
+10. 基本情報
+11. 担当者
+12. 週パターン
+13. 支援内容
+
+入力欄は minmax(0, 1fr) を使い、
+右側へはみ出しにくい構造にしています。
+============================================================
+*/
+
+
+/* =========================================================
+   1. 共通設定
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+
+:root {
+  --green: #2fa85a;
+  --green-dark: #238747;
+  --green-light: #eaf7ef;
+
+  --border: #cfd9d3;
+  --border-dark: #bcc8cf;
+
+  --text: #263238;
+  --label: #56666f;
+  --heading: #3f5966;
+  --muted: #687780;
+
+  --danger: #c9453d;
+
+  --page-bg: #f3f5f7;
+  --section-bg: #fafcfd;
+  --input-bg: #ffffff;
+}
+
+
+body {
+  margin: 0;
+
+  min-width: 1100px;
+
+  font-family:
+    "Yu Gothic UI",
+    "Meiryo",
+    sans-serif;
+
+  color: var(--text);
+
+  background: var(--page-bg);
+
+  font-size: 13px;
+}
+
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+
+button,
+select {
+  cursor: pointer;
+}
+
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =========================================================
+   2. ヘッダー
+   ========================================================= */
+
+.app-header {
+  height: 50px;
+
+  padding: 0 14px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #ccd5db;
+}
+
+
+.header-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.app-name {
+  color: var(--green);
+
+  font-size: 13px;
+
+  font-weight: 800;
+}
+
+
+.app-header h1 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+
+.header-actions {
+  display: flex;
+
+  gap: 6px;
+}
+
+
+/* =========================================================
+   3. 共通ボタン
+   ========================================================= */
+
+.button {
+  min-height: 29px;
+
+  padding: 0 10px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 4px;
+
+  font-weight: 700;
+}
+
+
+.button:disabled {
+  opacity: 0.55;
+
+  cursor: default;
+}
+
+
+.primary-button {
+  border: 1px solid var(--green);
+
+  background: var(--green);
+
+  color: #ffffff;
+}
+
+
+.secondary-button {
+  border: 1px solid #b8c4cb;
+
+  background: #ffffff;
+
+  color: var(--text);
+}
+
+
+.danger-button {
+  border: 1px solid #d7a4a0;
+
+  background: #ffffff;
+
+  color: var(--danger);
+}
+
+
+/* =========================================================
+   4. 一覧ツールバー
+   ========================================================= */
+
+.toolbar {
+  padding: 6px 10px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  flex-wrap: wrap;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #d8e0e5;
+}
+
+
+.toolbar select {
+  height: 29px;
+
+  min-width: 120px;
+
+  padding: 2px 6px;
+
+  border: 1px solid var(--border-dark);
+
+  border-radius: 4px;
+
+  background: #ffffff;
+}
+
+
+.toolbar-summary {
+  margin-left: auto;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  color: var(--muted);
+}
+
+
+.toolbar-summary strong {
+  color: var(--text);
+}
+
+
+.loading-status {
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   5. メッセージ
+   ========================================================= */
+
+.message-area {
+  margin: 6px 8px 0;
+
+  padding: 6px 9px;
+
+  border-radius: 4px;
+
+  background: var(--green-light);
+
+  color: var(--green-dark);
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+
+.message-area.error {
+  background: #fff1f0;
+
+  color: var(--danger);
+}
+
+
+/* =========================================================
+   6. 一覧テーブル
+   ========================================================= */
+
+.table-card {
+  margin: 7px 8px;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #cbd5db;
+}
+
+
+.table-scroll {
+  height: calc(100vh - 112px);
+
+  overflow: auto;
+}
+
+
+.shift-table {
+  width: 100%;
+
+  min-width: 1420px;
+
+  border-collapse: separate;
+
+  border-spacing: 0;
+
+  table-layout: fixed;
+
+  font-size: 12.5px;
+}
+
+
+.shift-table thead {
+  position: sticky;
+
+  top: 0;
+
+  z-index: 3;
+}
+
+
+.shift-table th,
+.shift-table td {
+  white-space: nowrap;
+
+  border-right: 1px solid #d9e0e4;
+
+  border-bottom: 1px solid #d9e0e4;
+}
+
+
+.shift-table th {
+  height: 28px;
+
+  padding: 1px 4px;
+
+  background: #eaf1f5;
+
+  color: #344f5d;
+
+  text-align: left;
+
+  font-weight: 700;
+}
+
+
+.shift-table td {
+  height: 27px;
+
+  padding: 1px 4px;
+
+  background: #ffffff;
+
+  vertical-align: middle;
+}
+
+
+.shift-table tbody tr:hover td {
+  background: #f2f8ff;
+}
+
+
+.inactive-row td {
+  background: #fafafa;
+
+  color: #8a969d;
+}
+
+
+.center-cell {
+  text-align: center !important;
+}
+
+
+.user-cell {
+  font-weight: 700;
+}
+
+
+.service-cell {
+  font-weight: 600;
+}
+
+
+.ellipsis-cell {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+.empty-area {
+  padding: 40px 20px;
+
+  text-align: center;
+
+  color: var(--muted);
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   7. 一覧の列幅
+   ========================================================= */
+
+.col-no {
+  width: 36px;
+}
+
+
+.col-weekday {
+  width: 44px;
+}
+
+
+.col-time {
+  width: 104px;
+}
+
+
+.col-user {
+  width: 105px;
+}
+
+
+.col-service {
+  width: 98px;
+}
+
+
+.col-week-pattern {
+  width: 72px;
+}
+
+
+.col-staff {
+  width: 105px;
+}
+
+
+.col-destination {
+  width: 150px;
+}
+
+
+.col-transport {
+  width: 92px;
+}
+
+
+.col-status {
+  width: 58px;
+}
+
+
+.col-detail {
+  width: 50px;
+}
+
+
+/* =========================================================
+   8. 一覧の状態・詳細ボタン
+   ========================================================= */
+
+.status-badge {
+  display: inline-block;
+
+  min-width: 38px;
+
+  padding: 2px 6px;
+
+  border-radius: 999px;
+
+  text-align: center;
+
+  font-size: 11px;
+
+  font-weight: 700;
+}
+
+
+.status-badge.active {
+  background: var(--green-light);
+
+  color: var(--green-dark);
+}
+
+
+.status-badge.inactive {
+  background: #f1f3f4;
+
+  color: var(--muted);
+}
+
+
+.detail-button {
+  height: 21px;
+
+  padding: 0 5px;
+
+  border: 1px solid #9fb1bc;
+
+  border-radius: 3px;
+
+  background: #ffffff;
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   9. 詳細ポップアップ全体
+   ========================================================= */
+
+.shift-modal {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 100;
+}
+
+
+.shift-modal-backdrop {
+  position: absolute;
+
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.42);
+}
+
+
+.shift-modal-dialog {
+  position: relative;
+
+  width: min(
+    1040px,
+    calc(100vw - 32px)
+  );
+
+  max-height: 92vh;
+
+  margin: 4vh auto;
+
+  overflow: auto;
+
+  background: #ffffff;
+
+  border-radius: 8px;
+
+  box-shadow:
+    0 14px 44px
+    rgba(0, 0, 0, 0.28);
+}
+
+
+.shift-modal-header {
+  min-height: 44px;
+
+  padding: 0 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  border-bottom: 1px solid #d6dee3;
+}
+
+
+.shift-modal-header h2 {
+  margin: 0;
+
+  font-size: 16px;
+}
+
+
+.modal-close-button {
+  height: 28px;
+
+  padding: 0 10px;
+
+  border: 1px solid var(--border-dark);
+
+  border-radius: 4px;
+
+  background: #ffffff;
+}
+
+
+.shift-modal-body {
+  padding: 12px;
+}
+
+
+.shift-modal-footer {
+  padding: 9px 13px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 8px;
+
+  border-top: 1px solid #d6dee3;
+}
+
+
+.footer-actions {
+  display: flex;
+
+  gap: 6px;
+}
+
+
+/* =========================================================
+   10. 詳細セクション共通
+   ========================================================= */
+
+.form-section {
+  margin-bottom: 10px;
+
+  padding: 10px;
+
+  background: var(--section-bg);
+
+  border: 1px solid #d5dde2;
+
+  border-radius: 6px;
+}
+
+
+.support-section {
+  margin-bottom: 0;
+}
+
+
+.section-title {
+  margin-bottom: 8px;
+
+  color: var(--heading);
+
+  font-size: 12px;
+
+  font-weight: 800;
+}
+
+
+.form-section label {
+  color: var(--label);
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+.form-section input,
+.form-section select,
+.form-section textarea {
+  min-width: 0;
+
+  border: 1px solid var(--border-dark);
+
+  border-radius: 4px;
+
+  background: var(--input-bg);
+
+  color: var(--text);
+}
+
+
+.form-section input,
+.form-section select {
+  height: 30px;
+
+  padding: 3px 7px;
+}
+
+
+.form-section textarea {
+  width: 100%;
+
+  padding: 7px 8px;
+
+  resize: vertical;
+}
+
+
+.form-section input[readonly] {
+  background: #f4f6f7;
+
+  color: #5f6d74;
+}
+
+
+/* =========================================================
+   11. 基本情報
+
+   5項目 × 2段
+   ========================================================= */
+
+.basic-info-grid {
+  display: grid;
+
+  grid-template-columns:
+    62px minmax(0, 1fr)
+    62px minmax(0, 1fr)
+    68px minmax(0, 1.12fr)
+    68px minmax(0, 1.12fr)
+    48px minmax(0, 0.9fr);
+
+  gap: 8px;
+
+  align-items: center;
+}
+
+
+.basic-info-grid label {
+  text-align: right;
+}
+
+
+.basic-info-grid input,
+.basic-info-grid select {
+  width: 100%;
+}
+
+
+/* =========================================================
+   12. 担当者
+   ========================================================= */
+
+.staff-grid {
+  display: grid;
+
+  grid-template-columns:
+    60px minmax(0, 1fr)
+    60px minmax(0, 1fr)
+    60px minmax(0, 1fr)
+    60px minmax(0, 1fr);
+
+  gap: 8px 10px;
+
+  align-items: center;
+}
+
+
+.staff-grid label {
+  text-align: right;
+}
+
+
+.staff-grid select {
+  width: 100%;
+}
+
+
+/* =========================================================
+   13. 週パターン + 人数 + 交代 + 表示順
+   ========================================================= */
+
+.staff-option-row {
+  margin-top: 8px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  white-space: nowrap;
+}
+
+
+.week-pattern-group {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  flex: 1 1 auto;
+
+  min-width: 0;
+}
+
+
+.inline-label {
+  width: 60px;
+
+  flex: 0 0 60px;
+
+  text-align: right;
+
+  color: var(--label);
+
+  font-weight: 600;
+}
+
+
+.week-pattern-box {
+  height: 32px;
+
+  padding: 4px 7px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  white-space: nowrap;
+
+  background: #ffffff;
+
+  border: 1px solid var(--border-dark);
+
+  border-radius: 4px;
+}
+
+
+.week-pattern-box label {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 3px;
+
+  margin: 0;
+
+  font-weight: 400;
+}
+
+
+.week-pattern-box input[type="checkbox"] {
+  width: 14px;
+
+  height: 14px;
+
+  margin: 0;
+}
+
+
+.small-field {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  flex: 0 0 auto;
+}
+
+
+.small-field label {
+  text-align: right;
+}
+
+
+.small-field select {
+  width: 62px;
+}
+
+
+.display-order-field input {
+  width: 70px;
+}
+
+
+/* =========================================================
+   14. 支援内容
+   ========================================================= */
+
+.support-row {
+  margin-top: 7px;
+
+  display: grid;
+
+  grid-template-columns:
+    74px
+    minmax(0, 1fr);
+
+  gap: 8px;
+
+  align-items: center;
+}
+
+
+.support-row:first-of-type {
+  margin-top: 0;
+}
+
+
+.support-row label {
+  text-align: right;
+}
+
+
+.support-row input {
+  width: 100%;
+}
+
+
+/* =========================================================
+   15. 行き先・待合せ・合流情報・移動手段
+   ========================================================= */
+
+.support-inline-row {
+  margin-top: 7px;
+
+  display: grid;
+
+  grid-template-columns:
+    74px minmax(0, 1fr)
+    60px minmax(0, 1fr)
+    68px minmax(0, 1fr)
+    68px minmax(0, 1fr);
+
+  gap: 8px;
+
+  align-items: center;
+}
+
+
+.support-inline-row label {
+  text-align: right;
+}
+
+
+.support-inline-row input,
+.support-inline-row select {
+  width: 100%;
+}
+
+
+/* =========================================================
+   16. 微調整
+   ========================================================= */
+
+#masterId,
+#historyId {
+  font-variant-numeric: tabular-nums;
+}
+
+
+#displayOrder {
+  text-align: left;
+}
+
+
+#detailNote,
+#note {
+  min-height: 54px;
+}
+
+
+/* =========================================================
+   17. 有償運送・送迎
+
+   有償運送：行／帰の2行
+   送迎：1行
+   ========================================================= */
+
+.transport-section {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+
+.transport-row {
+  display: grid;
+
+  gap: 5px 6px;
+
+  align-items: center;
+
+  white-space: nowrap;
+}
+
+
+.transport-row + .transport-row {
+  margin-top: 7px;
+}
+
+
+.paid-transport-row {
+  grid-template-columns:
+    58px
+    36px 92px
+    48px minmax(120px, 1fr)
+    48px minmax(120px, 1fr)
+    36px minmax(100px, 0.8fr);
+}
+
+
+.pickup-transport-row {
+  grid-template-columns:
+    58px
+    36px 92px
+    48px minmax(100px, 1fr)
+    48px minmax(100px, 1fr)
+    48px minmax(110px, 1fr)
+    36px minmax(95px, 0.8fr);
+}
+
+
+.transport-row-title {
+  color: var(--heading);
+
+  font-weight: 800;
+
+  text-align: left;
+}
+
+
+.transport-row label {
+  text-align: right;
+}
+
+
+.transport-row input,
+.transport-row select {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+}
+
+
+.transport-row input[type="time"] {
+  width: 92px;
+  min-width: 92px;
+}
