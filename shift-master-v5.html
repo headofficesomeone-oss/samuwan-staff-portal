@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>シフト規定値</title>
+
+  <link
+    rel="stylesheet"
+    href="shift-master-v5-style.css?v=5.0.0"
+  >
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       ヘッダー
+       ===================================================== -->
+  <header class="app-header">
+
+    <div class="header-title">
+
+      <span class="app-name">
+        訪問ケアぷーどる
+      </span>
+
+      <h1>
+        シフト規定値
+      </h1>
+
+    </div>
+
+
+    <div class="header-actions">
+
+      <button
+        type="button"
+        class="button primary-button"
+        id="newButton"
+      >
+        ＋ 新しい規定値
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       一覧ツールバー
+       ===================================================== -->
+  <section class="toolbar">
+
+    <select id="filterUser">
+      <option value="">
+        すべての利用者
+      </option>
+    </select>
+
+
+    <select id="filterWeekday">
+      <option value="">全曜日</option>
+      <option value="月">月</option>
+      <option value="火">火</option>
+      <option value="水">水</option>
+      <option value="木">木</option>
+      <option value="金">金</option>
+      <option value="土">土</option>
+      <option value="日">日</option>
+    </select>
+
+
+    <select id="sortMode">
+      <option value="shift">シフト順</option>
+      <option value="staff">ヘルパー順</option>
+      <option value="user">利用者順</option>
+    </select>
+
+
+    <select id="activeFilter">
+      <option value="active">有効のみ</option>
+      <option value="inactive">無効のみ</option>
+      <option value="all">有効・無効</option>
+    </select>
+
+
+    <div class="toolbar-summary">
+
+      <span>
+        表示
+        <strong id="recordCount">
+          0件
+        </strong>
+      </span>
+
+      <span
+        class="loading-status"
+        id="loadingStatus"
+      ></span>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       メッセージ
+       ===================================================== -->
+  <div
+    class="message-area hidden"
+    id="messageArea"
+  ></div>
+
+
+  <!-- =====================================================
+       規定値一覧
+       ===================================================== -->
+  <main class="table-card">
+
+    <div class="table-scroll">
+
+      <table class="shift-table">
+
+        <colgroup>
+          <col class="col-no">
+          <col class="col-weekday">
+          <col class="col-time">
+          <col class="col-user">
+          <col class="col-service">
+          <col class="col-week-pattern">
+          <col class="col-staff">
+          <col class="col-staff">
+          <col class="col-staff">
+          <col class="col-staff">
+          <col class="col-destination">
+          <col class="col-transport">
+          <col class="col-status">
+          <col class="col-detail">
+        </colgroup>
+
+
+        <thead>
+
+          <tr>
+            <th class="center-cell">№</th>
+            <th class="center-cell">曜日</th>
+            <th class="center-cell">時間</th>
+            <th>利用者</th>
+            <th>サービス</th>
+            <th class="center-cell">週P</th>
+            <th>主担当</th>
+            <th>副担当</th>
+            <th>担当3</th>
+            <th>担当4</th>
+            <th>行き先</th>
+            <th>移動手段</th>
+            <th class="center-cell">状態</th>
+            <th class="center-cell">詳細</th>
+          </tr>
+
+        </thead>
+
+
+        <tbody id="shiftTableBody"></tbody>
+
+      </table>
+
+
+      <div
+        class="empty-area hidden"
+        id="emptyArea"
+      >
+        該当する規定値はありません。
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =====================================================
+       詳細・新規作成ポップアップ
+       ===================================================== -->
+  <div
+    class="shift-modal hidden"
+    id="shiftDetailModal"
+  >
+
+    <div
+      class="shift-modal-backdrop"
+      id="modalBackdrop"
+    ></div>
+
+
+    <div class="shift-modal-dialog">
+
+      <div class="shift-modal-header">
+
+        <h2 id="modalTitle">
+          規定値の詳細
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close-button"
+          id="modalCloseButton"
+        >
+          閉じる
+        </button>
+
+      </div>
+
+
+      <div class="shift-modal-body">
+
+        <!-- =================================================
+             基本情報
+             ================================================= -->
+        <section class="form-section">
+          <div class="basic-info-grid">
+
+            <label for="masterId">
+              規定値ID
+            </label>
+
+            <input
+              id="masterId"
+              type="text"
+              readonly
+            >
+
+
+            <label for="historyId">
+              履歴ID
+            </label>
+
+            <input
+              id="historyId"
+              type="text"
+              readonly
+            >
+
+
+            <label for="startDate">
+              適用開始
+            </label>
+
+            <input
+              id="startDate"
+              type="date"
+            >
+
+
+            <label for="endDate">
+              適用終了
+            </label>
+
+            <input
+              id="endDate"
+              type="date"
+            >
+
+
+            <label for="statusDisplay">
+              状態
+            </label>
+
+            <input
+              id="statusDisplay"
+              type="text"
+              readonly
+            >
+
+
+            <label for="userSelect">
+              利用者
+            </label>
+
+            <select id="userSelect">
+              <option value="">
+                選択してください
+              </option>
+            </select>
+
+
+            <label for="serviceSelect">
+              サービス
+            </label>
+
+            <select id="serviceSelect">
+              <option value="">
+                選択してください
+              </option>
+            </select>
+
+
+            <label for="weekdaySelect">
+              曜日
+            </label>
+
+            <select id="weekdaySelect">
+              <option value="">選択</option>
+              <option value="月">月</option>
+              <option value="火">火</option>
+              <option value="水">水</option>
+              <option value="木">木</option>
+              <option value="金">金</option>
+              <option value="土">土</option>
+              <option value="日">日</option>
+            </select>
+
+
+            <label for="startTime">
+              開始
+            </label>
+
+            <input
+              id="startTime"
+              type="time"
+            >
+
+
+            <label for="endTime">
+              終了
+            </label>
+
+            <input
+              id="endTime"
+              type="time"
+            >
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             担当者
+             ================================================= -->
+        <section class="form-section">
+          <div class="staff-grid">
+
+            <label for="staff1">
+              主担当
+            </label>
+
+            <select id="staff1"></select>
+
+
+            <label for="staff2">
+              副担当
+            </label>
+
+            <select id="staff2"></select>
+
+
+            <label for="staff3">
+              担当3
+            </label>
+
+            <select id="staff3"></select>
+
+
+            <label for="staff4">
+              担当4
+            </label>
+
+            <select id="staff4"></select>
+
+          </div>
+
+
+          <!-- 週パターン・人数・交代・表示順 -->
+          <div class="staff-option-row">
+
+            <div class="week-pattern-group">
+
+              <span class="inline-label">
+                週パターン
+              </span>
+
+
+              <div
+                class="week-pattern-box"
+                id="weekPanel"
+              >
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="毎週"
+                    data-week-group="every"
+                  >
+                  毎週
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="第1"
+                    data-week-group="number"
+                  >
+                  第1
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="第2"
+                    data-week-group="number"
+                  >
+                  第2
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="第3"
+                    data-week-group="number"
+                  >
+                  第3
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="第4"
+                    data-week-group="number"
+                  >
+                  第4
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="第5"
+                    data-week-group="number"
+                  >
+                  第5
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="隔A"
+                    data-week-group="alternate"
+                  >
+                  隔A
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="隔B"
+                    data-week-group="alternate"
+                  >
+                  隔B
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    value="停止中"
+                    data-week-group="stopped"
+                  >
+                  停止中
+                </label>
+
+              </div>
+
+
+              <input
+                id="weekPatternText"
+                type="hidden"
+              >
+
+            </div>
+
+
+            <div class="small-field">
+
+              <label for="peopleSelect">
+                人数
+              </label>
+
+              <select id="peopleSelect">
+                <option value="1人">1人</option>
+                <option value="2人">2人</option>
+                <option value="3人">3人</option>
+                <option value="4人">4人</option>
+              </select>
+
+            </div>
+
+
+            <div class="small-field">
+
+              <label for="changeType">
+                交代
+              </label>
+
+              <select id="changeType">
+                <option value="通常">通常</option>
+                <option value="交代">交代</option>
+              </select>
+
+            </div>
+
+
+            <div class="small-field display-order-field">
+
+              <label for="displayOrder">
+                表示順
+              </label>
+
+              <input
+                id="displayOrder"
+                type="number"
+                min="0"
+              >
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             支援内容
+             ================================================= -->
+        <section class="form-section support-section">
+          <div class="support-row">
+
+            <label for="support">
+              支援内容
+            </label>
+
+            <input
+              id="support"
+              type="text"
+            >
+
+          </div>
+
+
+          <div class="support-inline-row">
+
+            <label for="destination">
+              行き先
+            </label>
+
+            <input
+              id="destination"
+              type="text"
+            >
+
+
+            <label for="meeting">
+              待合せ
+            </label>
+
+            <input
+              id="meeting"
+              type="text"
+            >
+
+
+            <label for="meetingPoint">
+              合流情報
+            </label>
+
+            <input
+              id="meetingPoint"
+              type="text"
+            >
+
+
+            <label for="transport">
+              移動手段
+            </label>
+
+            <select id="transport"></select>
+
+          </div>
+
+
+          <div class="support-row">
+
+            <label for="detailNote">
+              詳細注意
+            </label>
+
+            <textarea
+              id="detailNote"
+              rows="2"
+            ></textarea>
+
+          </div>
+
+
+          <div class="support-row">
+
+            <label for="simpleMemo">
+              簡易メモ
+            </label>
+
+            <input
+              id="simpleMemo"
+              type="text"
+            >
+
+          </div>
+
+
+          <div class="support-row">
+
+            <label for="note">
+              備考
+            </label>
+
+            <textarea
+              id="note"
+              rows="2"
+            ></textarea>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             有償運送・送迎
+             シフト基本表の詳細と同じ考え方
+             ================================================= -->
+        <section class="form-section transport-section">
+
+          <div class="transport-row paid-transport-row">
+
+            <span class="transport-row-title">
+              有償 行
+            </span>
+
+            <label for="paidGoTime">時刻</label>
+            <input
+              id="paidGoTime"
+              type="time"
+            >
+
+            <label for="paidGoFrom">出発地</label>
+            <input
+              id="paidGoFrom"
+              type="text"
+            >
+
+            <label for="paidGoDriver">運転手</label>
+            <select id="paidGoDriver">
+              <option value=""></option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+
+            <label for="paidGoVehicle">車種</label>
+            <input
+              id="paidGoVehicle"
+              type="text"
+            >
+
+          </div>
+
+
+          <div class="transport-row paid-transport-row">
+
+            <span class="transport-row-title">
+              有償 帰
+            </span>
+
+            <label for="paidReturnTime">時刻</label>
+            <input
+              id="paidReturnTime"
+              type="time"
+            >
+
+            <label for="paidReturnFrom">出発地</label>
+            <input
+              id="paidReturnFrom"
+              type="text"
+            >
+
+            <label for="paidReturnDriver">運転手</label>
+            <select id="paidReturnDriver">
+              <option value=""></option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+
+            <label for="paidReturnVehicle">車種</label>
+            <input
+              id="paidReturnVehicle"
+              type="text"
+            >
+
+          </div>
+
+
+          <div class="transport-row pickup-transport-row">
+
+            <span class="transport-row-title">
+              送迎
+            </span>
+
+            <label for="pickupTime">時刻</label>
+            <input
+              id="pickupTime"
+              type="time"
+            >
+
+            <label for="pickupFrom">出発地</label>
+            <input
+              id="pickupFrom"
+              type="text"
+            >
+
+            <label for="pickupTo">到着地</label>
+            <input
+              id="pickupTo"
+              type="text"
+            >
+
+            <label for="pickupDriver">運転手</label>
+            <select id="pickupDriver">
+              <option value=""></option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+
+            <label for="pickupVehicle">車種</label>
+            <input
+              id="pickupVehicle"
+              type="text"
+            >
+
+          </div>
+
+        </section>
+
+      </div>
+
+
+      <!-- =================================================
+           詳細フッター
+           ================================================= -->
+      <div class="shift-modal-footer">
+
+        <button
+          type="button"
+          class="button danger-button"
+          id="disableButton"
+        >
+          無効にする
+        </button>
+
+
+        <div class="footer-actions">
+
+          <button
+            type="button"
+            class="button secondary-button"
+            id="cancelButton"
+          >
+            変更を取り消す
+          </button>
+
+          <button
+            type="button"
+            class="button secondary-button"
+            id="copyDetailButton"
+          >
+            コピーして新規作成
+          </button>
+
+          <button
+            type="button"
+            class="button primary-button"
+            id="saveButton"
+          >
+            この内容で保存
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script
+    src="shift-master-v5-app.js?v=5.0.0"
+  ></script>
+
+</body>
+
+</html>
