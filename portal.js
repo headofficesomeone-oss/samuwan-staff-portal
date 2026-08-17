@@ -5957,6 +5957,13 @@ async function resumeCancelledShiftFromPortal_() {
     return;
   }
 
+  if (!currentUser) {
+    alert(
+      "職員情報を確認できません。"
+    );
+    return;
+  }
+
   const confirmed =
     confirm(
       shift.clientName +
@@ -5978,27 +5985,39 @@ async function resumeCancelledShiftFromPortal_() {
   );
 
   try {
+    /*
+     * 基本シフトGASへ直接アクセスせず、
+     * いつもの職員ポータルGASを経由します。
+     */
     const result =
-      await callShiftWeekApiJsonp_(
-        "week-resume-cancelled",
-        {
-          payload: {
-            shiftId:
-              shift.shiftId,
+      await postGas({
+        action:
+          "resumeCancelledShift",
 
-            employeeId:
-              currentUser
-                ? currentUser.employeeId
-                : "",
+        employeeId:
+          currentUser.employeeId,
 
-            employeeName:
-              currentUser
-                ? currentUser.employeeName
-                : ""
-          }
-        }
+        employeeName:
+          currentUser.employeeName,
+
+        shiftId:
+          shift.shiftId
+      });
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+      throw new Error(
+        result?.message ||
+        "中止を解除できませんでした。"
       );
+    }
 
+    /*
+     * 古い「中止」キャッシュを破棄して
+     * 最新状態を取り直します。
+     */
     try {
       localStorage.removeItem(
         TODAY_STAFF_SHIFT_CACHE_KEY
