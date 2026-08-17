@@ -927,6 +927,246 @@ function escapeHtml(
 }
 
 
+
+/* =============================================================
+   9-A. 一覧用プルダウン
+   ============================================================= */
+
+function optionHtml(
+  value,
+  currentValue
+) {
+  const text =
+    value === null ||
+    value === undefined
+      ? ""
+      : String(
+          value
+        );
+
+  const current =
+    currentValue === null ||
+    currentValue === undefined
+      ? ""
+      : String(
+          currentValue
+        );
+
+  return (
+    '<option value="' +
+    escapeHtml(
+      text
+    ) +
+    '"' +
+    (
+      text === current
+        ? ' selected'
+        : ''
+    ) +
+    '>' +
+    escapeHtml(
+      text
+    ) +
+    '</option>'
+  );
+}
+
+
+function buildListSelectHtml(
+  fieldName,
+  currentValue,
+  options,
+  originalIndex,
+  includeBlank = true
+) {
+  const values =
+    Array.from(
+      new Set(
+        [
+          ...(includeBlank ? [""] : []),
+          ...(
+            options ||
+            []
+          ),
+          (
+            currentValue === null ||
+            currentValue === undefined
+              ? ""
+              : String(
+                  currentValue
+                )
+          )
+        ]
+      )
+    );
+
+  return (
+    '<select ' +
+    'class="list-select" ' +
+    'data-field="' +
+    escapeHtml(
+      fieldName
+    ) +
+    '" ' +
+    'data-index="' +
+    originalIndex +
+    '">' +
+    values
+      .map(
+        value =>
+          optionHtml(
+            value,
+            currentValue
+          )
+      )
+      .join(
+        ""
+      ) +
+    '</select>'
+  );
+}
+
+
+function getListChoiceValues(
+  key
+) {
+  return (
+    masterData.choices[
+      key
+    ] ||
+    []
+  );
+}
+
+
+function getListStaffValues() {
+  return (
+    masterData.staff ||
+    []
+  );
+}
+
+
+async function handleListSelectChange(
+  select
+) {
+  const index =
+    Number(
+      select.dataset.index
+    );
+
+  const fieldName =
+    String(
+      select.dataset.field ||
+      ""
+    );
+
+  if (
+    !Number.isInteger(
+      index
+    ) ||
+    index < 0 ||
+    index >= shiftData.length ||
+    !fieldName
+  ) {
+    return;
+  }
+
+
+  const item =
+    shiftData[
+      index
+    ];
+
+  const oldValue =
+    item[
+      fieldName
+    ] === null ||
+    item[
+      fieldName
+    ] === undefined
+      ? ""
+      : String(
+          item[
+            fieldName
+          ]
+        );
+
+  const newValue =
+    String(
+      select.value ||
+      ""
+    );
+
+
+  if (
+    oldValue ===
+    newValue
+  ) {
+    return;
+  }
+
+
+  const updatedItem = {
+    ...item,
+    [fieldName]:
+      newValue
+  };
+
+
+  select.disabled =
+    true;
+
+
+  try {
+
+    const result =
+      await jsonpRequest(
+        "save",
+        {
+          mode:
+            "update",
+
+          sourceRow:
+            item.sourceRow ||
+            0,
+
+          data:
+            updatedItem
+        },
+        "shiftMasterInlineSaveCallback"
+      );
+
+
+    await reloadAllData();
+
+
+    showMessage(
+      result.message ||
+      "変更を保存しました"
+    );
+
+
+  } catch (
+    error
+  ) {
+
+    select.disabled =
+      false;
+
+    select.value =
+      oldValue;
+
+
+    showApiError(
+      error,
+      "一覧の変更を保存できませんでした"
+    );
+
+  }
+}
+
+
 /* =============================================================
    10. 一覧表示
    ============================================================= */
@@ -1024,8 +1264,22 @@ function renderTable() {
           ${displayIndex + 1}
         </td>
 
-        <td class="center-cell">
-          ${escapeHtml(item.weekday)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "weekday",
+            item.weekday,
+            [
+              "月",
+              "火",
+              "水",
+              "木",
+              "金",
+              "土",
+              "日"
+            ],
+            originalIndex,
+            false
+          )}
         </td>
 
         <td class="center-cell">
@@ -1041,28 +1295,55 @@ function renderTable() {
           ${escapeHtml(item.user)}
         </td>
 
-        <td class="service-cell">
-          ${escapeHtml(item.service)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "service",
+            item.service,
+            getListChoiceValues(
+              "サービス"
+            ),
+            originalIndex
+          )}
         </td>
 
         <td class="center-cell">
           ${escapeHtml(item.weekPattern)}
         </td>
 
-        <td>
-          ${escapeHtml(item.staff1)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "staff1",
+            item.staff1,
+            getListStaffValues(),
+            originalIndex
+          )}
         </td>
 
-        <td>
-          ${escapeHtml(item.staff2)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "staff2",
+            item.staff2,
+            getListStaffValues(),
+            originalIndex
+          )}
         </td>
 
-        <td>
-          ${escapeHtml(item.staff3)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "staff3",
+            item.staff3,
+            getListStaffValues(),
+            originalIndex
+          )}
         </td>
 
-        <td>
-          ${escapeHtml(item.staff4)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "staff4",
+            item.staff4,
+            getListStaffValues(),
+            originalIndex
+          )}
         </td>
 
         <td
@@ -1072,8 +1353,15 @@ function renderTable() {
           ${escapeHtml(item.destination)}
         </td>
 
-        <td>
-          ${escapeHtml(item.transport)}
+        <td class="list-select-cell">
+          ${buildListSelectHtml(
+            "transport",
+            item.transport,
+            getListChoiceValues(
+              "移動手段"
+            ),
+            originalIndex
+          )}
         </td>
 
         <td class="center-cell">
@@ -1120,6 +1408,24 @@ function renderTable() {
             index
           );
 
+        }
+      );
+
+    }
+  );
+
+
+  qsa(
+    ".list-select"
+  ).forEach(
+    select => {
+
+      select.addEventListener(
+        "change",
+        () => {
+          handleListSelectChange(
+            select
+          );
         }
       );
 

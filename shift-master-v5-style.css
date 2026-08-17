@@ -1095,3 +1095,43 @@ select {
 
   min-width: 64px;
 }
+
+
+/* =========================================================
+   18. 一覧内プルダウン
+
+   曜日 / サービス / 主担当 / 副担当 / 担当3 / 担当4 /
+   移動手段を一覧上でプルダウン表示します。
+   ========================================================= */
+
+.list-select {
+  width: 100%;
+
+  height: 23px;
+
+  min-width: 0;
+
+  padding: 0 3px;
+
+  border: 1px solid #ccd6dc;
+
+  border-radius: 3px;
+
+  background: #ffffff;
+
+  font-size: 12px;
+}
+
+
+.list-select:focus {
+  outline: 2px solid rgba(47, 168, 90, .16);
+
+  border-color: #9fc9ae;
+}
+
+
+.list-select-cell {
+  padding-left: 2px !important;
+
+  padding-right: 2px !important;
+}
