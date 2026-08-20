@@ -1475,12 +1475,27 @@ async function registerArrival_() {
 
   saveActiveOuting_(active);
 
-  saveLocalHistory_(
-    "到着",
-    {
-      place
-    }
-  );
+	const historyEvent =
+	  saveLocalHistory_(
+	    "到着",
+	    {
+	      place
+	    }
+	  );
+
+	console.log(
+	  "到着履歴保存",
+	  historyEvent
+	);
+
+	console.log(
+	  "履歴全体",
+	  JSON.parse(
+	    localStorage.getItem(
+	      PORTAL_HISTORY_KEY
+	    ) || "[]"
+	  )
+	);
 
   showMessage_(
     "到着を端末に保存しました。"
