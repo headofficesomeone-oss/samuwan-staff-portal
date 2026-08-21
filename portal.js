@@ -1667,20 +1667,41 @@ function applyLocalHistoryStateFallback_(
           shift.currentState || ""
         ).trim();
 
+      const localState =
+        getLocalLatestStateByShift_(
+          shift.shiftId
+        );
+
       /*
-       * キャッシュ表示時など、サーバー状態が空/未開始でも
-       * この端末の最新履歴が先へ進んでいれば、
-       * GAS取得完了までの仮表示として履歴側を優先します。
+       * ==================================================
+       * 終了・キャンセルは端末履歴を最優先
+       * ==================================================
+       *
+       * 「終わりました」直後は、
+       * GASが一瞬古い「移動中」「支援中」を返すことがあります。
+       *
+       * しかし端末側ですでに終了操作を記録している場合、
+       * 終了した支援を再び開始・再開できる表示には戻しません。
+       */
+      if (
+        localState === "終了" ||
+        localState === "キャンセル"
+      ) {
+        shift.currentState =
+          localState;
+
+        return;
+      }
+
+      /*
+       * 通常の途中状態については、
+       * サーバー状態が空・未開始の場合だけ
+       * 端末履歴で補完します。
        */
       if (
         !serverState ||
         serverState === "未開始"
       ) {
-        const localState =
-          getLocalLatestStateByShift_(
-            shift.shiftId
-          );
-
         if (
           localState &&
           localState !== "未開始"
