@@ -1429,79 +1429,75 @@ function prepareManualConfirm_() {
 async function registerArrival_() {
   if (guardRecordBusy_()) return;
 
-  const active =
-    getActiveOuting_();
+  recordOperationBusy = true;
 
-  const place =
-    value_("confirmPlace");
+  try {
+    const active =
+      getActiveOuting_();
 
-  const note =
-    value_("confirmNote");
+    const place =
+      value_("confirmPlace");
 
-  if (!active) {
-    alert(
-      "進行中の移動行程を確認できません。"
+    const note =
+      value_("confirmNote");
+
+    if (!active) {
+      alert(
+        "進行中の移動行程を確認できません。"
+      );
+      return;
+    }
+
+    if (!place) {
+      alert(
+        "到着場所を入力してください。"
+      );
+      return;
+    }
+
+    const ok =
+      confirm(
+        place +
+        "への到着を登録しますか？"
+      );
+
+    if (!ok) return;
+
+    appendActionRecordSessionEvent_({
+      type: "arrival",
+      place,
+      note
+    });
+
+    active.currentPlace =
+      place;
+
+    active.movementStatus =
+      "待機中";
+
+    active.arrivalType =
+      "経由地";
+
+    saveActiveOuting_(
+      active
     );
-    return;
-  }
 
-  if (!place) {
-    alert("到着場所を入力してください。");
-    return;
-  }
-
-  const ok =
-    confirm(
-      place +
-      "への到着を登録しますか？"
+    saveLocalHistory_(
+      "到着",
+      {
+        place
+      }
     );
 
-  if (!ok) return;
+    showMessage_(
+      "到着を端末に保存しました。"
+    );
 
-  appendActionRecordSessionEvent_({
-    type: "arrival",
-    place,
-    note
-  });
+    await initActionRecord_();
 
-  active.currentPlace =
-    place;
-
-  active.movementStatus =
-    "待機中";
-
-  active.arrivalType =
-    "経由地";
-
-  saveActiveOuting_(active);
-
-	const historyEvent =
-	  saveLocalHistory_(
-	    "到着",
-	    {
-	      place
-	    }
-	  );
-
-	console.log(
-	  "到着履歴保存",
-	  historyEvent
-	);
-
-	console.log(
-	  "履歴全体",
-	  JSON.parse(
-	    localStorage.getItem(
-	      PORTAL_HISTORY_KEY
-	    ) || "[]"
-	  )
-	);
-
-  showMessage_(
-    "到着を端末に保存しました。"
-  );
-
-  await initActionRecord_();
+  } finally {
+    recordOperationBusy = false;
+  }
 }
 
 function setDirectActivity_(
