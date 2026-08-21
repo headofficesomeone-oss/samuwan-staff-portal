@@ -187,15 +187,21 @@ function enqueueCompletedActionRecordSession_(
     pending = [];
   }
 
-  if (
-    !pending.some(
+  const existingIndex =
+    pending.findIndex(
       item =>
         item &&
         item.sessionId ===
           session.sessionId
-    )
-  ) {
-    pending.push(session);
+    );
+
+  if (existingIndex >= 0) {
+    pending[existingIndex] =
+      session;
+  } else {
+    pending.push(
+      session
+    );
   }
 
   localStorage.setItem(
