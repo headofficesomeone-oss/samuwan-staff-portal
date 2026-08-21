@@ -2433,14 +2433,15 @@ function setTodayShiftOptions(shifts) {
     finishedShifts
   );
 
-  if (
-    selectableShifts.length === 0
-  ) {
-    clearSupportChain_();
+	if (
+	  selectableShifts.length === 0
+	) {
+	  clearSupportChain_();
 
-    setStaffActionButtonsByState(
-      ""
-    );
+	  /*
+	   * 終了した支援の選択表示をクリア
+	   */
+	  handleTodayShiftChange();
 
     const actionGrid =
       document.getElementById(
