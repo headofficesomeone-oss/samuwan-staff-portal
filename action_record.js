@@ -563,10 +563,12 @@ function getRecordContext_() {
       p.get("shiftId") || "",
     clientName:
       p.get("clientName") || "",
-    service:
-      p.get("service") || "",
-    supportDate:
-      p.get("supportDate") || "",
+		service:
+		  p.get("service") || "",
+		destination:
+		  p.get("destination") || "",
+		supportDate:
+		  p.get("supportDate") || "",
     scheduledStart:
       p.get("scheduledStart") || "",
     scheduledEnd:

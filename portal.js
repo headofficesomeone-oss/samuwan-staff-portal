@@ -3655,6 +3655,11 @@ function buildActionRecordUrl_(shift, options = {}) {
     shift.service || ""
   );
 
+	params.set(
+	  "destination",
+	  shift.destination || ""
+	);
+
   params.set(
     "supportDate",
     shift.supportDate || ""
