@@ -1309,6 +1309,76 @@ function updateQueuedStaffActionError_(
   );
 }
 
+async function syncPortalHistoryBySendId_(
+  sendId
+) {
+  if (!sendId) {
+    return true;
+  }
+
+  let history = [];
+
+  try {
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          PORTAL_HISTORY_KEY
+        ) || "[]"
+      );
+  } catch (error) {
+    history = [];
+  }
+
+  const event =
+    history.find(
+      item =>
+        item &&
+        item.sendId === sendId
+    );
+
+  /*
+   * 対応する履歴が無い場合は
+   * STAFF_ACTIONだけの操作として正常扱い
+   */
+  if (!event) {
+    return true;
+  }
+
+  const result =
+    await postGas({
+      action:
+        "recordPortalHistoryEvent",
+      event:
+        event
+    });
+
+  if (
+    !result ||
+    result.success !== true
+  ) {
+    throw new Error(
+      result?.message ||
+      "操作履歴の同期に失敗しました"
+    );
+  }
+
+  /*
+   * PORTAL_HISTORYまで保存できたので
+   * 端末側も同期済みにする
+   */
+  event.syncPending =
+    false;
+
+  localStorage.setItem(
+    PORTAL_HISTORY_KEY,
+    JSON.stringify(
+      history.slice(-300)
+    )
+  );
+
+  return true;
+}
+
 async function sendQueuedStaffActionItem_(
   item
 ) {
@@ -1428,9 +1498,17 @@ async function flushStaffActionQueue_() {
          * 業務エラーはキューから除外し、
          * 二重再送しないようにします。
          */
-        removeStaffActionQueueItem_(
-          item.payload.sendId
-        );
+				/*
+				 * STAFF_ACTIONだけでなく、
+				 * 対応するPORTAL_HISTORYも同期する
+				 */
+				await syncPortalHistoryBySendId_(
+				  item.payload.sendId
+				);
+
+				removeStaffActionQueueItem_(
+				  item.payload.sendId
+				);
 
         console.error(
           "未送信操作の登録不可",
@@ -5176,20 +5254,6 @@ async function sendStaffAction(
 	  shift,
 	  actionType
 	);
-
-	/*
-	 * 操作直後は端末上のシフト状態も
-	 * 期待状態へ先に進める。
-	 */
-	const immediateState =
-	  getExpectedStateForAction_(
-	    actionType
-	  );
-
-	if (immediateState) {
-	  shift.currentState =
-	    immediateState;
-	}
 
 	setButtonsImmediatelyForAction_(
 	  actionType,
