@@ -1182,7 +1182,7 @@ function updateStaffActionSyncStatus_() {
   } else if (count <= 10) {
     el.classList.add("pending");
     el.textContent =
-      "↻ 未送信 " + count + "件";
+      "↻ 未送信 " + count + "件" + "（操作" + staffCount + "／行動" + actionRecordCount + "）";
   } else if (count < 50) {
     el.classList.add("warning");
     el.textContent =
@@ -1195,6 +1195,7 @@ function updateStaffActionSyncStatus_() {
       "件";
   }
 }
+
 function enqueueStaffAction_(
   payload
 ) {
