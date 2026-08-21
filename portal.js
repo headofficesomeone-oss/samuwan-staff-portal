@@ -5172,15 +5172,29 @@ async function sendStaffAction(
     shift
   );
 
-  setPendingStaffActionState_(
-    shift,
-    actionType
-  );
+	setPendingStaffActionState_(
+	  shift,
+	  actionType
+	);
 
-  setButtonsImmediatelyForAction_(
-    actionType,
-    shift
-  );
+	/*
+	 * 操作直後は端末上のシフト状態も
+	 * 期待状態へ先に進める。
+	 */
+	const immediateState =
+	  getExpectedStateForAction_(
+	    actionType
+	  );
+
+	if (immediateState) {
+	  shift.currentState =
+	    immediateState;
+	}
+
+	setButtonsImmediatelyForAction_(
+	  actionType,
+	  shift
+	);
 
   if (actionType === "向かいます") {
     clearCompletedActionRecord_();
@@ -5381,6 +5395,9 @@ const actionGrid =
     setStaffActionButtonsByState(
       optimisticState
     );
+		setStaffActionButtonsDisabled(
+		  true
+		);
   }
 }
 function setGuideImmediatelyForAction_(
