@@ -5459,11 +5459,9 @@ const actionGrid =
     setStaffActionButtonsByState(
       optimisticState
     );
-		setStaffActionButtonsDisabled(
-		  true
-		);
   }
 }
+
 function setGuideImmediatelyForAction_(
   actionType,
   shift,
