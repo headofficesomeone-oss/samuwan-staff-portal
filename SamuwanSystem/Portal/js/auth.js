@@ -3,7 +3,10 @@ async function initLiffForPortal(){
   if(typeof liff==="undefined") throw new Error("LIFFを読み込めませんでした。");
   await Promise.race([liff.init({liffId:APP.LIFF_ID}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("LIFF初期化がタイムアウトしました。")),8000))]);
   if(liff.isLoggedIn()){const p=await liff.getProfile();return {lineId:p.userId,lineName:p.displayName};}
-  if(liff.isInClient()){liff.login();return null;}
+
+  // LINE内ブラウザからGitHub Pagesを直接開いた場合でも、
+  // 未ログインなら必ずLIFFログインへ進める。
+  liff.login({redirectUri:window.location.href});
   return null;
 }
 async function loginByLineId(lineId){return await apiPost("loginByLineId",{lineId});}
