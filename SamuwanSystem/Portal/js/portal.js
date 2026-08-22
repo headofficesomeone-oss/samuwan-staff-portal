@@ -6,13 +6,21 @@ async function initializePage() {
   const valid = await validateSavedSession();
   if (valid) {
     await openPortal();
-  } else {
-    openAuth();
+    return;
+  }
+
+  openAuth();
+  try {
+    const result = await initializeLineAuth();
+    if (result && result.registered) await openPortal();
+  } catch (err) {
+    setText("authMessage", err.message);
   }
 }
 
 function bindPortalEvents() {
-  document.getElementById("loginButton").addEventListener("click", verifyAndRegisterDevice);
+  document.getElementById("issueTempButton").addEventListener("click", issueTempId);
+  document.getElementById("registerLineButton").addEventListener("click", registerLineId);
   document.getElementById("logoutButton").addEventListener("click", logoutDevice);
   document.getElementById("refreshButton").addEventListener("click", loadPortalState);
 
@@ -34,13 +42,12 @@ function openAuth() {
   show(document.getElementById("authView"), true);
   show(document.getElementById("portalView"), false);
   show(document.getElementById("logoutButton"), false);
-  setText("staffName", "本人確認が必要です");
+  setText("staffName", "LINE本人確認");
 }
 
 async function openPortal() {
   const session = getSession();
   if (!session) return openAuth();
-
   show(document.getElementById("authView"), false);
   show(document.getElementById("portalView"), true);
   show(document.getElementById("logoutButton"), true);
@@ -56,11 +63,7 @@ async function loadPortalState() {
   setText("currentDetail", "");
 
   try {
-    const result = await apiPost("portal.initial", {
-      employeeId: session.employeeId,
-      sessionToken: session.sessionToken
-    });
-
+    const result = await apiPost("portal.initial", session);
     const status = result.currentStatus || {};
     setText("currentStatus", status.label || "行動記録なし");
     setText("currentDetail", status.detail || "");
