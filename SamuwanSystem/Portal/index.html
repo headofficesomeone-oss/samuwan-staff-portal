@@ -5,32 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Samuwan Staff Portal</title>
   <link rel="stylesheet" href="./css/common.css">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
   <header class="app-header">
     <div>
       <div class="app-title">Samuwan Staff Portal</div>
-      <div id="staffName" class="staff-name">本人確認中...</div>
+      <div id="staffName" class="staff-name">LINE確認中...</div>
     </div>
     <button id="logoutButton" class="small-button hidden" type="button">端末登録解除</button>
   </header>
 
   <main class="app-main">
     <section id="authView" class="card">
-      <h2>本人確認</h2>
-      <p class="help">この端末を使用する職員を確認します。</p>
+      <h2>LINE本人確認</h2>
+      <p id="authGuide" class="help">LINEアカウントを確認しています。</p>
 
-      <label class="field">
-        <span>従業員ID</span>
-        <input id="employeeId" autocomplete="off" inputmode="text" placeholder="例：e0001">
-      </label>
+      <div id="unregisteredView" class="hidden">
+        <label class="field">
+          <span>職員</span>
+          <select id="employeeSelect"></select>
+        </label>
 
-      <label class="field">
-        <span>確認コード</span>
-        <input id="verifyCode" type="password" inputmode="numeric" autocomplete="off">
-      </label>
+        <button id="issueTempButton" class="primary-button" type="button">仮登録IDを発行</button>
 
-      <button id="loginButton" class="primary-button" type="button">本人確認して登録</button>
+        <label class="field">
+          <span>仮登録ID</span>
+          <input id="tempId" autocomplete="off" placeholder="LINEに届いた仮登録ID">
+        </label>
+
+        <button id="registerLineButton" class="secondary-button" type="button">LINE IDを登録</button>
+      </div>
+
       <div id="authMessage" class="message" aria-live="polite"></div>
     </section>
 
