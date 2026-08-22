@@ -117,3 +117,90 @@ button:disabled { opacity: .35; cursor: not-allowed; }
   .menu-grid { grid-template-columns: 1fr; }
   .menu-button.primary { grid-column: auto; }
 }
+
+.work-toggle {
+  min-width: 76px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.work-card {
+  margin-bottom: 12px;
+}
+
+.work-state-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: rgba(0,0,0,.06);
+}
+
+.permission-notice {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: .8;
+}
+
+.disabled-menu,
+.menu-button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(255,255,255,.96);
+  border-top: 1px solid rgba(0,0,0,.08);
+  z-index: 1000;
+}
+
+.bottom-nav button {
+  padding: 11px 8px;
+  border: 0;
+  background: transparent;
+  font-weight: 700;
+}
+
+.bottom-nav .active {
+  text-decoration: underline;
+}
+
+.app-main,
+.bottom-space {
+  padding-bottom: 88px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+.danger-card {
+  margin-top: 16px;
+}
+
+.danger-button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+}
