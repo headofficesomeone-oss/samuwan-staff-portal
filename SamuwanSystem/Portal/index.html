@@ -9,61 +9,26 @@
 </head>
 <body>
   <header class="app-header">
-    <div>
-      <div class="app-title">Samuwan Staff Portal</div>
-      <div id="staffName" class="staff-name">LINE確認中...</div>
-    </div>
-    <button id="logoutButton" class="small-button hidden" type="button">端末登録解除</button>
+    <div><div class="app-title">Samuwan Staff Portal</div><div id="staffName" class="staff-name">本人確認中...</div></div>
+    <button id="logoutButton" class="small-button hidden" type="button">登録情報を解除</button>
   </header>
-
   <main class="app-main">
-    <section id="authView" class="card">
-      <h2>LINE本人確認</h2>
-      <p id="authGuide" class="help">LINEアカウントを確認しています。</p>
-
-      <div id="unregisteredView" class="hidden">
-        <label class="field">
-          <span>職員</span>
-          <select id="employeeSelect"></select>
-        </label>
-
-        <button id="issueTempButton" class="primary-button" type="button">仮登録IDを発行</button>
-
-        <label class="field">
-          <span>仮登録ID</span>
-          <input id="tempId" autocomplete="off" placeholder="LINEに届いた仮登録ID">
-        </label>
-
-        <button id="registerLineButton" class="secondary-button" type="button">LINE IDを登録</button>
-      </div>
-
+    <section id="loadingView" class="card"><h2>本人確認中です</h2><p class="help">LINEの登録情報を確認しています。そのままお待ちください。</p></section>
+    <section id="registerView" class="card hidden">
+      <h2>初回登録・本人確認</h2><p class="help">ご自身の氏名を選択し、仮登録IDを発行してください。</p>
+      <label class="field"><span>氏名</span><select id="employeeName"><option value="">氏名一覧を読み込んでいます...</option></select></label>
+      <button id="issueTempButton" class="secondary-button" type="button">仮登録IDを発行する</button>
+      <label class="field"><span>仮登録ID</span><input id="tempId" type="password" autocomplete="off" placeholder="LINEに届いた仮登録ID"></label>
+      <button id="registerButton" class="primary-button" type="button">確認する</button>
       <div id="authMessage" class="message" aria-live="polite"></div>
     </section>
-
+    <section id="completeView" class="card hidden"><h2>登録が完了しました</h2><p id="completeMessage">LINE IDの登録が完了しました。</p><button id="toPortalButton" class="primary-button" type="button">ポータルへ進む</button></section>
     <section id="portalView" class="hidden">
-      <section class="status-card">
-        <div class="status-heading">
-          <h2>現在の状態</h2>
-          <button id="refreshButton" class="small-button" type="button">更新</button>
-        </div>
-        <div id="currentStatus" class="current-status">取得中...</div>
-        <div id="currentDetail" class="current-detail"></div>
-      </section>
-
-      <section class="menu-grid">
-        <button class="menu-button primary" data-page="action">行動記録</button>
-        <button class="menu-button" data-page="request">支援依頼</button>
-        <button class="menu-button" data-page="office">事務作業</button>
-        <button class="menu-button" data-page="meeting">会議記録</button>
-        <button class="menu-button" data-page="leave">休暇・届出</button>
-      </section>
-
+      <section class="status-card"><div class="status-heading"><h2>現在の状態</h2><button id="refreshButton" class="small-button" type="button">更新</button></div><div id="currentStatus" class="current-status">取得中...</div><div id="currentDetail" class="current-detail"></div></section>
+      <section class="menu-grid"><button class="menu-button primary" data-page="action">行動記録</button><button class="menu-button" data-page="request">支援依頼</button><button class="menu-button" data-page="office">事務作業</button><button class="menu-button" data-page="meeting">会議記録</button><button class="menu-button" data-page="leave">休暇・届出</button></section>
       <section id="message" class="message" aria-live="polite"></section>
     </section>
   </main>
-
-  <script src="./js/common.js"></script>
-  <script src="./js/auth.js"></script>
-  <script src="./js/portal.js"></script>
+  <script src="./js/common.js"></script><script src="./js/auth.js"></script><script src="./js/portal.js"></script>
 </body>
 </html>
