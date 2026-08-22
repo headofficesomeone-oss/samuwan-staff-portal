@@ -1,123 +1,31 @@
-let LINE_PROFILE = null;
-
-async function initializeLineAuth() {
-  setText("authMessage", "LINEを確認しています...");
-  await liff.init({ liffId: APP.LIFF_ID });
-
-  if (!liff.isLoggedIn()) {
-    liff.login();
-    return { pending: true };
-  }
-
-  LINE_PROFILE = await liff.getProfile();
-
-  const loginResult = await apiPost("auth.line.login", {
-    lineId: LINE_PROFILE.userId,
-    lineDisplayName: LINE_PROFILE.displayName
-  });
-
-  if (loginResult.registered) {
-    saveSession({
-      employeeId: loginResult.staff.employeeId,
-      employeeName: loginResult.staff.employeeName,
-      lineId: LINE_PROFILE.userId,
-      sessionToken: loginResult.sessionToken
-    });
-    return { registered: true };
-  }
-
-  await loadEmployeeChoices();
-  show(document.getElementById("unregisteredView"), true);
-  setText("authGuide", "このLINE IDは未登録です。職員を選択して仮登録IDを発行してください。");
-  setText("authMessage", "");
-  return { registered: false };
+let currentLineProfile = null;
+async function initLiffForPortal(){
+  if(typeof liff==="undefined") throw new Error("LIFFを読み込めませんでした。");
+  await Promise.race([liff.init({liffId:APP.LIFF_ID}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("LIFF初期化がタイムアウトしました。")),8000))]);
+  if(liff.isLoggedIn()){const p=await liff.getProfile();return {lineId:p.userId,lineName:p.displayName};}
+  if(liff.isInClient()){liff.login();return null;}
+  return null;
 }
-
-async function loadEmployeeChoices() {
-  const result = await apiPost("auth.employee.list");
-  const select = document.getElementById("employeeSelect");
-  select.innerHTML = "";
-  result.staffList.forEach(staff => {
-    const option = document.createElement("option");
-    option.value = staff.employeeId;
-    option.textContent = staff.employeeName;
-    select.appendChild(option);
-  });
+async function loginByLineId(lineId){return await apiPost("loginByLineId",{lineId});}
+async function loadEmployeeList(){
+  const select=document.getElementById("employeeName"); if(!select)return;
+  select.innerHTML='<option value="">氏名一覧を読み込んでいます...</option>'; select.disabled=true;
+  try{const result=await apiPost("getEmployeeList"); select.innerHTML='<option value="">氏名を選択してください</option>'; (result.employees||[]).forEach(e=>{const o=document.createElement("option");o.value=e.name;o.textContent=e.name;select.appendChild(o);});}
+  finally{select.disabled=false;}
 }
-
-async function issueTempId() {
-  if (!LINE_PROFILE) return;
-  const employeeId = document.getElementById("employeeSelect").value;
-  setText("authMessage", "仮登録IDを発行しています...");
-  try {
-    const result = await apiPost("auth.line.temp.issue", {
-      employeeId,
-      lineId: LINE_PROFILE.userId,
-      lineDisplayName: LINE_PROFILE.displayName
-    });
-    setText("authMessage",
-      result.linePushSent
-        ? "LINEへ仮登録IDを送信しました。届いたIDを入力してください。"
-        : "仮登録IDを発行しました。LINE送信設定が未完了のため、管理者側で確認してください。"
-    );
-  } catch (err) {
-    setText("authMessage", err.message);
-  }
+async function issueTempIdFromScreen(){
+  const employeeName=document.getElementById("employeeName").value;
+  if(!employeeName){setText("authMessage","氏名を選択してください。");return;}
+  if(!currentLineProfile||!currentLineProfile.lineId){setText("authMessage","LINE情報を取得できません。LINEから開き直してください。");return;}
+  setText("authMessage","仮登録IDを発行しています...");
+  await apiPost("issueTempId",{employeeName,lineId:currentLineProfile.lineId});
+  setText("authMessage","LINEに仮登録IDを送信しました。LINEのメッセージを確認してください。");
 }
-
-async function registerLineId() {
-  if (!LINE_PROFILE) return;
-  const employeeId = document.getElementById("employeeSelect").value;
-  const tempId = document.getElementById("tempId").value.trim();
-  if (!tempId) {
-    setText("authMessage", "仮登録IDを入力してください。");
-    return;
-  }
-
-  setText("authMessage", "LINE IDを登録しています...");
-  try {
-    const result = await apiPost("auth.line.register", {
-      employeeId,
-      tempId,
-      lineId: LINE_PROFILE.userId,
-      lineDisplayName: LINE_PROFILE.displayName
-    });
-
-    saveSession({
-      employeeId: result.staff.employeeId,
-      employeeName: result.staff.employeeName,
-      lineId: LINE_PROFILE.userId,
-      sessionToken: result.sessionToken
-    });
-    await openPortal();
-  } catch (err) {
-    setText("authMessage", err.message);
-  }
-}
-
-async function validateSavedSession() {
-  const session = getSession();
-  if (!session) return false;
-  try {
-    const result = await apiPost("auth.session", {
-      employeeId: session.employeeId,
-      lineId: session.lineId,
-      sessionToken: session.sessionToken
-    });
-    saveSession({
-      employeeId: result.staff.employeeId,
-      employeeName: result.staff.employeeName,
-      lineId: session.lineId,
-      sessionToken: result.sessionToken
-    });
-    return true;
-  } catch (_) {
-    clearSession();
-    return false;
-  }
-}
-
-function logoutDevice() {
-  clearSession();
-  location.reload();
+async function registerLineIdFromScreen(){
+  const employeeName=document.getElementById("employeeName").value; const tempId=document.getElementById("tempId").value.trim();
+  if(!employeeName||!tempId){setText("authMessage","氏名と仮登録IDを入力してください。");return null;}
+  if(!currentLineProfile||!currentLineProfile.lineId){setText("authMessage","LINE情報を取得できません。LINEから開き直してください。");return null;}
+  setText("authMessage","登録処理中です...");
+  const result=await apiPost("registerLineId",{employeeName,tempId,lineId:currentLineProfile.lineId,lineName:currentLineProfile.lineName});
+  const user={employeeId:result.employeeId,employeeName:result.employeeName}; savePortalUser(user); return {user,message:result.message||"LINE IDの登録が完了しました。"};
 }
