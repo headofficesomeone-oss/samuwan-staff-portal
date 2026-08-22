@@ -1,1 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Samuwan Staff Portal</title>
+  <link rel="stylesheet" href="./css/common.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <div class="app-title">Samuwan Staff Portal</div>
+      <div id="staffName" class="staff-name">本人確認中...</div>
+    </div>
+    <button id="logoutButton" class="small-button hidden" type="button">端末登録解除</button>
+  </header>
 
+  <main class="app-main">
+    <section id="authView" class="card">
+      <h2>本人確認</h2>
+      <p class="help">この端末を使用する職員を確認します。</p>
+
+      <label class="field">
+        <span>従業員ID</span>
+        <input id="employeeId" autocomplete="off" inputmode="text" placeholder="例：e0001">
+      </label>
+
+      <label class="field">
+        <span>確認コード</span>
+        <input id="verifyCode" type="password" inputmode="numeric" autocomplete="off">
+      </label>
+
+      <button id="loginButton" class="primary-button" type="button">本人確認して登録</button>
+      <div id="authMessage" class="message" aria-live="polite"></div>
+    </section>
+
+    <section id="portalView" class="hidden">
+      <section class="status-card">
+        <div class="status-heading">
+          <h2>現在の状態</h2>
+          <button id="refreshButton" class="small-button" type="button">更新</button>
+        </div>
+        <div id="currentStatus" class="current-status">取得中...</div>
+        <div id="currentDetail" class="current-detail"></div>
+      </section>
+
+      <section class="menu-grid">
+        <button class="menu-button primary" data-page="action">行動記録</button>
+        <button class="menu-button" data-page="request">支援依頼</button>
+        <button class="menu-button" data-page="office">事務作業</button>
+        <button class="menu-button" data-page="meeting">会議記録</button>
+        <button class="menu-button" data-page="leave">休暇・届出</button>
+      </section>
+
+      <section id="message" class="message" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <script src="./js/common.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/portal.js"></script>
+</body>
+</html>
