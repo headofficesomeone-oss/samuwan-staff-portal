@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>マイページ | Samuwan Staff Portal</title>
+  <link rel="stylesheet" href="./css/common.css?v=20260822-2005-phase5-1">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <div class="app-title">マイページ</div>
+      <div id="staffName" class="staff-name"></div>
+    </div>
+  </header>
+
+  <main class="app-main bottom-space">
+    <section class="card">
+      <h2>登録情報</h2>
+
+      <div class="info-row">
+        <span>職員名</span>
+        <strong id="myEmployeeName"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>従業員ID</span>
+        <strong id="myEmployeeId"></strong>
+      </div>
+
+      <div class="info-row">
+        <span>LINE連携</span>
+        <strong>登録済み</strong>
+      </div>
+    </section>
+
+    <section class="card danger-card">
+      <h2>LINE登録</h2>
+      <p class="help">
+        LINE登録を解除すると、次回利用時に仮登録IDによる再登録が必要になります。
+      </p>
+
+      <button id="unregisterButton" class="danger-button" type="button">
+        LINE登録を解除する
+      </button>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button type="button" id="homeButton">ホーム</button>
+    <button type="button" class="active">マイページ</button>
+  </nav>
+
+  <script src="./js/common.js?v=20260822-2005-phase5-1"></script>
+  <script src="./js/auth.js?v=20260822-2005-phase5-1"></script>
+  <script src="./js/mypage.js?v=20260822-2005-phase5-1"></script>
+</body>
+</html>
