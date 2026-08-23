@@ -1,5 +1,3 @@
-let currentLineProfile = null;
-
 document.addEventListener("DOMContentLoaded", initializeMyPage);
 
 async function initializeMyPage() {
@@ -28,12 +26,12 @@ async function initializeMyPage() {
 
     try {
       try {
-        currentLineProfile = await initLiffForPortal();
+        const lineProfile = await initLiffForPortal();
       } catch (_) {}
 
       await apiPost("unregisterLineId", {
         employeeId: user.employeeId,
-        lineId: currentLineProfile?.lineId || ""
+        lineId: (typeof lineProfile !== "undefined" && lineProfile) ? lineProfile.lineId : ""
       });
 
       clearPortalUser();

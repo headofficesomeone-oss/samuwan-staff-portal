@@ -106,8 +106,9 @@ function showOnly(id) {
     show(document.getElementById(viewId), viewId === id);
   });
 
-  // 始業・終業ボタンは本人確認後のメインPORTALだけ表示
+  // 始業・終業ボタンと下部ナビは本人確認後のメインPORTALだけ表示
   show(document.getElementById("workToggleButton"), id === "portalView");
+  show(document.getElementById("bottomNav"), id === "portalView");
 }
 
 function showPortalAreaDirect() {

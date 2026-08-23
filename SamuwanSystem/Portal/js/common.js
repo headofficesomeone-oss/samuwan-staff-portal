@@ -1,10 +1,10 @@
 const APP = {
-  GAS_URL: "httpsscript.google.commacrossAKfycbzzjinunR8vsF83ZiPZ2g0v7rc5QoCYDmloBpMyvUMIey0oaMTYPKgG_7Zw1DMC-5T8exec",  // 新しいGAS WebアプリURL
+  GAS_URL: "https://script.google.com/macros/s/AKfycbzzjinunR8vsF83ZiPZ2g0v7rc5QoCYDmloBpMyvUMIey0oaMTYPKgG_7Zw1DMC-5T8/exec",  // 新しいGAS WebアプリURL
   LIFF_ID: "2009935343-GyNpF9lj",
   STORAGE_KEY: "samuwan_portal_user_v5",
   WORK_STATUS_KEY: "samuwan_work_status_v1",
   ACTION_STATUS_KEY: "samuwan_action_status_v1",
-  VERSION: "20260822-2005-phase5-1"
+  VERSION: "20260823-1035-phase5-2"
 };
 
 async function apiPost(action, payload = {}) {
@@ -12,7 +12,23 @@ async function apiPost(action, payload = {}) {
     throw new Error("common.js の APP.GAS_URL が未設定です");
   }
 
-  const response = await fetch(APP.GAS_URL, {
+  const gasUrl = String(APP.GAS_URL).trim();
+
+  if (gasUrl.includes("script.googleusercontent.com")) {
+    throw new Error(
+      "GAS_URLに一時的なgoogleusercontent URLが設定されています。"
+      + "GASのデプロイ画面に表示される https://script.google.com/macros/s/.../exec を設定してください。"
+    );
+  }
+
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\?.*)?$/.test(gasUrl)) {
+    throw new Error(
+      "GAS_URLがWebアプリの /exec URLではありません。"
+      + "デプロイ画面の「ウェブアプリURL」を設定してください。"
+    );
+  }
+
+  const response = await fetch(gasUrl, {
     method: "POST",
     headers: {
       "Content-Type": "text/plain;charset=utf-8"
