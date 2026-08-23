@@ -1,10 +1,10 @@
 const APP = {
-  GAS_URL: "https://script.google.com/macros/s/AKfycbzzjinunR8vsF83ZiPZ2g0v7rc5QoCYDmloBpMyvUMIey0oaMTYPKgG_7Zw1DMC-5T8/exec",  // 新しいGAS WebアプリURL
+  GAS_URL: "httpsscript.google.commacrossAKfycbzzjinunR8vsF83ZiPZ2g0v7rc5QoCYDmloBpMyvUMIey0oaMTYPKgG_7Zw1DMC-5T8exec",  // 新しいGAS WebアプリURL
   LIFF_ID: "2009935343-GyNpF9lj",
   STORAGE_KEY: "samuwan_portal_user_v5",
   WORK_STATUS_KEY: "samuwan_work_status_v1",
   ACTION_STATUS_KEY: "samuwan_action_status_v1",
-  VERSION: "20260822-1932-phase5"
+  VERSION: "20260822-2005-phase5-1"
 };
 
 async function apiPost(action, payload = {}) {

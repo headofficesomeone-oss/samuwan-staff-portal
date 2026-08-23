@@ -1,6 +1,5 @@
 let currentUser = null;
 let currentWorkStatus = null;
-let currentLineProfile = null;
 
 document.addEventListener("DOMContentLoaded", initializePortalPage);
 
@@ -106,6 +105,9 @@ function showOnly(id) {
   ["loadingView", "registerView", "completeView", "portalView"].forEach(viewId => {
     show(document.getElementById(viewId), viewId === id);
   });
+
+  // 始業・終業ボタンは本人確認後のメインPORTALだけ表示
+  show(document.getElementById("workToggleButton"), id === "portalView");
 }
 
 function showPortalAreaDirect() {
