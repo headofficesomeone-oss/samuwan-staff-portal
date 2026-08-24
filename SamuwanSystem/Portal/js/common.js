@@ -4,7 +4,7 @@ const APP = {
   STORAGE_KEY: "samuwan_portal_user_v5",
   WORK_STATUS_KEY: "samuwan_work_status_v1",
   ACTION_STATUS_KEY: "samuwan_action_status_v1",
-  VERSION: "20260823-1035-phase5-2"
+  VERSION: "20260824-1534-phase7"
 };
 
 async function apiPost(action, payload = {}) {

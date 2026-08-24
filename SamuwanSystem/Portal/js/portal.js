@@ -1,5 +1,6 @@
 let currentUser = null;
 let currentWorkStatus = null;
+let currentCommute = null;
 
 document.addEventListener("DOMContentLoaded", initializePortalPage);
 
@@ -73,6 +74,8 @@ function bindEvents() {
   });
 
   document.getElementById("workToggleButton")?.addEventListener("click", toggleWorkStatus);
+
+  document.getElementById("commuteDestination")?.addEventListener("change", calculateSelectedCommute);
   document.getElementById("refreshButton")?.addEventListener("click", loadPortalInitial);
 
   document.querySelectorAll("[data-page]").forEach(button => {
@@ -144,6 +147,7 @@ async function loadPortalInitial() {
     renderWorkStatus(currentWorkStatus);
     renderActionSummary(actionStatus);
     applyWorkPermissions(currentWorkStatus);
+    await loadCommuteOptions();
 
   } catch (err) {
     setText("currentStatus", "取得に失敗しました");
@@ -205,31 +209,35 @@ function setMenuEnabled(page, enabled) {
   button.classList.toggle("disabled-menu", !enabled);
 }
 
+async function loadCommuteOptions() {
+  const select=document.getElementById('commuteDestination'); if(!select)return;
+  if(currentWorkStatus&&currentWorkStatus.status==='ON'){
+    select.disabled=true; select.innerHTML=`<option>${currentWorkStatus.destinationName||'勤務中'}</option>`;
+    setText('commuteResult',`${currentWorkStatus.destinationName||''} / ${currentWorkStatus.distanceKm||0}km / 約${currentWorkStatus.durationMinutes||0}分`); return;
+  }
+  select.disabled=true; select.innerHTML='<option value="">読み込み中...</option>';
+  try{
+    const result=await apiPost('commute.options',{employeeId:currentUser.employeeId});
+    select.innerHTML='<option value="">勤務開始場所を選択してください</option>';
+    (result.options||[]).forEach(o=>{const el=document.createElement('option');el.value=o.type+'|'+o.id;el.textContent=o.name;select.appendChild(el);});
+    setText('commuteResult','勤務開始場所を選択してください。');
+  }catch(err){setText('commuteMessage',err.message);}finally{select.disabled=false;}
+}
+async function calculateSelectedCommute(){
+  const select=document.getElementById('commuteDestination'); currentCommute=null; const value=String(select?.value||'').trim();
+  if(!value){setText('commuteResult','勤務開始場所を選択してください。');return;}
+  const [type,id]=value.split('|'); setText('commuteResult','通勤距離を計算しています...'); setText('commuteMessage','');
+  try{const r=await apiPost('commute.calculate',{employeeId:currentUser.employeeId,destinationType:type,destinationId:id});currentCommute=r.commute;setText('commuteResult',`${currentCommute.destinationName}まで ${currentCommute.distanceKm}km / 車で約${currentCommute.durationMinutes}分`);}catch(err){setText('commuteResult','通勤距離を取得できませんでした。');setText('commuteMessage',err.message);}
+}
 async function toggleWorkStatus() {
   if (!currentUser || !currentWorkStatus) return;
-
-  const isWorking = currentWorkStatus.status === "ON";
-  const action = isWorking ? "work.end" : "work.start";
-
-  const button = document.getElementById("workToggleButton");
-  if (button) button.disabled = true;
-
-  try {
-    const result = await apiPost(action, {
-      employeeId: currentUser.employeeId
-    });
-
-    currentWorkStatus = result.workStatus;
-    saveWorkStatus(currentWorkStatus);
-
-    renderWorkStatus(currentWorkStatus);
-    applyWorkPermissions(currentWorkStatus);
-
-  } catch (err) {
-    alert(err.message);
-  } finally {
-    if (button) button.disabled = false;
-  }
+  const isWorking=currentWorkStatus.status==='ON';
+  if(!isWorking&&!currentCommute){alert('勤務開始場所を選択して、通勤距離を確認してから始業してください。');return;}
+  const action=isWorking?'work.end':'work.start'; const button=document.getElementById('workToggleButton'); if(button)button.disabled=true;
+  try{
+    const payload={employeeId:currentUser.employeeId}; if(!isWorking)payload.commute=currentCommute;
+    const result=await apiPost(action,payload); currentWorkStatus=result.workStatus; saveWorkStatus(currentWorkStatus); renderWorkStatus(currentWorkStatus); applyWorkPermissions(currentWorkStatus); await loadCommuteOptions();
+  }catch(err){alert(err.message);}finally{if(button)button.disabled=false;}
 }
 
 async function openActionPage() {
