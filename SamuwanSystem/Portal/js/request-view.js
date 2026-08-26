@@ -228,23 +228,21 @@
   function cardHtml_(x) {
     const metaRows = [];
 
-    if (
-      x.requestType === '担当変更'
-    ) {
-      if (x.oldStaffName) {
-        metaRows.push([
-          '変更前',
-          x.oldStaffName
-        ]);
-      }
+		if (
+		  x.requestType === '担当変更'
+		) {
+		  const staffChange = [
+		    x.oldStaffName || '',
+		    x.newStaffName || ''
+		  ].filter(Boolean).join(' → ');
 
-      if (x.newStaffName) {
-        metaRows.push([
-          '変更後',
-          x.newStaffName
-        ]);
-      }
-    } else if (
+		  if (staffChange) {
+		    metaRows.push([
+		      '担当変更',
+		      staffChange
+		    ]);
+		  }
+		} else if (
       x.requestType === '変更'
     ) {
       if (x.changeContent) {
