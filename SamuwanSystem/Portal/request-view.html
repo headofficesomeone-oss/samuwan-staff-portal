@@ -1,41 +1,71 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>依頼情報</title>
-  <link rel="stylesheet" href="./css/request-view.css?v=20260826-1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>依頼情報</title>
+<link rel="stylesheet" href="./css/request-view.css?v=20260827-2">
 </head>
 <body>
-  <main class="app">
-    <header class="header">
-      <div class="title-row">
-        <div>
-          <div class="title">依頼情報</div>
-          <div class="sub" id="weekLabel">読み込み中...</div>
-        </div>
-
-        <div class="scope-toggle" aria-label="表示範囲">
-          <button type="button" class="scope-btn active" data-scope="all">全体</button>
-          <button type="button" class="scope-btn" data-scope="mine">自分</button>
-        </div>
+<main class="app">
+<header class="header">
+  <div class="title-row">
+    <div><div class="title">依頼情報</div><div class="sub" id="weekLabel">読み込み中...</div></div>
+    <div class="header-actions">
+      <button type="button" class="register-btn" id="openRegister">＋登録</button>
+      <div class="scope-toggle">
+        <button type="button" class="scope-btn active" data-scope="all">全体</button>
+        <button type="button" class="scope-btn" data-scope="mine">自分</button>
       </div>
+    </div>
+  </div>
+  <div class="days" id="daysNav"></div>
+</header>
+<section class="content">
+  <div class="day-head"><strong id="dayTitle">－</strong><span class="count" id="dayCount">0件</span></div>
+  <div class="message" id="message">依頼情報を取得しています...</div>
+  <div class="list" id="requestList"></div>
+</section>
+</main>
 
-      <div class="days" id="daysNav"></div>
-    </header>
-
-    <section class="content">
-      <div class="day-head">
-        <strong id="dayTitle">－</strong>
-        <span class="count" id="dayCount">0件</span>
+<dialog id="requestDialog" class="request-dialog">
+<form id="requestForm" class="request-form">
+  <div class="form-head"><strong>依頼登録</strong><button type="button" id="closeDialog" class="close-btn">×</button></div>
+  <div class="form-body">
+    <label class="field"><span>依頼区分</span><select id="requestType"><option>追加</option><option>キャンセル</option><option>変更</option><option>担当変更</option></select></label>
+    <label class="field" id="targetShiftField"><span>対象シフトID</span><input id="targetShiftId" placeholder="例 S000123"></label>
+    <label class="field"><span>対象日</span><input type="date" id="targetDate" required></label>
+    <label class="field"><span>利用者名</span><input id="clientName" required></label>
+    <div class="two-col">
+      <label class="field"><span>制度</span><select id="system"><option value=""></option><option>障害福祉</option><option>介護保険</option></select></label>
+      <label class="field"><span>サービス</span><input id="service"></label>
+    </div>
+    <div class="two-col">
+      <label class="field"><span>開始</span><input type="time" id="startTime"></label>
+      <label class="field"><span>終了</span><input type="time" id="endTime"></label>
+    </div>
+    <label class="field"><span>支援内容</span><input id="supportContent"></label>
+    <label class="field"><span>主担当</span><input id="mainStaffName"></label>
+    <div id="staffChangeFields" hidden>
+      <div class="two-col">
+        <label class="field"><span>変更前担当</span><input id="oldStaffName"></label>
+        <label class="field"><span>変更後担当</span><input id="newStaffName"></label>
       </div>
-
-      <div class="message" id="message">依頼情報を取得しています...</div>
-      <div class="list" id="requestList"></div>
-    </section>
-  </main>
-
-  <script src="./js/request-view_config.js?v=20260826-1"></script>
-  <script src="./js/request-view.js?v=20260826-1"></script>
+    </div>
+    <label class="field" id="changeContentField" hidden><span>変更内容</span><input id="changeContent"></label>
+    <label class="field"><span>変更理由・キャンセル理由</span><input id="changeReason"></label>
+    <div class="two-col">
+      <label class="field"><span>行先</span><input id="destination"></label>
+      <label class="field"><span>予約時間</span><input type="time" id="appointmentTime"></label>
+    </div>
+    <label class="field"><span>待合せ</span><input id="meetingPlace"></label>
+    <label class="field"><span>特記事項</span><textarea id="note" rows="3"></textarea></label>
+    <div id="saveMessage" class="save-message" hidden></div>
+  </div>
+  <div class="form-actions"><button type="button" id="cancelRegister" class="secondary-btn">閉じる</button><button type="submit" id="saveRequest" class="primary-btn">登録する</button></div>
+</form>
+</dialog>
+<script src="./js/request-view-config.js?v=20260827-2"></script>
+<script src="./js/request-view.js?v=20260827-2"></script>
 </body>
 </html>
