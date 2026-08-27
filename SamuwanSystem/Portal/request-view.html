@@ -35,7 +35,9 @@
     <label class="field"><span>依頼区分</span><select id="requestType"><option>追加</option><option>キャンセル</option><option>変更</option><option>担当変更</option></select></label>
     <label class="field" id="targetShiftField"><span>対象シフトID</span><input id="targetShiftId" placeholder="例 S000123"></label>
     <label class="field"><span>対象日</span><input type="date" id="targetDate" required></label>
-    <label class="field"><span>利用者名</span><input id="clientName" required></label>
+
+    <label class="field"><span>利用者名</span><select id="clientName" required><option value="">選択してください</option></select></label>
+
     <div class="two-col">
       <label class="field"><span>制度</span><select id="system"><option value=""></option><option>障害福祉</option><option>介護保険</option></select></label>
       <label class="field"><span>サービス</span><input id="service"></label>
@@ -45,13 +47,16 @@
       <label class="field"><span>終了</span><input type="time" id="endTime"></label>
     </div>
     <label class="field"><span>支援内容</span><input id="supportContent"></label>
-    <label class="field"><span>主担当</span><input id="mainStaffName"></label>
+
+    <label class="field"><span>主担当</span><select id="mainStaffName"><option value="">選択してください</option></select></label>
+
     <div id="staffChangeFields" hidden>
       <div class="two-col">
-        <label class="field"><span>変更前担当</span><input id="oldStaffName"></label>
-        <label class="field"><span>変更後担当</span><input id="newStaffName"></label>
+        <label class="field"><span>変更前担当</span><select id="oldStaffName"><option value="">選択してください</option></select></label>
+        <label class="field"><span>変更後担当</span><select id="newStaffName"><option value="">選択してください</option></select></label>
       </div>
     </div>
+
     <label class="field" id="changeContentField" hidden><span>変更内容</span><input id="changeContent"></label>
     <label class="field"><span>変更理由・キャンセル理由</span><input id="changeReason"></label>
     <div class="two-col">
