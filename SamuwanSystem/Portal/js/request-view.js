@@ -6,7 +6,8 @@
     scope: 'all',
     employee: user(),
     day: todayIndex(),
-    data: null
+    data: null,
+    masters: { clients: [], staffs: [] }
   };
 
   const $ = id => document.getElementById(id);
@@ -145,15 +146,21 @@
 
   formMode();
 
-  load().catch(err => {
+  start();
 
-    message(
-      '依頼情報を取得できませんでした。\n' +
-      (err?.message || err)
-    );
+  async function start() {
 
-  });
-
+    try {
+      await loadMasters();
+      await load();
+    }
+    catch (err) {
+      message(
+        '依頼情報を取得できませんでした。\n' +
+        (err?.message || err)
+      );
+    }
+  }
 
   // ==============================
   // GAS通信
@@ -207,6 +214,106 @@
     return response.json();
 
   }
+
+
+// ==============================
+// 利用者・従業員マスタ
+// ==============================
+
+async function loadMasters() {
+
+  const result =
+    await api({
+      action:
+        'request.masters'
+    });
+
+
+  if (!result?.ok) {
+
+    throw new Error(
+      result?.message ||
+      result?.error ||
+      'マスタ取得エラー'
+    );
+
+  }
+
+
+  S.masters.clients =
+    result.clients || [];
+
+  S.masters.staffs =
+    result.staffs || [];
+
+
+  setClientOptions();
+
+  setStaffOptions();
+
+}
+
+function setStaffOptions() {
+
+  const html =
+    `
+      <option value="">
+        選択してください
+      </option>
+    ` +
+    S.masters.staffs
+      .map(item => `
+        <option
+          value="${esc(item.id)}"
+          data-name="${esc(item.name)}"
+        >
+          ${esc(item.name)}
+        </option>
+      `)
+      .join('');
+
+
+  E.main.innerHTML =
+    html;
+
+  E.oldStaff.innerHTML =
+    html;
+
+  E.newStaff.innerHTML =
+    html;
+
+}
+
+function setStaffOptions() {
+
+  const html =
+    `
+      <option value="">
+        選択してください
+      </option>
+    ` +
+    S.masters.staffs
+      .map(item => `
+        <option
+          value="${esc(item.id)}"
+          data-name="${esc(item.name)}"
+        >
+          ${esc(item.name)}
+        </option>
+      `)
+      .join('');
+
+
+  E.main.innerHTML =
+    html;
+
+  E.oldStaff.innerHTML =
+    html;
+
+  E.newStaff.innerHTML =
+    html;
+
+}
 
 
   // ==============================
@@ -297,6 +404,10 @@
       return;
     }
 
+    const client = selectedMaster(E.client);
+    const mainStaff = selectedMaster(E.main);
+    const oldStaff = selectedMaster(E.oldStaff);
+    const newStaff = selectedMaster(E.newStaff);
 
     E.save.disabled = true;
 
@@ -326,8 +437,11 @@
           reporterName:
             S.employee.name,
 
+          clientId:
+            client.id,
+
           clientName:
-            E.client.value.trim(),
+            client.name,
 
           system:
             E.system.value,
@@ -344,14 +458,23 @@
           endTime:
             E.end.value,
 
+          mainStaffId:
+            mainStaff.id,
+
           mainStaffName:
-            E.main.value.trim(),
+            mainStaff.name,
+
+          oldStaffId:
+            oldStaff.id,
 
           oldStaffName:
-            E.oldStaff.value.trim(),
+            oldStaff.name,
+
+          newStaffId:
+            newStaff.id,
 
           newStaffName:
-            E.newStaff.value.trim(),
+            newStaff.name,
 
           destination:
             E.dest.value.trim(),
