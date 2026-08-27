@@ -26,10 +26,17 @@
   //   利用者M・従業員M
   // ==================================================
 
+  // ==================================================
+  // 状態
+  // ==================================================
+
   const S = {
 
-    weekStart:
-      monday(new Date()),
+    // 現在表示している週の月曜日
+    currentWeekStart:
+      monday(
+        new Date()
+      ),
 
     scope:
       'all',
@@ -40,8 +47,23 @@
     day:
       todayIndex(),
 
+    // request.range の結果
     data:
       null,
+
+    // 読み込み済み期間
+    rangeStart:
+      '',
+
+    rangeEnd:
+      '',
+
+    // 週切替可能範囲
+    minWeekStart:
+      '',
+
+    maxWeekStart:
+      '',
 
     masters: {
       clients: [],
@@ -51,20 +73,14 @@
   };
 
 
-  // ==================================================
-  // DOM取得
-  // ==================================================
-
   const $ =
     id =>
-      document.getElementById(id);
+      document.getElementById(
+        id
+      );
 
 
   const E = {
-
-    // ------------------------------
-    // 一覧画面
-    // ------------------------------
 
     week:
       $('weekLabel'),
@@ -85,10 +101,6 @@
       $('requestList'),
 
 
-    // ------------------------------
-    // 全体 / 自分
-    // ------------------------------
-
     scope: [
       ...document.querySelectorAll(
         '.scope-btn'
@@ -96,9 +108,13 @@
     ],
 
 
-    // ------------------------------
-    // 登録ダイアログ
-    // ------------------------------
+    // 前週・翌週
+    prevWeek:
+      $('prevWeek'),
+
+    nextWeek:
+      $('nextWeek'),
+
 
     open:
       $('openRegister'),
@@ -116,10 +132,6 @@
       $('cancelRegister'),
 
 
-    // ------------------------------
-    // 基本入力
-    // ------------------------------
-
     type:
       $('requestType'),
 
@@ -130,10 +142,6 @@
       $('targetShiftId'),
 
 
-    // ------------------------------
-    // 複数日
-    // ------------------------------
-
     dateList:
       $('requestDateList'),
 
@@ -141,17 +149,8 @@
       $('addRequestDate'),
 
 
-    // ------------------------------
-    // 利用者
-    // ------------------------------
-
     client:
       $('clientName'),
-
-
-    // ------------------------------
-    // 制度・サービス
-    // ------------------------------
 
     system:
       $('system'),
@@ -160,10 +159,6 @@
       $('service'),
 
 
-    // ------------------------------
-    // 時間
-    // ------------------------------
-
     start:
       $('startTime'),
 
@@ -171,17 +166,9 @@
       $('endTime'),
 
 
-    // ------------------------------
-    // 支援内容
-    // ------------------------------
-
     support:
       $('supportContent'),
 
-
-    // ------------------------------
-    // 担当
-    // ------------------------------
 
     main:
       $('mainStaffName'),
@@ -193,10 +180,6 @@
       $('staff3Name'),
 
 
-    // ------------------------------
-    // 担当変更
-    // ------------------------------
-
     staffFields:
       $('staffChangeFields'),
 
@@ -206,10 +189,6 @@
     newStaff:
       $('newStaffName'),
 
-
-    // ------------------------------
-    // その他変更
-    // ------------------------------
 
     changeField:
       $('changeContentField'),
@@ -221,10 +200,6 @@
       $('changeReason'),
 
 
-    // ------------------------------
-    // 外出・通院
-    // ------------------------------
-
     dest:
       $('destination'),
 
@@ -234,18 +209,9 @@
     meet:
       $('meetingPlace'),
 
-
-    // ------------------------------
-    // 備考
-    // ------------------------------
-
     note:
       $('note'),
 
-
-    // ------------------------------
-    // 登録結果
-    // ------------------------------
 
     saveMsg:
       $('saveMessage'),
@@ -257,174 +223,224 @@
 
 
   // ==================================================
-  // イベント
+  // イベント登録
   // ==================================================
 
+  bindEvents();
 
-  // --------------------------------------------------
-  // 全体 / 自分
-  //
-  // ここではGASへ再通信しません。
-  // 最初に取得した「全体」の1週間分から、
-  // ブラウザ側で自分だけを絞り込みます。
-  // --------------------------------------------------
 
-  E.scope.forEach(
-    button => {
+  formMode();
 
-      button.addEventListener(
-        'click',
-        () => {
 
-          if (
-            button.dataset.scope ===
-              'mine' &&
-            !S.employee.id
-          ) {
+  start();
 
-            alert(
-              'ログイン中の従業員IDが必要です。'
+
+
+  function bindEvents() {
+
+
+    // ------------------------------------------
+    // 全体 / 自分
+    //
+    // GAS再通信なし
+    // ------------------------------------------
+
+    E.scope.forEach(
+      button => {
+
+        button.addEventListener(
+          'click',
+          () => {
+
+            if (
+              button.dataset.scope ===
+                'mine' &&
+              !S.employee.id
+            ) {
+
+              alert(
+                'ログイン中の従業員IDが必要です。'
+              );
+
+              return;
+
+            }
+
+
+            S.scope =
+              button.dataset.scope;
+
+
+            E.scope.forEach(
+              x => {
+
+                x.classList.toggle(
+                  'active',
+                  x === button
+                );
+
+              }
             );
 
-            return;
+
+            render();
 
           }
+        );
+
+      }
+    );
 
 
-          S.scope =
-            button.dataset.scope;
+    // ------------------------------------------
+    // 前週
+    // ------------------------------------------
+
+    E.prevWeek.addEventListener(
+      'click',
+      () => {
+
+        moveWeek(
+          -1
+        );
+
+      }
+    );
 
 
-          E.scope.forEach(
-            x => {
+    // ------------------------------------------
+    // 翌週
+    // ------------------------------------------
 
-              x.classList.toggle(
-                'active',
-                x === button
-              );
+    E.nextWeek.addEventListener(
+      'click',
+      () => {
+
+        moveWeek(
+          1
+        );
+
+      }
+    );
+
+
+    // ------------------------------------------
+    // 登録
+    // ------------------------------------------
+
+    E.open.addEventListener(
+      'click',
+      () => {
+
+        resetForm();
+
+
+        // 現在表示中の日付を
+        // 最初の対象日に入れる
+        const selectedDate =
+          addDaysString(
+            S.currentWeekStart,
+            S.day
+          );
+
+
+        const firstDate =
+          E.dateList.querySelector(
+            '.request-date'
+          );
+
+
+        if (firstDate) {
+
+          firstDate.value =
+            selectedDate;
+
+        }
+
+
+        E.dialog.showModal();
+
+      }
+    );
+
+
+    E.close.addEventListener(
+      'click',
+      () =>
+        E.dialog.close()
+    );
+
+
+    E.cancel.addEventListener(
+      'click',
+      () =>
+        E.dialog.close()
+    );
+
+
+    E.type.addEventListener(
+      'change',
+      formMode
+    );
+
+
+    E.form.addEventListener(
+      'submit',
+      saveRequest
+    );
+
+
+    E.addDate.addEventListener(
+      'click',
+      addRequestDateRow
+    );
+
+
+    // ------------------------------------------
+    // 曜日ボタン
+    // ------------------------------------------
+
+    [
+      ...E.nav.querySelectorAll(
+        '.day-btn'
+      )
+    ]
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            'click',
+            () => {
+
+              S.day =
+                Number(
+                  button.dataset.i
+                );
+
+
+              render();
 
             }
           );
 
-
-          // 通信せず再描画
-          render();
-
         }
       );
 
-    }
-  );
+  }
 
-
-  // --------------------------------------------------
-  // ＋登録
-  // --------------------------------------------------
-
-  E.open.addEventListener(
-    'click',
-    () => {
-
-      // フォーム初期化
-      resetForm();
-
-
-      // 現在選択中の曜日の日付を
-      // 1つ目の対象日に入れる
-      const day =
-        S.data?.days?.[S.day];
-
-
-      const firstDate =
-        E.dateList.querySelector(
-          '.request-date'
-        );
-
-
-      if (
-        day?.date &&
-        firstDate
-      ) {
-
-        firstDate.value =
-          day.date;
-
-      }
-
-
-      E.dialog.showModal();
-
-    }
-  );
-
-
-  // --------------------------------------------------
-  // 閉じる
-  // --------------------------------------------------
-
-  E.close.addEventListener(
-    'click',
-    () =>
-      E.dialog.close()
-  );
-
-
-  E.cancel.addEventListener(
-    'click',
-    () =>
-      E.dialog.close()
-  );
-
-
-  // --------------------------------------------------
-  // 依頼区分変更
-  // --------------------------------------------------
-
-  E.type.addEventListener(
-    'change',
-    formMode
-  );
-
-
-  // --------------------------------------------------
-  // 登録
-  // --------------------------------------------------
-
-  E.form.addEventListener(
-    'submit',
-    saveRequest
-  );
-
-
-  // --------------------------------------------------
-  // 対象日追加
-  // --------------------------------------------------
-
-  E.addDate.addEventListener(
-    'click',
-    addRequestDateRow
-  );
 
 
   // ==================================================
   // 初期処理
   // ==================================================
 
-  formMode();
-
-  start();
-
-
   async function start() {
 
     try {
 
-      // 利用者・従業員マスタ
       await loadMasters();
 
-
-      // 依頼情報
-      await load();
+      await loadRange();
 
     }
     catch (err) {
@@ -442,8 +458,9 @@
   }
 
 
+
   // ==================================================
-  // GAS通信
+  // GAS
   // ==================================================
 
   async function api(
@@ -458,11 +475,13 @@
 
 
     if (
-      !url.endsWith('/exec')
+      !url.endsWith(
+        '/exec'
+      )
     ) {
 
       throw new Error(
-        'request-view-config.js のGAS_URLを確認してください。'
+        'request-view-config.js のGASURLを確認してください。'
       );
 
     }
@@ -510,8 +529,9 @@
   }
 
 
+
   // ==================================================
-  // 利用者・従業員マスタ
+  // マスタ
   // ==================================================
 
   async function loadMasters() {
@@ -544,7 +564,6 @@
       result.staffs || [];
 
 
-    // プルダウン反映
     setClientOptions();
 
     setStaffOptions();
@@ -552,13 +571,10 @@
   }
 
 
-  // --------------------------------------------------
-  // 利用者プルダウン
-  // --------------------------------------------------
 
   function setClientOptions() {
 
-    const html =
+    E.client.innerHTML =
       `
         <option value="">
           選択してください
@@ -577,21 +593,9 @@
         )
         .join('');
 
-
-    E.client.innerHTML =
-      html;
-
   }
 
 
-  // --------------------------------------------------
-  // 従業員プルダウン
-  //
-  // 同じ従業員Mを
-  // 主担当・担当2・担当3
-  // 変更前担当・変更後担当
-  // に使用します。
-  // --------------------------------------------------
 
   function setStaffOptions() {
 
@@ -633,10 +637,6 @@
   }
 
 
-  // --------------------------------------------------
-  // 選択されたマスタの
-  // ID + 氏名を取得
-  // --------------------------------------------------
 
   function selectedMaster(
     select
@@ -675,32 +675,69 @@
   }
 
 
+
   // ==================================================
-  // 週間依頼情報読み込み
+  // 依頼情報をまとめて取得
   // ==================================================
 
-  async function load() {
+  async function loadRange() {
 
     message(
       '依頼情報を取得しています...'
     );
 
 
-    // 常に全体を1回取得
+    const todayWeek =
+      monday(
+        new Date()
+      );
+
+
+    // ------------------------------------------
+    // 現在週の1週間前から
+    // ------------------------------------------
+
+    S.rangeStart =
+      addDaysString(
+        todayWeek,
+        -7
+      );
+
+
+    // ------------------------------------------
+    // 現在週から3か月先
+    // ------------------------------------------
+
+    const threeMonthsLater =
+      addMonthsString(
+        todayWeek,
+        3
+      );
+
+
+    // 3か月先が含まれる週の日曜日まで
+    S.rangeEnd =
+      addDaysString(
+        monday(
+          parseDateString(
+            threeMonthsLater
+          )
+        ),
+        6
+      );
+
+
     const result =
       await api({
 
         action:
-          'request.week',
+          'request.range',
 
-        weekStart:
-          S.weekStart,
+        startDate:
+          S.rangeStart,
 
-        scope:
-          'all',
-
-        employeeId:
-          ''
+        endDate:
+          S.rangeEnd
 
       });
 
@@ -722,13 +759,713 @@
       result;
 
 
+    // ------------------------------------------
+    // 前週まで
+    // ------------------------------------------
+
+    S.minWeekStart =
+      monday(
+        parseDateString(
+          S.rangeStart
+        )
+      );
+
+
+    // ------------------------------------------
+    // 先3か月まで
+    // ------------------------------------------
+
+    S.maxWeekStart =
+      monday(
+        parseDateString(
+          S.rangeEnd
+        )
+      );
+
+
     render();
 
   }
 
 
+
   // ==================================================
-  // 依頼登録
+  // 週切替
+  // ==================================================
+
+  function moveWeek(
+    offset
+  ) {
+
+    const next =
+      addDaysString(
+        S.currentWeekStart,
+        offset * 7
+      );
+
+
+    // 読み込み済み範囲外なら動かさない
+    if (
+      next <
+        S.minWeekStart ||
+      next >
+        S.maxWeekStart
+    ) {
+
+      return;
+
+    }
+
+
+    S.currentWeekStart =
+      next;
+
+
+    // GAS通信なし
+    render();
+
+  }
+
+
+
+  // ==================================================
+  // 現在表示週を作成
+  // ==================================================
+
+  function getCurrentWeekDays() {
+
+    const weekdays = [
+      '月',
+      '火',
+      '水',
+      '木',
+      '金',
+      '土',
+      '日'
+    ];
+
+
+    return weekdays.map(
+      (
+        weekday,
+        index
+      ) => {
+
+        const date =
+          addDaysString(
+            S.currentWeekStart,
+            index
+          );
+
+
+        const items =
+          (
+            S.data.items ||
+            []
+          )
+            .filter(
+              item =>
+                item.date ===
+                date
+            )
+            .sort(
+              (
+                a,
+                b
+              ) => {
+
+                const ta =
+                  timeSortValue(
+                    a.startTime
+                  );
+
+
+                const tb =
+                  timeSortValue(
+                    b.startTime
+                  );
+
+
+                if (
+                  ta !== tb
+                ) {
+
+                  return (
+                    ta - tb
+                  );
+
+                }
+
+
+                return String(
+                  a.clientName || ''
+                )
+                  .localeCompare(
+                    String(
+                      b.clientName || ''
+                    ),
+                    'ja'
+                  );
+
+              }
+            );
+
+
+        return {
+
+          weekday:
+            weekday,
+
+          date:
+            date,
+
+          dateLabel:
+            label(
+              date
+            ),
+
+          items:
+            items
+
+        };
+
+      }
+    );
+
+  }
+
+
+
+  // ==================================================
+  // 表示
+  // ==================================================
+
+  function render() {
+
+    if (!S.data) {
+      return;
+    }
+
+
+    const weekDays =
+      getCurrentWeekDays();
+
+
+    // ------------------------------------------
+    // 週表示
+    // ------------------------------------------
+
+    E.week.textContent =
+      `${label(
+        weekDays[0].date
+      )}〜${label(
+        weekDays[6].date
+      )}`;
+
+
+    // ------------------------------------------
+    // 曜日ボタン
+    // ------------------------------------------
+
+    const dayButtons =
+      [
+        ...E.nav.querySelectorAll(
+          '.day-btn'
+        )
+      ];
+
+
+    dayButtons.forEach(
+      (
+        button,
+        index
+      ) => {
+
+        const day =
+          weekDays[index];
+
+
+        button.classList.toggle(
+          'active',
+          index === S.day
+        );
+
+
+        button.classList.toggle(
+          'saturday',
+          index === 5
+        );
+
+
+        button.classList.toggle(
+          'sunday',
+          index === 6
+        );
+
+
+        button.classList.toggle(
+          'today',
+          day.date ===
+            dateString(
+              new Date()
+            )
+        );
+
+
+        button.innerHTML =
+          `
+            ${esc(
+              day.weekday
+            )}
+
+            <span class="date">
+              ${esc(
+                day.dateLabel
+              )}
+            </span>
+          `;
+
+      }
+    );
+
+
+    // ------------------------------------------
+    // 前週・翌週ボタン
+    // ------------------------------------------
+
+    E.prevWeek.disabled =
+      S.currentWeekStart <=
+      S.minWeekStart;
+
+
+    E.nextWeek.disabled =
+      S.currentWeekStart >=
+      S.maxWeekStart;
+
+
+    // ------------------------------------------
+    // 選択日
+    // ------------------------------------------
+
+    const day =
+      weekDays[
+        S.day
+      ];
+
+
+    E.title.textContent =
+      [
+        '月曜日',
+        '火曜日',
+        '水曜日',
+        '木曜日',
+        '金曜日',
+        '土曜日',
+        '日曜日'
+      ][
+        S.day
+      ];
+
+
+    // ------------------------------------------
+    // 全体 / 自分
+    // ------------------------------------------
+
+    const items =
+      S.scope ===
+        'mine'
+        ? day.items.filter(
+            isMineRequest
+          )
+        : day.items;
+
+
+    E.count.textContent =
+      `${items.length}件`;
+
+
+    E.msg.hidden =
+      true;
+
+
+    if (
+      items.length
+    ) {
+
+      E.list.innerHTML =
+        items
+          .map(
+            card
+          )
+          .join('');
+
+    }
+    else {
+
+      E.list.innerHTML =
+        `
+          <div class="empty">
+
+            ${
+              S.scope === 'mine'
+                ? 'この日の自分に関係する依頼はありません'
+                : 'この日の依頼情報はありません'
+            }
+
+          </div>
+        `;
+
+    }
+
+  }
+
+
+
+  // ==================================================
+  // 自分の依頼
+  // ==================================================
+
+  function isMineRequest(
+    item
+  ) {
+
+    const employeeId =
+      String(
+        S.employee.id ||
+        ''
+      ).trim();
+
+
+    if (!employeeId) {
+
+      return false;
+
+    }
+
+
+    return [
+
+      item.reporterId,
+
+      item.mainStaffId,
+
+      item.staff2Id,
+
+      item.staff3Id,
+
+      item.oldStaffId,
+
+      item.newStaffId
+
+    ]
+      .some(
+        id =>
+          String(
+            id || ''
+          ).trim() ===
+          employeeId
+      );
+
+  }
+
+
+
+  // ==================================================
+  // カード
+  // ==================================================
+
+  function card(
+    item
+  ) {
+
+    const rows =
+      [];
+
+
+    // ------------------------------------------
+    // 担当変更
+    // ------------------------------------------
+
+    if (
+      item.requestType ===
+      '担当変更'
+    ) {
+
+      const staffChange =
+        [
+          item.oldStaffName ||
+            '',
+
+          item.newStaffName ||
+            ''
+        ]
+          .filter(
+            Boolean
+          )
+          .join(
+            ' → '
+          );
+
+
+      if (
+        staffChange
+      ) {
+
+        rows.push([
+          '担当変更',
+          staffChange
+        ]);
+
+      }
+
+    }
+
+
+    // ------------------------------------------
+    // その他変更
+    // ------------------------------------------
+
+    else if (
+      item.requestType ===
+      '変更'
+    ) {
+
+      if (
+        item.changeContent
+      ) {
+
+        rows.push([
+          '変更内容',
+          item.changeContent
+        ]);
+
+      }
+
+    }
+
+
+    // ------------------------------------------
+    // 通常担当
+    // 主担当・担当2・担当3を1行
+    // ------------------------------------------
+
+    else {
+
+      const staffNames =
+        [
+          item.mainStaffName,
+          item.staff2Name,
+          item.staff3Name
+        ]
+          .filter(
+            Boolean
+          );
+
+
+      if (
+        staffNames.length
+      ) {
+
+        rows.push([
+          '担当',
+          staffNames.join(
+            '　'
+          )
+        ]);
+
+      }
+
+    }
+
+
+    // ------------------------------------------
+    // 行先
+    // ------------------------------------------
+
+    if (
+      item.destination
+    ) {
+
+      const destination =
+        item.appointmentTime
+          ? `${item.destination}　予約 ${item.appointmentTime}`
+          : item.destination;
+
+
+      rows.push([
+        '行先',
+        destination
+      ]);
+
+    }
+
+
+    // ------------------------------------------
+    // 待合せ
+    // ------------------------------------------
+
+    if (
+      item.meetingPlace
+    ) {
+
+      rows.push([
+        '待合せ',
+        item.meetingPlace
+      ]);
+
+    }
+
+
+    // ------------------------------------------
+    // 理由
+    // ------------------------------------------
+
+    if (
+      item.changeReason
+    ) {
+
+      rows.push([
+        '理由',
+        item.changeReason
+      ]);
+
+    }
+
+
+    const metaHtml =
+      rows.length
+        ? `
+          <div class="meta">
+
+            ${
+              rows
+                .map(
+                  row => `
+                    <div class="meta-row">
+
+                      <span class="label">
+                        ${esc(
+                          row[0]
+                        )}
+                      </span>
+
+                      <span class="value">
+                        ${esc(
+                          row[1]
+                        )}
+                      </span>
+
+                    </div>
+                  `
+                )
+                .join('')
+            }
+
+          </div>
+        `
+        : '';
+
+
+    return `
+      <article class="card">
+
+        <div class="top">
+
+          <div class="time">
+
+            ${esc(
+              range(
+                item.startTime,
+                item.endTime
+              )
+            )}
+
+          </div>
+
+
+          <div class="name">
+
+            ${esc(
+              item.clientName ||
+              ''
+            )}
+
+          </div>
+
+
+          <div
+            class="badge ${badge(
+              item.requestType
+            )}"
+          >
+
+            ${esc(
+              item.requestType ||
+              ''
+            )}
+
+          </div>
+
+        </div>
+
+
+        <div class="service">
+
+          <b>
+            ${esc(
+              item.service ||
+              ''
+            )}
+          </b>
+
+          ${esc(
+            item.supportContent ||
+            ''
+          )}
+
+        </div>
+
+
+        <div class="report">
+
+          <span>
+            報告者
+          </span>
+
+          <b>
+            ${esc(
+              item.reporterName ||
+              ''
+            )}
+          </b>
+
+        </div>
+
+
+        ${metaHtml}
+
+
+        ${
+          item.note
+            ? `
+              <div class="memo">
+                ${esc(
+                  item.note
+                )}
+              </div>
+            `
+            : ''
+        }
+
+      </article>
+    `;
+
+  }
+
+
+
+  // ==================================================
+  // 登録
   // ==================================================
 
   async function saveRequest(
@@ -741,10 +1478,6 @@
     const type =
       E.type.value;
 
-
-    // ------------------------------------------------
-    // 追加以外は対象シフトID必須
-    // ------------------------------------------------
 
     if (
       type !== '追加' &&
@@ -761,12 +1494,9 @@
     }
 
 
-    // ------------------------------------------------
-    // 担当変更チェック
-    // ------------------------------------------------
-
     if (
-      type === '担当変更' &&
+      type ===
+        '担当変更' &&
       (
         !E.oldStaff.value.trim() ||
         !E.newStaff.value.trim()
@@ -782,10 +1512,6 @@
 
     }
 
-
-    // ------------------------------------------------
-    // プルダウン値
-    // ------------------------------------------------
 
     const client =
       selectedMaster(
@@ -823,10 +1549,6 @@
       );
 
 
-    // ------------------------------------------------
-    // 複数日
-    // ------------------------------------------------
-
     const targetDates =
       getRequestDates();
 
@@ -844,10 +1566,6 @@
 
     }
 
-
-    // ------------------------------------------------
-    // 登録開始
-    // ------------------------------------------------
 
     E.save.disabled =
       true;
@@ -867,26 +1585,11 @@
           action:
             'request.save',
 
-
-          // ============================
-          // 依頼区分
-          // ============================
-
           requestType:
             type,
 
-
-          // ============================
-          // 対象シフト
-          // ============================
-
           targetShiftId:
             E.targetId.value.trim(),
-
-
-          // ============================
-          // 報告者
-          // ============================
 
           reporterId:
             S.employee.id,
@@ -894,21 +1597,11 @@
           reporterName:
             S.employee.name,
 
-
-          // ============================
-          // 利用者
-          // ============================
-
           clientId:
             client.id,
 
           clientName:
             client.name,
-
-
-          // ============================
-          // 制度・サービス
-          // ============================
 
           system:
             E.system.value,
@@ -916,18 +1609,8 @@
           service:
             E.service.value.trim(),
 
-
-          // ============================
-          // 複数日
-          // ============================
-
           targetDates:
             targetDates,
-
-
-          // ============================
-          // 時間
-          // ============================
 
           startTime:
             E.start.value,
@@ -935,21 +1618,11 @@
           endTime:
             E.end.value,
 
-
-          // ============================
-          // 主担当
-          // ============================
-
           mainStaffId:
             mainStaff.id,
 
           mainStaffName:
             mainStaff.name,
-
-
-          // ============================
-          // 担当2
-          // ============================
 
           staff2Id:
             staff2.id,
@@ -957,21 +1630,11 @@
           staff2Name:
             staff2.name,
 
-
-          // ============================
-          // 担当3
-          // ============================
-
           staff3Id:
             staff3.id,
 
           staff3Name:
             staff3.name,
-
-
-          // ============================
-          // 担当変更
-          // ============================
 
           oldStaffId:
             oldStaff.id,
@@ -985,11 +1648,6 @@
           newStaffName:
             newStaff.name,
 
-
-          // ============================
-          // 行先
-          // ============================
-
           destination:
             E.dest.value.trim(),
 
@@ -999,18 +1657,8 @@
           meetingPlace:
             E.meet.value.trim(),
 
-
-          // ============================
-          // 支援内容
-          // ============================
-
           supportContent:
             E.support.value.trim(),
-
-
-          // ============================
-          // 変更内容
-          // ============================
 
           changeContent:
             E.change.value.trim(),
@@ -1018,18 +1666,8 @@
           changeReason:
             E.reason.value.trim(),
 
-
-          // ============================
-          // 備考
-          // ============================
-
           note:
             E.note.value.trim(),
-
-
-          // ============================
-          // 登録方法
-          // ============================
 
           registerMethod:
             'WEB'
@@ -1050,16 +1688,11 @@
       }
 
 
-      // ------------------------------------------------
-      // 登録成功
-      // ------------------------------------------------
-
       let resultText =
         result.message ||
         '登録しました。';
 
 
-      // 複数IDが返っている場合
       if (
         Array.isArray(
           result.requestIds
@@ -1091,8 +1724,11 @@
       );
 
 
-      // 登録後だけ最新情報を再読込
-      await load();
+      // --------------------------------------
+      // 登録後だけ最新データを再取得
+      // --------------------------------------
+
+      await loadRange();
 
 
       setTimeout(
@@ -1124,563 +1760,9 @@
   }
 
 
-  // ==================================================
-  // 画面描画
-  // ==================================================
-
-  function render() {
-
-    const days =
-      S.data?.days || [];
-
-
-    if (
-      !days.length
-    ) {
-
-      message(
-        '対象週のデータがありません。'
-      );
-
-      return;
-
-    }
-
-
-    // ------------------------------------------------
-    // 週表示
-    // ------------------------------------------------
-
-    E.week.textContent =
-      `${label(days[0].date)}〜${label(days[6].date)}`;
-
-
-    // ------------------------------------------------
-    // 曜日ボタン
-    // ------------------------------------------------
-
-    E.nav.innerHTML =
-      days
-        .map(
-          (
-            day,
-            index
-          ) => {
-
-            const classes =
-              ['day-btn'];
-
-
-            if (
-              index === S.day
-            ) {
-
-              classes.push(
-                'active'
-              );
-
-            }
-
-
-            if (
-              index === 5
-            ) {
-
-              classes.push(
-                'saturday'
-              );
-
-            }
-
-
-            if (
-              index === 6
-            ) {
-
-              classes.push(
-                'sunday'
-              );
-
-            }
-
-
-            if (
-              day.date ===
-              dateString(
-                new Date()
-              )
-            ) {
-
-              classes.push(
-                'today'
-              );
-
-            }
-
-
-            return `
-              <button
-                type="button"
-                class="${classes.join(' ')}"
-                data-i="${index}"
-              >
-                ${esc(day.weekday)}
-
-                <span class="date">
-                  ${esc(day.dateLabel)}
-                </span>
-              </button>
-            `;
-
-          }
-        )
-        .join('');
-
-
-    // ------------------------------------------------
-    // 曜日選択
-    // ------------------------------------------------
-
-    [
-      ...E.nav.querySelectorAll(
-        '.day-btn'
-      )
-    ]
-      .forEach(
-        button => {
-
-          button.addEventListener(
-            'click',
-            () => {
-
-              S.day =
-                Number(
-                  button.dataset.i
-                );
-
-
-              render();
-
-            }
-          );
-
-        }
-      );
-
-
-    // ------------------------------------------------
-    // 選択日
-    // ------------------------------------------------
-
-    const day =
-      days[S.day];
-
-
-    if (!day) {
-      return;
-    }
-
-
-    E.title.textContent =
-      [
-        '月曜日',
-        '火曜日',
-        '水曜日',
-        '木曜日',
-        '金曜日',
-        '土曜日',
-        '日曜日'
-      ][S.day];
-
-
-    // ------------------------------------------------
-    // 全体 / 自分
-    // ------------------------------------------------
-
-    const items =
-      S.scope === 'mine'
-        ? day.items.filter(
-            isMineRequest
-          )
-        : day.items;
-
-
-    // ------------------------------------------------
-    // 件数
-    // ------------------------------------------------
-
-    E.count.textContent =
-      `${items.length}件`;
-
-
-    E.msg.hidden =
-      true;
-
-
-    // ------------------------------------------------
-    // カード
-    // ------------------------------------------------
-
-    if (
-      items.length
-    ) {
-
-      E.list.innerHTML =
-        items
-          .map(card)
-          .join('');
-
-    }
-    else {
-
-      E.list.innerHTML =
-        `
-          <div class="empty">
-            ${
-              S.scope === 'mine'
-                ? 'この日の自分に関係する依頼はありません'
-                : 'この日の依頼情報はありません'
-            }
-          </div>
-        `;
-
-    }
-
-  }
-
 
   // ==================================================
-  // 自分に関係する依頼
-  // ==================================================
-
-  function isMineRequest(
-    item
-  ) {
-
-    const employeeId =
-      String(
-        S.employee.id || ''
-      ).trim();
-
-
-    if (
-      !employeeId
-    ) {
-
-      return false;
-
-    }
-
-
-    // 主担当だけでなく
-    // 担当2・担当3も含める
-    const relatedIds = [
-
-      item.reporterId,
-
-      item.mainStaffId,
-
-      item.staff2Id,
-
-      item.staff3Id,
-
-      item.oldStaffId,
-
-      item.newStaffId
-
-    ];
-
-
-    return relatedIds.some(
-      id =>
-        String(
-          id || ''
-        ).trim() ===
-        employeeId
-    );
-
-  }
-
-
-  // ==================================================
-  // 依頼カード
-  // ==================================================
-
-  function card(
-    item
-  ) {
-
-    const rows =
-      [];
-
-
-    // ------------------------------------------------
-    // 担当変更
-    // ------------------------------------------------
-
-    if (
-      item.requestType ===
-      '担当変更'
-    ) {
-
-      const staffChange =
-        [
-          item.oldStaffName || '',
-          item.newStaffName || ''
-        ]
-          .filter(Boolean)
-          .join(
-            ' → '
-          );
-
-
-      if (
-        staffChange
-      ) {
-
-        rows.push([
-          '担当変更',
-          staffChange
-        ]);
-
-      }
-
-    }
-
-
-    // ------------------------------------------------
-    // その他変更
-    // ------------------------------------------------
-
-    else if (
-      item.requestType ===
-      '変更'
-    ) {
-
-      if (
-        item.changeContent
-      ) {
-
-        rows.push([
-          '変更内容',
-          item.changeContent
-        ]);
-
-      }
-
-    }
-
-
-    // ------------------------------------------------
-    // 通常担当
-    //
-    // 主担当・担当2・担当3を
-    // 1行に表示
-    // ------------------------------------------------
-
-    else {
-
-      const staffNames =
-        [
-          item.mainStaffName,
-          item.staff2Name,
-          item.staff3Name
-        ]
-          .filter(Boolean);
-
-
-      if (
-        staffNames.length
-      ) {
-
-        rows.push([
-          '担当',
-          staffNames.join(
-            '　'
-          )
-        ]);
-
-      }
-
-    }
-
-
-    // ------------------------------------------------
-    // 行先
-    // ------------------------------------------------
-
-    if (
-      item.destination
-    ) {
-
-      const destination =
-        item.appointmentTime
-          ? `${item.destination}　予約 ${item.appointmentTime}`
-          : item.destination;
-
-
-      rows.push([
-        '行先',
-        destination
-      ]);
-
-    }
-
-
-    // ------------------------------------------------
-    // 待合せ
-    // ------------------------------------------------
-
-    if (
-      item.meetingPlace
-    ) {
-
-      rows.push([
-        '待合せ',
-        item.meetingPlace
-      ]);
-
-    }
-
-
-    // ------------------------------------------------
-    // 理由
-    // ------------------------------------------------
-
-    if (
-      item.changeReason
-    ) {
-
-      rows.push([
-        '理由',
-        item.changeReason
-      ]);
-
-    }
-
-
-    // ------------------------------------------------
-    // 詳細行
-    // ------------------------------------------------
-
-    const metaHtml =
-      rows.length
-        ? `
-          <div class="meta">
-
-            ${
-              rows
-                .map(
-                  row => `
-                    <div class="meta-row">
-
-                      <span class="label">
-                        ${esc(row[0])}
-                      </span>
-
-                      <span class="value">
-                        ${esc(row[1])}
-                      </span>
-
-                    </div>
-                  `
-                )
-                .join('')
-            }
-
-          </div>
-        `
-        : '';
-
-
-    // ------------------------------------------------
-    // カードHTML
-    // ------------------------------------------------
-
-    return `
-      <article class="card">
-
-        <div class="top">
-
-          <div class="time">
-            ${esc(
-              range(
-                item.startTime,
-                item.endTime
-              )
-            )}
-          </div>
-
-          <div class="name">
-            ${esc(
-              item.clientName || ''
-            )}
-          </div>
-
-          <div
-            class="badge ${badge(item.requestType)}"
-          >
-            ${esc(
-              item.requestType || ''
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="service">
-
-          <b>
-            ${esc(
-              item.service || ''
-            )}
-          </b>
-
-          ${esc(
-            item.supportContent || ''
-          )}
-
-        </div>
-
-
-        <div class="report">
-
-          <span>
-            報告者
-          </span>
-
-          <b>
-            ${esc(
-              item.reporterName || ''
-            )}
-          </b>
-
-        </div>
-
-
-        ${metaHtml}
-
-
-        ${
-          item.note
-            ? `
-              <div class="memo">
-                ${esc(
-                  item.note
-                )}
-              </div>
-            `
-            : ''
-        }
-
-      </article>
-    `;
-
-  }
-
-
-  // ==================================================
-  // フォーム表示制御
+  // 登録フォーム
   // ==================================================
 
   function formMode() {
@@ -1689,26 +1771,22 @@
       E.type.value;
 
 
-    // 追加では対象シフトID不要
     E.targetField.hidden =
       type === '追加';
 
 
-    // 担当変更だけ表示
     E.staffFields.hidden =
-      type !== '担当変更';
+      type !==
+      '担当変更';
 
 
-    // 変更だけ表示
     E.changeField.hidden =
-      type !== '変更';
+      type !==
+      '変更';
 
   }
 
 
-  // ==================================================
-  // フォーム初期化
-  // ==================================================
 
   function resetForm() {
 
@@ -1723,8 +1801,6 @@
       true;
 
 
-    // 追加された日付欄を
-    // 1行だけに戻す
     const rows =
       [
         ...E.dateList.querySelectorAll(
@@ -1772,9 +1848,6 @@
   }
 
 
-  // ==================================================
-  // 複数日追加
-  // ==================================================
 
   function addRequestDateRow() {
 
@@ -1784,7 +1857,6 @@
       );
 
 
-    // 最大5日
     if (
       rows.length >= 5
     ) {
@@ -1825,7 +1897,6 @@
       `;
 
 
-    // 削除
     row
       .querySelector(
         '.date-remove-btn'
@@ -1844,9 +1915,6 @@
   }
 
 
-  // ==================================================
-  // 複数日取得
-  // ==================================================
 
   function getRequestDates() {
 
@@ -1859,13 +1927,16 @@
         input =>
           input.value
       )
-      .filter(Boolean);
+      .filter(
+        Boolean
+      );
 
   }
 
 
+
   // ==================================================
-  // 登録メッセージ
+  // 表示補助
   // ==================================================
 
   function saveMsg(
@@ -1889,9 +1960,6 @@
   }
 
 
-  // ==================================================
-  // 一覧メッセージ
-  // ==================================================
 
   function message(
     text
@@ -1911,9 +1979,6 @@
   }
 
 
-  // ==================================================
-  // バッジ
-  // ==================================================
 
   function badge(
     type
@@ -1929,7 +1994,8 @@
 
 
     if (
-      type === 'キャンセル'
+      type ===
+      'キャンセル'
     ) {
 
       return 'cancel';
@@ -1938,7 +2004,8 @@
 
 
     if (
-      type === '担当変更'
+      type ===
+      '担当変更'
     ) {
 
       return 'staff';
@@ -1951,9 +2018,6 @@
   }
 
 
-  // ==================================================
-  // 時間表示
-  // ==================================================
 
   function range(
     start,
@@ -1981,6 +2045,40 @@
   }
 
 
+
+  function timeSortValue(
+    value
+  ) {
+
+    const match =
+      String(
+        value || ''
+      )
+        .match(
+          /^(\d{1,2}):(\d{2})$/
+        );
+
+
+    if (!match) {
+
+      return 99999;
+
+    }
+
+
+    return (
+      Number(
+        match[1]
+      ) * 60 +
+      Number(
+        match[2]
+      )
+    );
+
+  }
+
+
+
   // ==================================================
   // ログインユーザー
   // ==================================================
@@ -1993,7 +2091,6 @@
       );
 
 
-    // URL指定があれば優先
     if (
       params.get(
         'employeeId'
@@ -2005,19 +2102,20 @@
         id:
           params.get(
             'employeeId'
-          ) || '',
+          ) ||
+          '',
 
         name:
           params.get(
             'employeeName'
-          ) || ''
+          ) ||
+          ''
 
       };
 
     }
 
 
-    // PORTALのcurrentUser
     try {
 
       const currentUser =
@@ -2060,8 +2158,9 @@
   }
 
 
+
   // ==================================================
-  // 今週月曜日
+  // 日付
   // ==================================================
 
   function monday(
@@ -2097,14 +2196,12 @@
   }
 
 
-  // ==================================================
-  // 今日の曜日index
-  // ==================================================
 
   function todayIndex() {
 
     const day =
-      new Date().getDay();
+      new Date()
+        .getDay();
 
 
     return (
@@ -2116,9 +2213,6 @@
   }
 
 
-  // ==================================================
-  // yyyy-mm-dd
-  // ==================================================
 
   function dateString(
     date
@@ -2143,9 +2237,95 @@
   }
 
 
-  // ==================================================
-  // M/D表示
-  // ==================================================
+
+  function parseDateString(
+    value
+  ) {
+
+    const match =
+      String(
+        value || ''
+      )
+        .match(
+          /^(\d{4})-(\d{2})-(\d{2})$/
+        );
+
+
+    if (!match) {
+
+      throw new Error(
+        '日付形式が正しくありません: ' +
+        value
+      );
+
+    }
+
+
+    return new Date(
+      Number(
+        match[1]
+      ),
+      Number(
+        match[2]
+      ) - 1,
+      Number(
+        match[3]
+      )
+    );
+
+  }
+
+
+
+  function addDaysString(
+    value,
+    days
+  ) {
+
+    const date =
+      parseDateString(
+        value
+      );
+
+
+    date.setDate(
+      date.getDate() +
+      days
+    );
+
+
+    return dateString(
+      date
+    );
+
+  }
+
+
+
+  function addMonthsString(
+    value,
+    months
+  ) {
+
+    const date =
+      parseDateString(
+        value
+      );
+
+
+    date.setMonth(
+      date.getMonth() +
+      months
+    );
+
+
+    return dateString(
+      date
+    );
+
+  }
+
+
 
   function label(
     value
@@ -2181,6 +2361,7 @@
   }
 
 
+
   // ==================================================
   // HTMLエスケープ
   // ==================================================
@@ -2190,7 +2371,8 @@
   ) {
 
     return String(
-      value ?? ''
+      value ??
+      ''
     )
       .replaceAll(
         '&',
