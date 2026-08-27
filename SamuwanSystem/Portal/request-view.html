@@ -4,11 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>依頼情報</title>
-<link rel="stylesheet" href="./css/request-view.css?v=20260827-5">
+<link rel="stylesheet" href="./css/request-view.css?v=20260827-6">
 </head>
 <body>
 <main class="app">
+
 <header class="header">
+
   <div class="title-row">
     <div><div class="title">依頼情報</div><div class="sub" id="weekLabel">読み込み中...</div></div>
     <div class="header-actions">
@@ -19,8 +21,24 @@
       </div>
     </div>
   </div>
-  <div class="days" id="daysNav"></div>
+
+  <div class="week-nav-row">
+
+    <button type="button" id="prevWeek" class="week-nav-btn" aria-label="前週">‹</button>
+    <div class="days" id="daysNav">
+      <button type="button" class="day-btn" data-i="0">月<span class="date"></span></button>
+      <button type="button" class="day-btn" data-i="1">火<span class="date"></span></button>
+      <button type="button" class="day-btn" data-i="2">水<span class="date"></span></button>
+      <button type="button" class="day-btn" data-i="3">木<span class="date"></span></button>
+      <button type="button" class="day-btn" data-i="4">金<span class="date"></span></button>
+      <button type="button" class="day-btn" data-i="5">土<span class="date"></span></button>
+      <button type="button" class="day-btn" data-i="6">日<span class="date"></span></button>
+    </div>
+    <button type="button" id="nextWeek" class="week-nav-btn" aria-label="翌週">›</button>
+  </div>
+
 </header>
+
 <section class="content">
   <div class="day-head"><strong id="dayTitle">－</strong><span class="count" id="dayCount">0件</span></div>
   <div class="message" id="message">依頼情報を取得しています...</div>
@@ -88,7 +106,7 @@
   <div class="form-actions"><button type="button" id="cancelRegister" class="secondary-btn">閉じる</button><button type="submit" id="saveRequest" class="primary-btn">登録する</button></div>
 </form>
 </dialog>
-<script src="./js/request-view-config.js?v=20260827-5"></script>
-<script src="./js/request-view.js?v=20260827-5"></script>
+<script src="./js/request-view-config.js?v=20260827-6"></script>
+<script src="./js/request-view.js?v=20260827-6"></script>
 </body>
 </html>
