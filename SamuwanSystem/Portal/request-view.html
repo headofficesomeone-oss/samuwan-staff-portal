@@ -1,112 +1,598 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>依頼情報</title>
-<link rel="stylesheet" href="./css/request-view.css?v=20260827-6">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>依頼情報</title>
+  <link rel="stylesheet" href="./css/request-view.css?v=20260827-7">
 </head>
+
 <body>
+
 <main class="app">
 
-<header class="header">
+  <header class="header">
 
-  <div class="title-row">
-    <div><div class="title">依頼情報</div><div class="sub" id="weekLabel">読み込み中...</div></div>
-    <div class="header-actions">
-      <button type="button" class="register-btn" id="openRegister">＋登録</button>
-      <div class="scope-toggle">
-        <button type="button" class="scope-btn active" data-scope="all">全体</button>
-        <button type="button" class="scope-btn" data-scope="mine">自分</button>
+    <div class="title-row">
+
+      <div>
+        <div class="title">依頼情報</div>
+        <div class="sub" id="weekLabel">読み込み中...</div>
       </div>
+
+      <div class="header-actions">
+
+        <button
+          type="button"
+          class="register-btn"
+          id="openRegister"
+        >
+          ＋登録
+        </button>
+
+        <div class="scope-toggle">
+
+          <button
+            type="button"
+            class="scope-btn active"
+            data-scope="all"
+          >
+            全体
+          </button>
+
+          <button
+            type="button"
+            class="scope-btn"
+            data-scope="mine"
+          >
+            自分
+          </button>
+
+        </div>
+
+      </div>
+
     </div>
-  </div>
 
-  <div class="week-nav-row">
 
-    <button type="button" id="prevWeek" class="week-nav-btn" aria-label="前週">‹</button>
-    <div class="days" id="daysNav">
-      <button type="button" class="day-btn" data-i="0">月<span class="date"></span></button>
-      <button type="button" class="day-btn" data-i="1">火<span class="date"></span></button>
-      <button type="button" class="day-btn" data-i="2">水<span class="date"></span></button>
-      <button type="button" class="day-btn" data-i="3">木<span class="date"></span></button>
-      <button type="button" class="day-btn" data-i="4">金<span class="date"></span></button>
-      <button type="button" class="day-btn" data-i="5">土<span class="date"></span></button>
-      <button type="button" class="day-btn" data-i="6">日<span class="date"></span></button>
+    <!-- 前週 / 曜日 / 翌週 -->
+    <div class="week-nav-row">
+
+      <button
+        type="button"
+        id="prevWeek"
+        class="week-nav-btn"
+        aria-label="前週"
+      >
+        ‹
+      </button>
+
+      <div class="days" id="daysNav">
+
+        <button type="button" class="day-btn" data-i="0">
+          月<span class="date"></span>
+        </button>
+
+        <button type="button" class="day-btn" data-i="1">
+          火<span class="date"></span>
+        </button>
+
+        <button type="button" class="day-btn" data-i="2">
+          水<span class="date"></span>
+        </button>
+
+        <button type="button" class="day-btn" data-i="3">
+          木<span class="date"></span>
+        </button>
+
+        <button type="button" class="day-btn" data-i="4">
+          金<span class="date"></span>
+        </button>
+
+        <button type="button" class="day-btn" data-i="5">
+          土<span class="date"></span>
+        </button>
+
+        <button type="button" class="day-btn" data-i="6">
+          日<span class="date"></span>
+        </button>
+
+      </div>
+
+      <button
+        type="button"
+        id="nextWeek"
+        class="week-nav-btn"
+        aria-label="翌週"
+      >
+        ›
+      </button>
+
     </div>
-    <button type="button" id="nextWeek" class="week-nav-btn" aria-label="翌週">›</button>
-  </div>
 
-</header>
+  </header>
 
-<section class="content">
-  <div class="day-head"><strong id="dayTitle">－</strong><span class="count" id="dayCount">0件</span></div>
-  <div class="message" id="message">依頼情報を取得しています...</div>
-  <div class="list" id="requestList"></div>
-</section>
+
+  <section class="content">
+
+    <div class="day-head">
+
+      <strong id="dayTitle">－</strong>
+
+      <span class="count" id="dayCount">
+        0件
+      </span>
+
+    </div>
+
+
+    <div
+      class="message"
+      id="message"
+    >
+      依頼情報を取得しています...
+    </div>
+
+    <div
+      class="list"
+      id="requestList"
+    ></div>
+
+  </section>
+
 </main>
 
-<dialog id="requestDialog" class="request-dialog">
-<form id="requestForm" class="request-form">
-  <div class="form-head"><strong>依頼登録</strong><button type="button" id="closeDialog" class="close-btn">×</button></div>
+
+<!-- ==================================================
+     依頼登録ダイアログ
+================================================== -->
+<dialog
+  id="requestDialog"
+  class="request-dialog"
+>
+
+<form
+  id="requestForm"
+  class="request-form"
+>
+
+  <div class="form-head">
+
+    <strong>
+      依頼登録
+    </strong>
+
+    <button
+      type="button"
+      id="closeDialog"
+      class="close-btn"
+    >
+      ×
+    </button>
+
+  </div>
+
+
   <div class="form-body">
-    <label class="field"><span>依頼区分</span><select id="requestType"><option>追加</option><option>キャンセル</option><option>変更</option><option>担当変更</option></select></label>
-    <label class="field" id="targetShiftField"><span>対象シフトID</span><input id="targetShiftId" placeholder="例 S000123"></label>
-
-<div class="field"><span>対象日</span>
-  <div id="requestDateList">
-    <div class="request-date-row">
-      <input type="date" class="request-date" required>
-      <button type="button" class="date-remove-btn" hidden>×</button>
-    </div>
-  </div>
-  <button type="button" id="addRequestDate" class="date-add-btn">＋ 日付を追加</button>
-</div>
-
-    <label class="field"><span>利用者名</span><select id="clientName" required><option value="">選択してください</option></select></label>
-
-    <div class="two-col">
-      <label class="field"><span>制度</span><select id="system"><option value=""></option><option>障害福祉</option><option>介護保険</option></select></label>
-      <label class="field"><span>サービス</span><input id="service"></label>
-    </div>
-    <div class="two-col">
-      <label class="field"><span>開始</span><input type="time" id="startTime"></label>
-      <label class="field"><span>終了</span><input type="time" id="endTime"></label>
-    </div>
-    <label class="field"><span>支援内容</span><input id="supportContent"></label>
 
 
-    <label class="field"><span>主担当</span><select id="mainStaffName"><option value="">選択してください</option></select></label>
+    <!-- 依頼区分 -->
+    <label class="field">
 
-    <div class="two-col">
+      <span>
+        依頼区分
+      </span>
 
-      <label class="field"><span>担当2</span><select id="staff2Name"><option value="">選択してください</option></select></label>
+      <select id="requestType">
 
-      <label class="field"><span>担当3</span><select id="staff3Name"><option value="">選択してください</option></select></label>
+        <option>
+          追加
+        </option>
 
-    </div>
+        <option>
+          キャンセル
+        </option>
 
-    <div id="staffChangeFields" hidden>
-      <div class="two-col">
-        <label class="field"><span>変更前担当</span><select id="oldStaffName"><option value="">選択してください</option></select></label>
-        <label class="field"><span>変更後担当</span><select id="newStaffName"><option value="">選択してください</option></select></label>
+        <option>
+          変更
+        </option>
+
+        <option>
+          担当変更
+        </option>
+
+      </select>
+
+    </label>
+
+
+    <!-- 対象シフト -->
+    <label
+      class="field"
+      id="targetShiftField"
+    >
+
+      <span>
+        対象シフトID
+      </span>
+
+      <input
+        id="targetShiftId"
+        placeholder="例 S000123"
+      >
+
+    </label>
+
+
+    <!-- 複数日 -->
+    <div class="field">
+
+      <span>
+        対象日
+      </span>
+
+      <div id="requestDateList">
+
+        <div class="request-date-row">
+
+          <input
+            type="date"
+            class="request-date"
+            required
+          >
+
+          <button
+            type="button"
+            class="date-remove-btn"
+            hidden
+          >
+            ×
+          </button>
+
+        </div>
+
       </div>
+
+      <button
+        type="button"
+        id="addRequestDate"
+        class="date-add-btn"
+      >
+        ＋ 日付を追加
+      </button>
+
     </div>
 
-    <label class="field" id="changeContentField" hidden><span>変更内容</span><input id="changeContent"></label>
-    <label class="field"><span>変更理由・キャンセル理由</span><input id="changeReason"></label>
+
+    <!-- 利用者 -->
+    <label class="field">
+
+      <span>
+        利用者名
+      </span>
+
+      <select
+        id="clientName"
+        required
+      >
+
+        <option value="">
+          選択してください
+        </option>
+
+      </select>
+
+    </label>
+
+
+    <!-- 制度 / サービス -->
     <div class="two-col">
-      <label class="field"><span>行先</span><input id="destination"></label>
-      <label class="field"><span>予約時間</span><input type="time" id="appointmentTime"></label>
+
+      <label class="field">
+
+        <span>
+          制度
+        </span>
+
+        <select id="system">
+
+          <option value=""></option>
+
+          <option>
+            障害福祉
+          </option>
+
+          <option>
+            介護保険
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          サービス
+        </span>
+
+        <input id="service">
+
+      </label>
+
     </div>
-    <label class="field"><span>待合せ</span><input id="meetingPlace"></label>
-    <label class="field"><span>特記事項</span><textarea id="note" rows="3"></textarea></label>
-    <div id="saveMessage" class="save-message" hidden></div>
+
+
+    <!-- 時間 -->
+    <div class="two-col">
+
+      <label class="field">
+
+        <span>
+          開始
+        </span>
+
+        <input
+          type="time"
+          id="startTime"
+        >
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          終了
+        </span>
+
+        <input
+          type="time"
+          id="endTime"
+        >
+
+      </label>
+
+    </div>
+
+
+    <!-- 支援内容 -->
+    <label class="field">
+
+      <span>
+        支援内容
+      </span>
+
+      <input id="supportContent">
+
+    </label>
+
+
+    <!-- 主担当 -->
+    <label class="field">
+
+      <span>
+        主担当
+      </span>
+
+      <select id="mainStaffName">
+
+        <option value="">
+          選択してください
+        </option>
+
+      </select>
+
+    </label>
+
+
+    <!-- 担当2 / 担当3 -->
+    <div class="two-col">
+
+      <label class="field">
+
+        <span>
+          担当2
+        </span>
+
+        <select id="staff2Name">
+
+          <option value="">
+            選択してください
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          担当3
+        </span>
+
+        <select id="staff3Name">
+
+          <option value="">
+            選択してください
+          </option>
+
+        </select>
+
+      </label>
+
+    </div>
+
+
+    <!-- 担当変更 -->
+    <div
+      id="staffChangeFields"
+      hidden
+    >
+
+      <div class="two-col">
+
+        <label class="field">
+
+          <span>
+            変更前担当
+          </span>
+
+          <select id="oldStaffName">
+
+            <option value="">
+              選択してください
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label class="field">
+
+          <span>
+            変更後担当
+          </span>
+
+          <select id="newStaffName">
+
+            <option value="">
+              選択してください
+            </option>
+
+          </select>
+
+        </label>
+
+      </div>
+
+    </div>
+
+
+    <!-- 変更内容 -->
+    <label
+      class="field"
+      id="changeContentField"
+      hidden
+    >
+
+      <span>
+        変更内容
+      </span>
+
+      <input id="changeContent">
+
+    </label>
+
+
+    <!-- 理由 -->
+    <label class="field">
+
+      <span>
+        変更理由・キャンセル理由
+      </span>
+
+      <input id="changeReason">
+
+    </label>
+
+
+    <!-- 行先 / 予約 -->
+    <div class="two-col">
+
+      <label class="field">
+
+        <span>
+          行先
+        </span>
+
+        <input id="destination">
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          予約時間
+        </span>
+
+        <input
+          type="time"
+          id="appointmentTime"
+        >
+
+      </label>
+
+    </div>
+
+
+    <!-- 待合せ -->
+    <label class="field">
+
+      <span>
+        待合せ
+      </span>
+
+      <input id="meetingPlace">
+
+    </label>
+
+
+    <!-- 特記事項 -->
+    <label class="field">
+
+      <span>
+        特記事項
+      </span>
+
+      <textarea
+        id="note"
+        rows="3"
+      ></textarea>
+
+    </label>
+
+
+    <div
+      id="saveMessage"
+      class="save-message"
+      hidden
+    ></div>
+
   </div>
-  <div class="form-actions"><button type="button" id="cancelRegister" class="secondary-btn">閉じる</button><button type="submit" id="saveRequest" class="primary-btn">登録する</button></div>
+
+
+  <div class="form-actions">
+
+    <button
+      type="button"
+      id="cancelRegister"
+      class="secondary-btn"
+    >
+      閉じる
+    </button>
+
+    <button
+      type="submit"
+      id="saveRequest"
+      class="primary-btn"
+    >
+      登録する
+    </button>
+
+  </div>
+
 </form>
+
 </dialog>
-<script src="./js/request-view-config.js?v=20260827-6"></script>
-<script src="./js/request-view.js?v=20260827-6"></script>
+
+
+<script src="./js/request-view-config.js?v=20260827-7"></script>
+<script src="./js/request-view.js?v=20260827-7"></script>
+
 </body>
 </html>
