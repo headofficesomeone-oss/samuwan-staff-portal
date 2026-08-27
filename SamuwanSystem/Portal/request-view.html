@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>依頼情報</title>
-<link rel="stylesheet" href="./css/request-view.css?v=20260827-2">
+<link rel="stylesheet" href="./css/request-view.css?v=20260827-5">
 </head>
 <body>
 <main class="app">
@@ -34,7 +34,16 @@
   <div class="form-body">
     <label class="field"><span>依頼区分</span><select id="requestType"><option>追加</option><option>キャンセル</option><option>変更</option><option>担当変更</option></select></label>
     <label class="field" id="targetShiftField"><span>対象シフトID</span><input id="targetShiftId" placeholder="例 S000123"></label>
-    <label class="field"><span>対象日</span><input type="date" id="targetDate" required></label>
+
+<div class="field"><span>対象日</span>
+  <div id="requestDateList">
+    <div class="request-date-row">
+      <input type="date" class="request-date" required>
+      <button type="button" class="date-remove-btn" hidden>×</button>
+    </div>
+  </div>
+  <button type="button" id="addRequestDate" class="date-add-btn">＋ 日付を追加</button>
+</div>
 
     <label class="field"><span>利用者名</span><select id="clientName" required><option value="">選択してください</option></select></label>
 
@@ -48,7 +57,16 @@
     </div>
     <label class="field"><span>支援内容</span><input id="supportContent"></label>
 
+
     <label class="field"><span>主担当</span><select id="mainStaffName"><option value="">選択してください</option></select></label>
+
+    <div class="two-col">
+
+      <label class="field"><span>担当2</span><select id="staff2Name"><option value="">選択してください</option></select></label>
+
+      <label class="field"><span>担当3</span><select id="staff3Name"><option value="">選択してください</option></select></label>
+
+    </div>
 
     <div id="staffChangeFields" hidden>
       <div class="two-col">
@@ -70,7 +88,7 @@
   <div class="form-actions"><button type="button" id="cancelRegister" class="secondary-btn">閉じる</button><button type="submit" id="saveRequest" class="primary-btn">登録する</button></div>
 </form>
 </dialog>
-<script src="./js/request-view-config.js?v=20260827-2"></script>
-<script src="./js/request-view.js?v=20260827-2"></script>
+<script src="./js/request-view-config.js?v=20260827-5"></script>
+<script src="./js/request-view.js?v=20260827-5"></script>
 </body>
 </html>
