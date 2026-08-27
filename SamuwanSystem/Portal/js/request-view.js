@@ -253,7 +253,7 @@ async function loadMasters() {
 
 }
 
-function setStaffOptions() {
+function setClientOptions() {
 
   const html =
     `
@@ -261,7 +261,7 @@ function setStaffOptions() {
         選択してください
       </option>
     ` +
-    S.masters.staffs
+    S.masters.clients
       .map(item => `
         <option
           value="${esc(item.id)}"
@@ -273,13 +273,7 @@ function setStaffOptions() {
       .join('');
 
 
-  E.main.innerHTML =
-    html;
-
-  E.oldStaff.innerHTML =
-    html;
-
-  E.newStaff.innerHTML =
+  E.client.innerHTML =
     html;
 
 }
