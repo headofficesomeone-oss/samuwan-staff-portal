@@ -141,6 +141,9 @@
       $('supportContent'),
 
 
+    people:
+      $('people'),
+
     main:
       $('mainStaffName'),
 
@@ -149,6 +152,12 @@
 
     staff3:
       $('staff3Name'),
+
+    outDriver:
+      $('outDriverName'),
+
+    backDriver:
+      $('backDriverName'),
 
 
     staffFields:
@@ -596,6 +605,12 @@
       html;
 
     E.staff3.innerHTML =
+      html;
+
+    E.outDriver.innerHTML =
+      html;
+
+    E.backDriver.innerHTML =
       html;
 
     E.oldStaff.innerHTML =
@@ -1468,6 +1483,18 @@
       );
 
 
+    const outDriver =
+      selectedMaster(
+        E.outDriver
+      );
+
+
+    const backDriver =
+      selectedMaster(
+        E.backDriver
+      );
+
+
     const oldStaff =
       selectedMaster(
         E.oldStaff
@@ -1566,6 +1593,9 @@
           endTime:
             E.end.value,
 
+          people:
+            E.people.value,
+
           mainStaffId:
             mainStaff.id,
 
@@ -1583,6 +1613,18 @@
 
           staff3Name:
             staff3.name,
+
+          outDriverId:
+            outDriver.id,
+
+          outDriverName:
+            outDriver.name,
+
+          backDriverId:
+            backDriver.id,
+
+          backDriverName:
+            backDriver.name,
 
           oldStaffId:
             oldStaff.id,
