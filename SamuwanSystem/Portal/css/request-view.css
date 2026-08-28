@@ -541,3 +541,51 @@ textarea{
   }
 
 }
+
+
+/* ==================================================
+   人数 / 担当 / ドライバー
+   3列 × 2段
+================================================== */
+
+.staff-driver-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.staff-driver-grid .field{
+  min-width:0;
+}
+
+.staff-driver-grid .field>span{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.staff-driver-grid select{
+  width:100%;
+  min-width:0;
+  padding-left:6px;
+  padding-right:6px;
+  font-size:14px;
+}
+
+@media(max-width:390px){
+
+  .staff-driver-grid{
+    gap:6px;
+  }
+
+  .staff-driver-grid .field>span{
+    font-size:11px;
+  }
+
+  .staff-driver-grid select{
+    font-size:13px;
+    padding-left:4px;
+    padding-right:4px;
+  }
+
+}
