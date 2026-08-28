@@ -1542,6 +1542,95 @@
     }
 
 
+    // ==================================================
+    // 入力途中での誤登録防止
+    //
+    // Enterキーでsubmitされても、ここを必ず通るため
+    // 不足項目があれば登録せずに止めます。
+    // ==================================================
+
+    const validationMessage =
+      validateRequestBeforeSave_({
+
+        type:
+          type,
+
+        client:
+          client,
+
+        targetDates:
+          targetDates
+
+      });
+
+
+    if (
+      validationMessage
+    ) {
+
+      saveMsg(
+        validationMessage,
+        true
+      );
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // 最終確認
+    //
+    // 登録ボタンでもEnterでも、GASへ送る前に
+    // 必ず「この内容で登録しますか？」を表示します。
+    // ==================================================
+
+    const confirmed =
+      window.confirm(
+        buildRequestConfirmText_({
+
+          type:
+            type,
+
+          client:
+            client,
+
+          targetDates:
+            targetDates,
+
+          mainStaff:
+            mainStaff,
+
+          staff2:
+            staff2,
+
+          staff3:
+            staff3,
+
+          outDriver:
+            outDriver,
+
+          backDriver:
+            backDriver
+
+        })
+      );
+
+
+    if (
+      !confirmed
+    ) {
+
+      saveMsg(
+        '登録をキャンセルしました。',
+        false
+      );
+
+      return;
+
+    }
+
+
     E.save.disabled =
       true;
 
@@ -1743,6 +1832,289 @@
         false;
 
     }
+
+  }
+
+
+  // ==================================================
+  // 登録前入力チェック
+  // ==================================================
+
+  function validateRequestBeforeSave_(
+    data
+  ) {
+
+    const type =
+      data.type;
+
+
+    // ------------------------------------------
+    // 共通必須
+    // ------------------------------------------
+
+    if (
+      !data.client?.id ||
+      !data.client?.name
+    ) {
+
+      return (
+        '利用者を選択してください。'
+      );
+
+    }
+
+
+    if (
+      !Array.isArray(
+        data.targetDates
+      ) ||
+      !data.targetDates.length
+    ) {
+
+      return (
+        '対象日を入力してください。'
+      );
+
+    }
+
+
+    // ------------------------------------------
+    // 「追加」は予定そのものを新しく作るため、
+    // 入力途中の登録を防ぐ目的で
+    // サービス・開始・終了・人数を必須にします。
+    // ------------------------------------------
+
+    if (
+      type === '追加'
+    ) {
+
+      if (
+        !E.service.value.trim()
+      ) {
+
+        return (
+          'サービスを入力してください。'
+        );
+
+      }
+
+
+      if (
+        !E.start.value
+      ) {
+
+        return (
+          '開始時刻を入力してください。'
+        );
+
+      }
+
+
+      if (
+        !E.end.value
+      ) {
+
+        return (
+          '終了時刻を入力してください。'
+        );
+
+      }
+
+
+      if (
+        !E.people.value
+      ) {
+
+        return (
+          '人数を選択してください。'
+        );
+
+      }
+
+    }
+
+
+    return '';
+
+  }
+
+
+  // ==================================================
+  // 登録確認メッセージ
+  // ==================================================
+
+  function buildRequestConfirmText_(
+    data
+  ) {
+
+    const lines = [];
+
+
+    lines.push(
+      'この内容で登録しますか？'
+    );
+
+
+    lines.push(
+      ''
+    );
+
+
+    lines.push(
+      '依頼区分：' +
+      (
+        data.type ||
+        ''
+      )
+    );
+
+
+    lines.push(
+      '利用者：' +
+      (
+        data.client?.name ||
+        ''
+      )
+    );
+
+
+    lines.push(
+      '対象日：' +
+      data.targetDates.join(
+        ' / '
+      )
+    );
+
+
+    const timeText =
+      E.start.value &&
+      E.end.value
+        ? E.start.value +
+          '～' +
+          E.end.value
+        : (
+            E.start.value ||
+            E.end.value ||
+            '未入力'
+          );
+
+
+    lines.push(
+      '時間：' +
+      timeText
+    );
+
+
+    if (
+      E.service.value.trim()
+    ) {
+
+      lines.push(
+        'サービス：' +
+        E.service.value.trim()
+      );
+
+    }
+
+
+    if (
+      E.people.value
+    ) {
+
+      lines.push(
+        '人数：' +
+        E.people.value
+      );
+
+    }
+
+
+    const staffNames =
+      [
+        data.mainStaff?.name,
+        data.staff2?.name,
+        data.staff3?.name
+      ]
+        .filter(
+          Boolean
+        );
+
+
+    if (
+      staffNames.length
+    ) {
+
+      lines.push(
+        '担当：' +
+        staffNames.join(
+          ' / '
+        )
+      );
+
+    }
+
+
+    if (
+      data.outDriver?.name
+    ) {
+
+      lines.push(
+        '行ドライバ：' +
+        data.outDriver.name
+      );
+
+    }
+
+
+    if (
+      data.backDriver?.name
+    ) {
+
+      lines.push(
+        '帰ドライバ：' +
+        data.backDriver.name
+      );
+
+    }
+
+
+    if (
+      E.support.value.trim()
+    ) {
+
+      lines.push(
+        '支援内容：' +
+        E.support.value.trim()
+      );
+
+    }
+
+
+    if (
+      E.dest.value.trim()
+    ) {
+
+      lines.push(
+        '行先：' +
+        E.dest.value.trim()
+      );
+
+    }
+
+
+    lines.push(
+      ''
+    );
+
+
+    lines.push(
+      '「OK」で登録します。'
+    );
+
+
+    return lines.join(
+      '\\n'
+    );
 
   }
 
