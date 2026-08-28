@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>依頼情報</title>
-  <link rel="stylesheet" href="./css/request-view.css?v=20260827-7">
+  <link rel="stylesheet" href="./css/request-view.css?v=20260828-1">
 </head>
 
 <body>
@@ -369,37 +369,37 @@
     </label>
 
 
-    <!-- 主担当 -->
-    <label class="field">
+    <!-- ==================================================
+         人数 / 担当 / ドライバー
+         3列 × 2段
+    ================================================== -->
 
-      <span>
-        主担当
-      </span>
+    <div class="staff-driver-grid">
 
-      <select id="mainStaffName">
-
-        <option value="">
-          選択してください
-        </option>
-
-      </select>
-
-    </label>
-
-
-    <!-- 担当2 / 担当3 -->
-    <div class="two-col">
+      <!-- 1段目 -->
 
       <label class="field">
 
         <span>
-          担当2
+          人数
         </span>
 
-        <select id="staff2Name">
+        <select id="people">
 
           <option value="">
-            選択してください
+            選択
+          </option>
+
+          <option value="1">
+            1
+          </option>
+
+          <option value="2">
+            2
+          </option>
+
+          <option value="3">
+            3
           </option>
 
         </select>
@@ -410,13 +410,83 @@
       <label class="field">
 
         <span>
+          主担当
+        </span>
+
+        <select id="mainStaffName">
+
+          <option value="">
+            選択
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          担当2
+        </span>
+
+        <select id="staff2Name">
+
+          <option value="">
+            選択
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <!-- 2段目 -->
+
+      <label class="field">
+
+        <span>
           担当3
         </span>
 
         <select id="staff3Name">
 
           <option value="">
-            選択してください
+            選択
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          行ドライバ
+        </span>
+
+        <select id="outDriverName">
+
+          <option value="">
+            選択
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          帰ドライバ
+        </span>
+
+        <select id="backDriverName">
+
+          <option value="">
+            選択
           </option>
 
         </select>
@@ -591,8 +661,8 @@
 </dialog>
 
 
-<script src="./js/request-view-config.js?v=20260827-7"></script>
-<script src="./js/request-view.js?v=20260827-7"></script>
+<script src="./js/request-view-config.js?v=20260828-1"></script>
+<script src="./js/request-view.js?v=20260828-1"></script>
 
 </body>
 </html>
