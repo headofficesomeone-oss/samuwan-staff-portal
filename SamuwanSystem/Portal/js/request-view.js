@@ -1623,7 +1623,8 @@
 
       saveMsg(
         '登録をキャンセルしました。',
-        false
+        false,
+        3000
       );
 
       return;
@@ -1683,7 +1684,10 @@
             E.end.value,
 
           people:
-            E.people.value,
+            (
+              E.people.value ||
+              '1'
+            ),
 
           mainStaffId:
             mainStaff.id,
@@ -1881,7 +1885,8 @@
     // ------------------------------------------
     // 「追加」は予定そのものを新しく作るため、
     // 入力途中の登録を防ぐ目的で
-    // サービス・開始・終了・人数を必須にします。
+    // サービス・開始を必須にします。
+    // 終了時刻は任意、人数は空欄なら1名扱いです。
     // ------------------------------------------
 
     if (
@@ -1909,27 +1914,6 @@
 
       }
 
-
-      if (
-        !E.end.value
-      ) {
-
-        return (
-          '終了時刻を入力してください。'
-        );
-
-      }
-
-
-      if (
-        !E.people.value
-      ) {
-
-        return (
-          '人数を選択してください。'
-        );
-
-      }
 
     }
 
@@ -2017,16 +2001,13 @@
     }
 
 
-    if (
-      E.people.value
-    ) {
-
-      lines.push(
-        '人数：' +
-        E.people.value
-      );
-
-    }
+    lines.push(
+      '人数：' +
+      (
+        E.people.value ||
+        '1'
+      )
+    );
 
 
     const staffNames =
@@ -2297,10 +2278,29 @@
   // 表示補助
   // ==================================================
 
+  let saveMessageTimer_ =
+    null;
+
+
   function saveMsg(
     text,
-    isError
+    isError,
+    autoHideMs
   ) {
+
+    if (
+      saveMessageTimer_
+    ) {
+
+      clearTimeout(
+        saveMessageTimer_
+      );
+
+      saveMessageTimer_ =
+        null;
+
+    }
+
 
     E.saveMsg.hidden =
       false;
@@ -2314,6 +2314,39 @@
       isError
         ? '#c62828'
         : '#1f2933';
+
+
+    // メッセージはフォーム上部にあるため、
+    // 入力途中でも見える位置まで戻します。
+    E.dialog.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+
+    if (
+      autoHideMs &&
+      autoHideMs > 0
+    ) {
+
+      saveMessageTimer_ =
+        setTimeout(
+          () => {
+
+            E.saveMsg.hidden =
+              true;
+
+            E.saveMsg.textContent =
+              '';
+
+            saveMessageTimer_ =
+              null;
+
+          },
+          autoHideMs
+        );
+
+    }
 
   }
 
