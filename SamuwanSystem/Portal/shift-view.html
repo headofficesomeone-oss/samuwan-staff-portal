@@ -8,72 +8,106 @@
 </head>
 <body>
 
-<main class="page">
+<div class="app">
 
-  <header class="page-head">
-    <div>
-      <h1>シフト一覧</h1>
-      <div id="weekLabel" class="week-label">読み込み中...</div>
+  <header class="header">
+
+    <div class="title-row">
+
+      <div>
+        <div class="title">シフト一覧</div>
+        <div id="weekLabel" class="sub">読み込み中...</div>
+      </div>
+
+      <div class="header-actions">
+        <a class="register-btn shift-request-link" href="./request-view.html">
+          依頼情報
+        </a>
+      </div>
+
     </div>
 
-    <a class="request-link" href="./request-view.html">
-      依頼情報
-    </a>
+
+    <div class="shift-week-info">
+      <span id="weekState" class="shift-week-state">状態確認中</span>
+      <span id="weekSource" class="shift-week-source"></span>
+    </div>
+
+
+    <div class="week-nav-row">
+
+      <button
+        id="prevWeek"
+        class="week-nav-btn"
+        type="button"
+      >
+        ‹
+      </button>
+
+      <div id="daysNav" class="days"></div>
+
+      <button
+        id="nextWeek"
+        class="week-nav-btn"
+        type="button"
+      >
+        ›
+      </button>
+
+    </div>
+
   </header>
 
-  <div class="week-state-row">
-    <span id="weekState" class="week-state">状態確認中</span>
-    <span id="weekSource" class="week-source"></span>
-  </div>
 
-  <nav class="day-nav">
-    <button id="prevWeek" class="arrow-btn" type="button">‹</button>
-    <div id="daysNav" class="days"></div>
-    <button id="nextWeek" class="arrow-btn" type="button">›</button>
-  </nav>
+  <main class="content">
 
-  <section class="day-head">
-    <h2 id="dayTitle">-</h2>
-    <span id="dayCount" class="count">0件</span>
-  </section>
+    <div class="day-head">
+      <h2 id="dayTitle">-</h2>
+      <span id="dayCount" class="count">0件</span>
+    </div>
 
-  <div id="message" class="message">シフトを取得しています...</div>
-  <div id="shiftList" class="shift-list"></div>
+    <div id="message" class="message">
+      シフトを取得しています...
+    </div>
 
-</main>
+    <div id="shiftList" class="list"></div>
+
+  </main>
+
+</div>
 
 
 <!-- 担当変更 -->
-<dialog id="staffChangeDialog" class="shift-dialog">
-  <form id="staffChangeForm" class="dialog-card">
+<dialog id="staffChangeDialog" class="request-dialog">
+  <form id="staffChangeForm" class="request-form">
 
-    <div class="dialog-head">
+    <div class="form-head">
       <strong>担当変更</strong>
-      <button type="button" id="closeStaffChangeDialog" class="dialog-close">×</button>
+      <button type="button" id="closeStaffChangeDialog" class="close-btn">×</button>
     </div>
 
-    <div class="dialog-body">
+    <div class="form-body">
 
       <div id="staffChangeSummary" class="dialog-summary"></div>
 
-      <div class="current-grid">
-        <div class="current-box">
+      <div class="staff-current-grid">
+        <div class="staff-current-cell">
           <span>人数</span>
           <b id="currentPeople">1</b>
         </div>
-        <div class="current-box">
+        <div class="staff-current-cell">
           <span>主担当</span>
           <b id="currentMain">－</b>
         </div>
-        <div class="current-box">
+        <div class="staff-current-cell">
           <span>担当2</span>
           <b id="currentStaff2">－</b>
         </div>
-        <div class="current-box">
+        <div class="staff-current-cell">
           <span>行ドライバ</span>
           <b id="currentOutDriver">－</b>
         </div>
-        <div class="current-box">
+        <div class="staff-current-cell">
           <span>帰ドライバ</span>
           <b id="currentBackDriver">－</b>
         </div>
@@ -90,7 +124,7 @@
         </select>
       </label>
 
-      <div class="before-row">
+      <div class="staff-change-current-line">
         <span>変更前</span>
         <b id="staffChangeOld">－</b>
       </div>
@@ -107,8 +141,8 @@
         <textarea id="staffChangeReason" rows="2"></textarea>
       </label>
 
-      <div class="dialog-actions">
-        <button type="button" id="cancelStaffChange" class="sub-btn">閉じる</button>
+      <div class="form-actions">
+        <button type="button" id="cancelStaffChange" class="secondary-btn">閉じる</button>
         <button type="submit" class="primary-btn">担当変更する</button>
       </div>
 
@@ -119,15 +153,15 @@
 
 
 <!-- キャンセル -->
-<dialog id="shiftCancelDialog" class="shift-dialog">
-  <form id="shiftCancelForm" class="dialog-card">
+<dialog id="shiftCancelDialog" class="request-dialog">
+  <form id="shiftCancelForm" class="request-form">
 
-    <div class="dialog-head">
+    <div class="form-head">
       <strong>シフトキャンセル</strong>
-      <button type="button" id="closeShiftCancelDialog" class="dialog-close">×</button>
+      <button type="button" id="closeShiftCancelDialog" class="close-btn">×</button>
     </div>
 
-    <div class="dialog-body">
+    <div class="form-body">
 
       <div id="shiftCancelSummary" class="dialog-summary"></div>
 
@@ -136,8 +170,8 @@
         <textarea id="shiftCancelReason" rows="3"></textarea>
       </label>
 
-      <div class="dialog-actions">
-        <button type="button" id="cancelShiftCancel" class="sub-btn">閉じる</button>
+      <div class="form-actions">
+        <button type="button" id="cancelShiftCancel" class="secondary-btn">閉じる</button>
         <button type="submit" class="danger-btn">キャンセルする</button>
       </div>
 
@@ -146,7 +180,7 @@
   </form>
 </dialog>
 
-<script src="./js/request-view-config.js?v=20260830-2"></script>
-<script src="./js/shift-view.js?v=20260830-2"></script>
+<script src="./js/request-view-config.js?v=20260830-3"></script>
+<script src="./js/shift-view.js?v=20260830-3"></script>
 </body>
 </html>
