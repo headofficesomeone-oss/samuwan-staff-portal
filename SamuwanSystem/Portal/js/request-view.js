@@ -924,7 +924,23 @@
       result;
 
 
-    await loadActionability_();
+    // 操作ボタン判定に失敗しても、依頼一覧自体は表示する
+    try {
+
+      await loadActionability_();
+
+    }
+    catch (actionErr) {
+
+      console.warn(
+        '一覧操作判定を取得できませんでした。',
+        actionErr
+      );
+
+      S.actionMap =
+        {};
+
+    }
 
 
     S.minWeekStart =
