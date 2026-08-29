@@ -1577,7 +1577,7 @@
 
 
     // ------------------------------------------
-    // 1. 現在の担当
+    // 現在の担当
     // ------------------------------------------
 
     const staffNames =
@@ -1606,7 +1606,7 @@
 
 
     // ------------------------------------------
-    // 2. 現在のドライバー
+    // 現在のドライバー
     //
     // 行だけ → ドライバ
     // 帰だけ → ドライバ
@@ -1667,7 +1667,7 @@
 
 
     // ------------------------------------------
-    // 3. 行先
+    // 行先
     // ------------------------------------------
 
     if (
@@ -1688,9 +1688,67 @@
     }
 
 
+    // 待合せ
+    if (
+      item.meetingPlace
+    ) {
+
+      rows.push([
+        '待合せ',
+        item.meetingPlace
+      ]);
+
+    }
+
+
     // ------------------------------------------
-    // 4. 担当変更内容
+    // 通常の現在情報
     // ------------------------------------------
+
+    const metaHtml =
+      rows.length
+        ? `
+          <div class="meta">
+
+            ${
+              rows
+                .map(
+                  row => `
+                    <div class="meta-row">
+
+                      <span class="label">
+                        ${esc(
+                          row[0]
+                        )}
+                      </span>
+
+                      <span class="value">
+                        ${esc(
+                          row[1]
+                        )}
+                      </span>
+
+                    </div>
+                  `
+                )
+                .join('')
+            }
+
+          </div>
+        `
+        : '';
+
+
+    // ------------------------------------------
+    // 変更情報
+    //
+    // 「担当変更　行ドライバ　大野 → 塩田」
+    // を1行で表示し、理由とまとめて別背景で囲む。
+    // ------------------------------------------
+
+    let changeInfoHtml =
+      '';
+
 
     if (
       item.requestType ===
@@ -1758,102 +1816,138 @@
       }
 
 
-      rows.push([
-        targetLabel
-          ? '担当変更　' +
-            targetLabel
-          : '担当変更',
-        ''
-      ]);
+      changeInfoHtml = `
+        <div class="change-info-box">
 
+          <div class="change-info-row">
 
-      if (
-        changeValue
-      ) {
+            <span class="change-info-label">
+              担当変更
+              ${
+                targetLabel
+                  ? '　' +
+                    esc(
+                      targetLabel
+                    )
+                  : ''
+              }
+            </span>
 
-        rows.push([
-          '',
-          changeValue
-        ]);
+            ${
+              changeValue
+                ? `
+                  <span class="change-info-value">
+                    ${esc(
+                      changeValue
+                    )}
+                  </span>
+                `
+                : ''
+            }
 
-      }
+          </div>
+
+          ${
+            item.changeReason
+              ? `
+                <div class="change-info-row">
+
+                  <span class="change-info-label">
+                    理由
+                  </span>
+
+                  <span class="change-info-value">
+                    ${esc(
+                      item.changeReason
+                    )}
+                  </span>
+
+                </div>
+              `
+              : ''
+          }
+
+        </div>
+      `;
 
     }
     else if (
       item.requestType ===
-      '変更' &&
-      item.changeContent
+      '変更'
     ) {
 
-      rows.push([
-        '変更内容',
-        item.changeContent
-      ]);
+      changeInfoHtml = `
+        <div class="change-info-box">
+
+          ${
+            item.changeContent
+              ? `
+                <div class="change-info-row">
+
+                  <span class="change-info-label">
+                    変更内容
+                  </span>
+
+                  <span class="change-info-value">
+                    ${esc(
+                      item.changeContent
+                    )}
+                  </span>
+
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            item.changeReason
+              ? `
+                <div class="change-info-row">
+
+                  <span class="change-info-label">
+                    理由
+                  </span>
+
+                  <span class="change-info-value">
+                    ${esc(
+                      item.changeReason
+                    )}
+                  </span>
+
+                </div>
+              `
+              : ''
+          }
+
+        </div>
+      `;
 
     }
-
-
-    // 待合せ
-    if (
-      item.meetingPlace
-    ) {
-
-      rows.push([
-        '待合せ',
-        item.meetingPlace
-      ]);
-
-    }
-
-
-    // ------------------------------------------
-    // 5. 理由
-    // ------------------------------------------
-
-    if (
+    else if (
       item.changeReason
     ) {
 
-      rows.push([
-        '理由',
-        item.changeReason
-      ]);
+      changeInfoHtml = `
+        <div class="change-info-box">
 
-    }
+          <div class="change-info-row">
 
+            <span class="change-info-label">
+              理由
+            </span>
 
-    const metaHtml =
-      rows.length
-        ? `
-          <div class="meta">
-
-            ${
-              rows
-                .map(
-                  row => `
-                    <div class="meta-row">
-
-                      <span class="label">
-                        ${esc(
-                          row[0]
-                        )}
-                      </span>
-
-                      <span class="value">
-                        ${esc(
-                          row[1]
-                        )}
-                      </span>
-
-                    </div>
-                  `
-                )
-                .join('')
-            }
+            <span class="change-info-value">
+              ${esc(
+                item.changeReason
+              )}
+            </span>
 
           </div>
-        `
-        : '';
+
+        </div>
+      `;
+
+    }
 
 
     return `
@@ -1941,6 +2035,9 @@
 
 
         ${metaHtml}
+
+
+        ${changeInfoHtml}
 
 
         ${
