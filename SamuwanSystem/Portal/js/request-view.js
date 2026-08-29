@@ -42,7 +42,9 @@
     masters: {
       clients: [],
       staffs: []
-    }
+    },
+
+    cancelTargets: []
 
   };
 
@@ -111,6 +113,18 @@
 
     targetId:
       $('targetShiftId'),
+
+    cancelPicker:
+      $('cancelTargetPicker'),
+
+    loadCancelTargets:
+      $('loadCancelTargets'),
+
+    cancelTargetStatus:
+      $('cancelTargetStatus'),
+
+    cancelTargetList:
+      $('cancelTargetList'),
 
 
     dateList:
@@ -364,7 +378,36 @@
 
     E.type.addEventListener(
       'change',
-      formMode
+      () => {
+
+        formMode();
+
+        clearCancelTargets_();
+
+      }
+    );
+
+
+    E.loadCancelTargets.addEventListener(
+      'click',
+      loadCancelTargets_
+    );
+
+
+    E.client.addEventListener(
+      'change',
+      () => {
+
+        if (
+          E.type.value ===
+          'キャンセル'
+        ) {
+
+          clearCancelTargets_();
+
+        }
+
+      }
     );
 
 
@@ -1414,6 +1457,341 @@
   // 登録処理
   // ==================================================
 
+  // ==================================================
+  // キャンセル対象予定
+  // ==================================================
+
+  function clearCancelTargets_() {
+
+    S.cancelTargets =
+      [];
+
+
+    if (
+      E.cancelTargetStatus
+    ) {
+
+      E.cancelTargetStatus.textContent =
+        '';
+
+    }
+
+
+    if (
+      E.cancelTargetList
+    ) {
+
+      E.cancelTargetList.innerHTML =
+        '';
+
+    }
+
+  }
+
+
+  async function loadCancelTargets_() {
+
+    const client =
+      selectedMaster(
+        E.client
+      );
+
+
+    const targetDates =
+      [
+        ...new Set(
+          getRequestDates()
+        )
+      ];
+
+
+    if (
+      !client.id
+    ) {
+
+      saveMsg(
+        '利用者を選択してください。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !targetDates.length
+    ) {
+
+      saveMsg(
+        '対象日を入力してください。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    E.loadCancelTargets.disabled =
+      true;
+
+
+    E.cancelTargetStatus.textContent =
+      '対象予定を取得しています...';
+
+
+    E.cancelTargetList.innerHTML =
+      '';
+
+
+    try {
+
+      const result =
+        await api({
+
+          action:
+            'request.cancel.targets',
+
+          clientId:
+            client.id,
+
+          targetDates:
+            targetDates
+
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '対象予定を取得できませんでした。'
+        );
+
+      }
+
+
+      S.cancelTargets =
+        result.items ||
+        [];
+
+
+      renderCancelTargets_(
+        result
+      );
+
+    }
+    catch (err) {
+
+      E.cancelTargetStatus.textContent =
+        '';
+
+
+      saveMsg(
+        '対象予定を取得できませんでした。\n' +
+        (
+          err?.message ||
+          err
+        ),
+        true
+      );
+
+    }
+    finally {
+
+      E.loadCancelTargets.disabled =
+        false;
+
+    }
+
+  }
+
+
+  function renderCancelTargets_(
+    result
+  ) {
+
+    const items =
+      S.cancelTargets ||
+      [];
+
+
+    const notes =
+      result?.notes ||
+      [];
+
+
+    E.cancelTargetStatus.textContent =
+      items.length
+        ? (
+            items.length +
+            '件あります。キャンセルする予定を選択してください。'
+          )
+        : '対象となる予定はありません。';
+
+
+    if (
+      notes.length
+    ) {
+
+      E.cancelTargetStatus.textContent +=
+        '\n' +
+        notes.join(
+          '\n'
+        );
+
+    }
+
+
+    if (
+      !items.length
+    ) {
+
+      E.cancelTargetList.innerHTML =
+        '';
+
+      return;
+
+    }
+
+
+    E.cancelTargetList.innerHTML =
+      items
+        .map(
+          item => {
+
+            const staff =
+              [
+                item.mainStaffName,
+                item.staff2Name,
+                item.staff3Name
+              ]
+                .filter(
+                  Boolean
+                )
+                .join(
+                  ' / '
+                );
+
+
+            const details =
+              [
+                item.system,
+                item.service,
+                staff
+                  ? '担当 ' + staff
+                  : '',
+                item.supportContent
+              ]
+                .filter(
+                  Boolean
+                )
+                .join(
+                  '　'
+                );
+
+
+            return `
+              <label class="cancel-target-card">
+
+                <input
+                  type="checkbox"
+                  class="cancel-target-check"
+                  value="${esc(
+                    item.shiftId
+                  )}"
+                >
+
+                <div class="cancel-target-main">
+
+                  <div class="cancel-target-date">
+                    ${esc(
+                      item.date
+                    )}
+                  </div>
+
+                  <div class="cancel-target-title">
+                    ${esc(
+                      range(
+                        item.startTime,
+                        item.endTime
+                      )
+                    )}
+                   　
+                    ${esc(
+                      item.service ||
+                      'サービス未設定'
+                    )}
+                  </div>
+
+                  <div class="cancel-target-sub">
+                    ${esc(
+                      details
+                    )}
+                  </div>
+
+                </div>
+
+              </label>
+            `;
+
+          }
+        )
+        .join('');
+
+  }
+
+
+  function selectedCancelShiftIds_() {
+
+    return [
+      ...E.cancelTargetList.querySelectorAll(
+        '.cancel-target-check:checked'
+      )
+    ]
+      .map(
+        input =>
+          String(
+            input.value ||
+            ''
+          ).trim()
+      )
+      .filter(
+        Boolean
+      );
+
+  }
+
+
+  function selectedCancelTargetItems_() {
+
+    const ids =
+      new Set(
+        selectedCancelShiftIds_()
+      );
+
+
+    return (
+      S.cancelTargets ||
+      []
+    )
+      .filter(
+        item =>
+          ids.has(
+            String(
+              item.shiftId ||
+              ''
+            )
+          )
+      );
+
+  }
+
+
   async function saveRequest(
     event
   ) {
@@ -1519,6 +1897,218 @@
         '対象日を入力してください。',
         true
       );
+
+      return;
+
+    }
+
+
+    // ==================================================
+    // キャンセルは対象シフトを複数選択して登録
+    // ==================================================
+
+    if (
+      type ===
+      'キャンセル'
+    ) {
+
+      if (
+        !client.id
+      ) {
+
+        saveMsg(
+          '利用者を選択してください。',
+          true
+        );
+
+        return;
+
+      }
+
+
+      const shiftIds =
+        selectedCancelShiftIds_();
+
+
+      if (
+        !shiftIds.length
+      ) {
+
+        saveMsg(
+          'キャンセルする予定を1件以上選択してください。',
+          true
+        );
+
+        return;
+
+      }
+
+
+      const selectedItems =
+        selectedCancelTargetItems_();
+
+
+      const lines = [
+        '選択した予定をキャンセルしますか？',
+        '',
+        '利用者：' +
+          client.name,
+        '件数：' +
+          shiftIds.length
+      ];
+
+
+      selectedItems.forEach(
+        item => {
+
+          lines.push(
+            (
+              item.date ||
+              ''
+            ) +
+            ' ' +
+            range(
+              item.startTime,
+              item.endTime
+            ) +
+            ' ' +
+            (
+              item.service ||
+              ''
+            )
+          );
+
+        }
+      );
+
+
+      if (
+        E.reason.value.trim()
+      ) {
+
+        lines.push(
+          '',
+          '理由：' +
+          E.reason.value.trim()
+        );
+
+      }
+
+
+      const confirmed =
+        window.confirm(
+          lines.join(
+            '\n'
+          )
+        );
+
+
+      if (
+        !confirmed
+      ) {
+
+        saveMsg(
+          '登録をキャンセルしました。',
+          false,
+          3000
+        );
+
+        return;
+
+      }
+
+
+      E.save.disabled =
+        true;
+
+
+      saveMsg(
+        'キャンセルを登録しています...',
+        false
+      );
+
+
+      try {
+
+        const result =
+          await api({
+
+            action:
+              'request.cancel.multi',
+
+            shiftIds:
+              shiftIds,
+
+            reporterId:
+              S.employee.id,
+
+            reporterName:
+              S.employee.name,
+
+            reason:
+              E.reason.value.trim(),
+
+            note:
+              E.note.value.trim(),
+
+            registerMethod:
+              'WEB'
+
+          });
+
+
+        if (
+          !result?.ok
+        ) {
+
+          throw new Error(
+            result?.message ||
+            result?.error ||
+            'キャンセル登録に失敗しました。'
+          );
+
+        }
+
+
+        saveMsg(
+          result.message ||
+          (
+            shiftIds.length +
+            '件をキャンセルしました。'
+          ),
+          false
+        );
+
+
+        await loadRange();
+
+
+        setTimeout(
+          () =>
+            E.dialog.close(),
+          700
+        );
+
+      }
+      catch (err) {
+
+        saveMsg(
+          'キャンセル登録できませんでした。\n' +
+          (
+            err?.message ||
+            err
+          ),
+          true
+        );
+
+      }
+      finally {
+
+        E.save.disabled =
+          false;
+
+      }
+
 
       return;
 
@@ -2110,8 +2700,18 @@
       E.type.value;
 
 
+    // キャンセルは対象予定選択式。
+    // 手入力の対象シフトIDは使いません。
     E.targetField.hidden =
-      type === '追加';
+      (
+        type === '追加' ||
+        type === 'キャンセル'
+      );
+
+
+    E.cancelPicker.hidden =
+      type !==
+      'キャンセル';
 
 
     E.staffFields.hidden =
@@ -2137,6 +2737,9 @@
 
     E.saveMsg.hidden =
       true;
+
+
+    clearCancelTargets_();
 
 
     const rows =
