@@ -399,8 +399,8 @@
       () => {
 
         if (
-          E.type.value ===
-          'キャンセル'
+          E.type.value === 'キャンセル' ||
+          E.type.value === '依頼取消'
         ) {
 
           clearCancelTargets_();
@@ -1538,7 +1538,9 @@
 
 
     E.cancelTargetStatus.textContent =
-      '対象予定を取得しています...';
+      E.type.value === '依頼取消'
+        ? '取消可能な依頼を取得しています...'
+        : 'キャンセル可能な予定を取得しています...';
 
 
     E.cancelTargetList.innerHTML =
@@ -1547,11 +1549,21 @@
 
     try {
 
+      const type =
+        E.type.value;
+
+
+      const action =
+        type === '依頼取消'
+          ? 'request.withdraw.targets'
+          : 'request.cancel.targets';
+
+
       const result =
         await api({
 
           action:
-            'request.cancel.targets',
+            action,
 
           clientId:
             client.id,
@@ -1625,13 +1637,26 @@
       [];
 
 
+    const isWithdraw =
+      E.type.value ===
+      '依頼取消';
+
+
     E.cancelTargetStatus.textContent =
       items.length
         ? (
             items.length +
-            '件あります。キャンセルする予定を選択してください。'
+            (
+              isWithdraw
+                ? '件あります。取り消す依頼を選択してください。'
+                : '件あります。キャンセルする予定を選択してください。'
+            )
           )
-        : '対象となる予定はありません。';
+        : (
+            isWithdraw
+              ? '取消できる依頼はありません。'
+              : 'キャンセルできる予定はありません。'
+          );
 
 
     if (
@@ -1702,7 +1727,9 @@
                   type="checkbox"
                   class="cancel-target-check"
                   value="${esc(
-                    item.shiftId
+                    isWithdraw
+                      ? item.requestId
+                      : item.shiftId
                   )}"
                 >
 
@@ -1715,22 +1742,51 @@
                   </div>
 
                   <div class="cancel-target-title">
-                    ${esc(
-                      range(
-                        item.startTime,
-                        item.endTime
-                      )
-                    )}
-                   　
-                    ${esc(
-                      item.service ||
-                      'サービス未設定'
-                    )}
+                    ${
+                      isWithdraw
+                        ? esc(
+                            (
+                              item.requestType ||
+                              '依頼'
+                            ) +
+                            '　' +
+                            range(
+                              item.startTime,
+                              item.endTime
+                            )
+                          )
+                        : (
+                            esc(
+                              range(
+                                item.startTime,
+                                item.endTime
+                              )
+                            ) +
+                            '　' +
+                            esc(
+                              item.service ||
+                              'サービス未設定'
+                            )
+                          )
+                    }
                   </div>
 
                   <div class="cancel-target-sub">
                     ${esc(
-                      details
+                      isWithdraw
+                        ? [
+                            item.requestId,
+                            item.system,
+                            item.service,
+                            item.supportContent
+                          ]
+                            .filter(
+                              Boolean
+                            )
+                            .join(
+                              '　'
+                            )
+                        : details
                     )}
                   </div>
 
@@ -1746,7 +1802,7 @@
   }
 
 
-  function selectedCancelShiftIds_() {
+  function selectedTargetIds_() {
 
     return [
       ...E.cancelTargetList.querySelectorAll(
@@ -1767,12 +1823,17 @@
   }
 
 
-  function selectedCancelTargetItems_() {
+  function selectedTargetItems_() {
 
     const ids =
       new Set(
-        selectedCancelShiftIds_()
+        selectedTargetIds_()
       );
+
+
+    const isWithdraw =
+      E.type.value ===
+      '依頼取消';
 
 
     return (
@@ -1783,8 +1844,9 @@
         item =>
           ids.has(
             String(
-              item.shiftId ||
-              ''
+              isWithdraw
+                ? item.requestId
+                : item.shiftId
             )
           )
       );
@@ -1811,6 +1873,7 @@
     if (
       type !== '追加' &&
       type !== 'キャンセル' &&
+      type !== '依頼取消' &&
       !E.targetId.value.trim()
     ) {
 
@@ -1910,6 +1973,219 @@
 
 
     // ==================================================
+    // 依頼取消
+    // まだ実シフトへ反映されていない依頼だけを
+    // 複数選択して取り消します。
+    // ==================================================
+
+    if (
+      type ===
+      '依頼取消'
+    ) {
+
+      if (
+        !client.id
+      ) {
+
+        saveMsg(
+          '利用者を選択してください。',
+          true
+        );
+
+        return;
+
+      }
+
+
+      const requestIds =
+        selectedTargetIds_();
+
+
+      if (
+        !requestIds.length
+      ) {
+
+        saveMsg(
+          '取り消す依頼を1件以上選択してください。',
+          true
+        );
+
+        return;
+
+      }
+
+
+      const selectedItems =
+        selectedTargetItems_();
+
+
+      const lines = [
+        '選択した依頼を取り消しますか？',
+        '',
+        '利用者：' +
+          client.name,
+        '件数：' +
+          requestIds.length
+      ];
+
+
+      selectedItems.forEach(
+        item => {
+
+          lines.push(
+            (
+              item.date ||
+              ''
+            ) +
+            ' ' +
+            (
+              item.requestType ||
+              ''
+            ) +
+            ' ' +
+            range(
+              item.startTime,
+              item.endTime
+            ) +
+            ' ' +
+            (
+              item.service ||
+              ''
+            )
+          );
+
+        }
+      );
+
+
+      if (
+        E.reason.value.trim()
+      ) {
+
+        lines.push(
+          '',
+          '取消理由：' +
+          E.reason.value.trim()
+        );
+
+      }
+
+
+      const confirmed =
+        window.confirm(
+          lines.join(
+            '\n'
+          )
+        );
+
+
+      if (
+        !confirmed
+      ) {
+
+        saveMsg(
+          '依頼取消をキャンセルしました。',
+          false,
+          3000
+        );
+
+        return;
+
+      }
+
+
+      E.save.disabled =
+        true;
+
+
+      saveMsg(
+        '依頼を取り消しています...',
+        false
+      );
+
+
+      try {
+
+        const result =
+          await api({
+
+            action:
+              'request.withdraw.multi',
+
+            requestIds:
+              requestIds,
+
+            cancelerId:
+              S.employee.id,
+
+            cancelerName:
+              S.employee.name,
+
+            reason:
+              E.reason.value.trim()
+
+          });
+
+
+        if (
+          !result?.ok
+        ) {
+
+          throw new Error(
+            result?.message ||
+            result?.error ||
+            '依頼取消に失敗しました。'
+          );
+
+        }
+
+
+        saveMsg(
+          result.message ||
+          (
+            requestIds.length +
+            '件の依頼を取り消しました。'
+          ),
+          false
+        );
+
+
+        await loadRange();
+
+
+        setTimeout(
+          () =>
+            E.dialog.close(),
+          700
+        );
+
+      }
+      catch (err) {
+
+        saveMsg(
+          '依頼を取り消せませんでした。\n' +
+          (
+            err?.message ||
+            err
+          ),
+          true
+        );
+
+      }
+      finally {
+
+        E.save.disabled =
+          false;
+
+      }
+
+
+      return;
+
+    }
+
+
+    // ==================================================
     // キャンセルは対象シフトを複数選択して登録
     // ==================================================
 
@@ -1933,7 +2209,7 @@
 
 
       const shiftIds =
-        selectedCancelShiftIds_();
+        selectedTargetIds_();
 
 
       if (
@@ -1951,7 +2227,7 @@
 
 
       const selectedItems =
-        selectedCancelTargetItems_();
+        selectedTargetItems_();
 
 
       const lines = [
@@ -2711,13 +2987,22 @@
     E.targetField.hidden =
       (
         type === '追加' ||
-        type === 'キャンセル'
+        type === 'キャンセル' ||
+        type === '依頼取消'
       );
 
 
     E.cancelPicker.hidden =
-      type !==
-      'キャンセル';
+      !(
+        type === 'キャンセル' ||
+        type === '依頼取消'
+      );
+
+
+    E.loadCancelTargets.textContent =
+      type === '依頼取消'
+        ? '取消可能な依頼を表示'
+        : 'キャンセル可能な予定を表示';
 
 
     E.staffFields.hidden =
@@ -2994,6 +3279,16 @@
     if (
       type ===
       'キャンセル'
+    ) {
+
+      return 'cancel';
+
+    }
+
+
+    if (
+      type ===
+      '依頼取消'
     ) {
 
       return 'cancel';
