@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>依頼情報</title>
-  <link rel="stylesheet" href="./css/request-view.css?v=20260829-7">
+  <link rel="stylesheet" href="./css/request-view.css?v=20260829-9">
 </head>
 
 <body>
@@ -873,8 +873,54 @@
 
 </dialog>
 
-<script src="./js/request-view-config.js?v=20260829-8"></script>
-<script src="./js/request-view.js?v=20260829-8"></script>
+
+<!-- ==================================================
+     詳細・履歴
+================================================== -->
+<dialog
+  id="historyDialog"
+  class="request-dialog history-dialog"
+>
+
+  <div class="request-form">
+
+    <div class="form-head">
+
+      <strong>
+        詳細・履歴
+      </strong>
+
+      <button
+        type="button"
+        id="closeHistoryDialog"
+        class="close-btn"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="form-body">
+
+      <div
+        id="historySummary"
+        class="history-summary"
+      ></div>
+
+      <div
+        id="historyList"
+        class="history-list"
+      ></div>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+
+<script src="./js/request-view-config.js?v=20260829-9"></script>
+<script src="./js/request-view.js?v=20260829-9"></script>
 
 </body>
 </html>
