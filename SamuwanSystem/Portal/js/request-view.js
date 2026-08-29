@@ -1,6 +1,40 @@
 (() => {
   'use strict';
 
+  function debugStep_(message, kind) {
+    try {
+      const box = document.getElementById('debugStatusBox');
+      const text = document.getElementById('debugStatusText');
+      if (text) text.textContent = message;
+      if (box) {
+        box.classList.remove('ok','error');
+        if (kind) box.classList.add(kind);
+      }
+      console.log('[request-view]', message);
+    } catch (err) {
+      console.log('[request-view debug error]', err);
+    }
+  }
+
+  window.addEventListener('error', event => {
+    debugStep_(
+      'JavaScriptエラー: ' + (event.message || '不明') +
+      (event.lineno ? ' / line ' + event.lineno : ''),
+      'error'
+    );
+  });
+
+  window.addEventListener('unhandledrejection', event => {
+    const reason = event.reason;
+    debugStep_(
+      'Promiseエラー: ' + ((reason && reason.message) || reason || '不明'),
+      'error'
+    );
+  });
+
+  debugStep_('0. JavaScript読込完了', 'ok');
+
+
 
   // ==================================================
   // 状態
@@ -639,6 +673,8 @@
 
   async function start() {
 
+    debugStep_('1. start() 開始');
+
     try {
 
       await loadMasters();
@@ -736,6 +772,8 @@
   // ==================================================
 
   async function loadMasters() {
+
+    debugStep_('2. マスタ取得開始');
 
     const result =
       await api({
@@ -924,6 +962,8 @@
       );
 
 
+    debugStep_('4. request.range 開始');
+
     const result =
       await api({
 
@@ -956,6 +996,9 @@
       result;
 
 
+    debugStep_('5. request.range 応答受信', 'ok');
+
+
     // ==================================================
     // まず依頼一覧を表示する
     //
@@ -984,7 +1027,13 @@
       );
 
 
+    debugStep_('6. 一覧 render() 実行前');
+
+
     render();
+
+
+    debugStep_('7. 一覧 render() 完了', 'ok');
 
 
     // ==================================================
@@ -996,6 +1045,8 @@
     // ==================================================
 
     try {
+
+      debugStep_('8. 操作ボタン判定開始');
 
       await Promise.race([
 
@@ -1022,12 +1073,21 @@
 
       render();
 
+
+      debugStep_('9. 操作ボタン判定完了', 'ok');
+
     }
     catch (actionErr) {
 
       console.warn(
         '一覧操作判定を取得できませんでした。',
         actionErr
+      );
+
+      debugStep_(
+        '9. 操作ボタン判定失敗: ' +
+        ((actionErr && actionErr.message) || actionErr),
+        'error'
       );
 
 
