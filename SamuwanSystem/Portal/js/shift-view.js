@@ -207,7 +207,47 @@
 
     if (item.destination) rows.push(['行先',item.destination]);
     if (item.meetingPlace) rows.push(['待合せ',item.meetingPlace]);
-    if (item.people) rows.push(['人数',item.people]);
+
+    // 人数は通常は表示しない。
+    // 空白は1人として扱い、担当枠との不一致時だけ注意表示する。
+    const storedPeopleRaw =
+      String(
+        item.people ??
+        ''
+      ).trim();
+
+
+    const storedPeople =
+      storedPeopleRaw
+        ? Number(
+            storedPeopleRaw
+          ) || 1
+        : 1;
+
+
+    let expectedPeople =
+      1;
+
+
+    if (
+      item.staff3Name
+    ) {
+      expectedPeople = 3;
+    }
+    else if (
+      item.staff2Name
+    ) {
+      expectedPeople = 2;
+    }
+    else {
+      expectedPeople = 1;
+    }
+
+
+    const peopleMismatch =
+      storedPeople !==
+      expectedPeople;
+
 
     const meta = rows.map(r => `
       <div class="meta-row">
@@ -236,6 +276,19 @@
         </div>
 
         ${meta ? `<div class="shift-meta">${meta}</div>` : ''}
+
+        ${
+          peopleMismatch
+            ? `
+              <div class="people-mismatch">
+                人数 ${esc(storedPeople)}
+                <small>
+                  担当状況では ${esc(expectedPeople)}人
+                </small>
+              </div>
+            `
+            : ''
+        }
 
         ${!item.isActual ? `
           <div class="expected-note">
