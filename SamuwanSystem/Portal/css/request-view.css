@@ -668,3 +668,88 @@ textarea{
 .cancel-target-card.is-cancelled .cancel-target-title{
   text-decoration:line-through;
 }
+
+
+/* ==================================================
+   一覧カード操作
+================================================== */
+
+.card-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px solid #edf0f2;
+}
+
+.card-action-btn{
+  min-height:36px;
+  padding:7px 11px;
+  border:1px solid #cfd6dc;
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.card-action-btn:disabled{
+  opacity:.55;
+  cursor:default;
+}
+
+
+/* ==================================================
+   担当変更 - 現在値
+================================================== */
+
+.staff-current-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:14px;
+}
+
+.staff-current-cell{
+  min-width:0;
+  padding:9px 7px;
+  border:1px solid #d8dee4;
+  border-radius:9px;
+  background:#f7f8f9;
+}
+
+.staff-current-cell span{
+  display:block;
+  margin-bottom:4px;
+  font-size:11px;
+  white-space:nowrap;
+}
+
+.staff-current-cell b{
+  display:block;
+  min-height:1.5em;
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+
+.staff-change-current-line{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:2px 0 12px;
+  padding:9px 10px;
+  border-radius:8px;
+  background:#f7f8f9;
+}
+
+.staff-change-current-line span{
+  flex:0 0 auto;
+  font-size:12px;
+}
+
+.staff-change-current-line b{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
