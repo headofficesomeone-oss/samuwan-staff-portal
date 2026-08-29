@@ -261,9 +261,9 @@
       const d = addDays(start,i);
       const cls = [
         'day-btn',
-        i === S.selectedDay ? 'selected' : '',
-        i === 5 ? 'sat' : '',
-        i === 6 ? 'sun' : ''
+        i === S.selectedDay ? 'active' : '',
+        i === 5 ? 'saturday' : '',
+        i === 6 ? 'sunday' : ''
       ].filter(Boolean).join(' ');
 
       return `
@@ -357,31 +357,31 @@
 
     const meta = rows.map(r => `
       <div class="meta-row">
-        <span class="meta-label">${esc(r[0])}</span>
-        <span class="meta-value">${esc(r[1])}</span>
+        <span class="label">${esc(r[0])}</span>
+        <span class="value">${esc(r[1])}</span>
       </div>
     `).join('');
 
     const cls = [
-      'shift-card',
-      item.isActual ? '' : 'expected',
-      ['キャンセル','無効','変更前'].includes(item.state) ? 'cancelled' : ''
+      'card',
+      item.isActual ? '' : 'shift-expected',
+      ['キャンセル','無効','変更前'].includes(item.state) ? 'shift-cancelled' : ''
     ].filter(Boolean).join(' ');
 
     return `
       <article class="${cls}">
-        <div class="shift-top">
-          <div class="shift-time">${esc(item.startTime || '')}${item.endTime ? '–' + esc(item.endTime) : ''}</div>
-          <div class="shift-name">${esc(item.clientName || '')}</div>
-          <div class="shift-state">${esc(item.state || (item.isActual ? '予定' : '予定候補'))}</div>
+        <div class="top">
+          <div class="time">${esc(item.startTime || '')}${item.endTime ? '–' + esc(item.endTime) : ''}</div>
+          <div class="name">${esc(item.clientName || '')}</div>
+          <div class="badge shift-plan-badge">${esc(item.state || (item.isActual ? '予定' : '予定候補'))}</div>
         </div>
 
-        <div class="shift-service">
+        <div class="service">
           <b>${esc(item.service || '')}</b>
           ${item.supportContent ? '　' + esc(item.supportContent) : ''}
         </div>
 
-        ${meta ? `<div class="shift-meta">${meta}</div>` : ''}
+        ${meta ? `<div class="meta">${meta}</div>` : ''}
 
         ${
           peopleMismatch
@@ -415,10 +415,10 @@
             item.state
           )
             ? `
-              <div class="shift-actions">
+              <div class="card-actions">
                 <button
                   type="button"
-                  class="shift-action-btn"
+                  class="card-action-btn"
                   data-action="staffchange"
                   data-shift-id="${esc(item.shiftId)}"
                 >
@@ -427,7 +427,7 @@
 
                 <button
                   type="button"
-                  class="shift-action-btn"
+                  class="card-action-btn"
                   data-action="cancel"
                   data-shift-id="${esc(item.shiftId)}"
                 >
