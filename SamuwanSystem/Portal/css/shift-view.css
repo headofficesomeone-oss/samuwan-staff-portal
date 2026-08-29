@@ -1,358 +1,959 @@
+:root{
+  --bg:#f4f6f8;
+  --card:#fff;
+  --line:#dfe5ea;
+  --text:#1f2933;
+  --sub:#66727f;
+  --accent:#2463a8;
+  --accent-soft:#eaf2fb;
+  --today-border:#a61e6e;
+  --sat:#1565c0;
+  --sun:#d32f2f;
+  --cancel:#c62828;
+  --change:#ad5700;
+  --staff:#6a1b9a;
+}
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
+
+html,
 body{
   margin:0;
-  background:#f4f6f8;
-  color:#102033;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;
 }
-button,a{font:inherit}
-.page{
+
+button,
+input,
+select,
+textarea{
+  font:inherit;
+}
+
+.app{
   max-width:560px;
+  margin:auto;
   min-height:100vh;
-  margin:0 auto;
-  padding:10px 12px 36px;
+}
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:20;
   background:#fff;
+  border-bottom:1px solid var(--line);
 }
-.page-head{
+
+.title-row{
   display:flex;
-  align-items:flex-start;
   justify-content:space-between;
-  gap:12px;
+  gap:8px;
+  padding:12px 10px 8px;
 }
-h1{margin:0;font-size:21px}
-.week-label{margin-top:3px;color:#607080;font-size:14px}
-.request-link{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:42px;
-  padding:0 15px;
-  border-radius:12px;
-  background:#286bb2;
-  color:#fff;
-  text-decoration:none;
+
+.title{
+  font-size:21px;
   font-weight:800;
 }
-.week-state-row{
+
+.sub{
+  font-size:12px;
+  color:var(--sub);
+}
+
+
+/* ==================================================
+   右上
+================================================== */
+
+.header-actions{
   display:flex;
   align-items:center;
-  gap:8px;
-  margin:8px 0 8px;
+  gap:5px;
 }
-.week-state,.week-source{
-  display:inline-flex;
-  padding:5px 9px;
-  border-radius:999px;
-  background:#edf3f9;
-  font-size:12px;
+
+.register-btn{
+  height:42px;
+  border:0;
+  border-radius:9px;
+  padding:0 10px;
+  background:var(--accent);
+  color:#fff;
+  font-size:11px;
   font-weight:800;
 }
-.week-source{background:#f5f5f5;color:#667}
-.day-nav{
-  display:grid;
-  grid-template-columns:42px 1fr 42px;
-  gap:6px;
-  align-items:stretch;
+
+.register-btn:disabled{
+  background:#c7ccd2;
+  color:#fff;
+  cursor:not-allowed;
+  opacity:.8;
 }
+
+.scope-toggle{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  height:42px;
+  padding:2px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#eef1f4;
+}
+
+.scope-btn{
+  height:36px;
+  border:0;
+  border-radius:8px;
+  padding:0 8px;
+  background:transparent;
+  font-size:11px;
+  font-weight:800;
+}
+
+.scope-btn.active{
+  background:#fff;
+  color:var(--accent);
+}
+
+
+/* ==================================================
+   前週 / 曜日 / 翌週
+================================================== */
+
+.week-nav-row{
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr) 32px;
+  gap:4px;
+  align-items:stretch;
+  padding:0 6px 9px;
+}
+
+.week-nav-row .days{
+  padding:0;
+}
+
+.week-nav-btn{
+  border:0;
+  border-radius:10px;
+  background:#eef1f4;
+  color:#46515d;
+  font-size:24px;
+  font-weight:700;
+  padding:0;
+}
+
+.week-nav-btn:disabled{
+  opacity:.25;
+}
+
 .days{
   display:grid;
   grid-template-columns:repeat(7,1fr);
-  gap:5px;
+  gap:4px;
+  padding:0 8px 9px;
 }
-.arrow-btn,.day-btn{
-  border:0;
-  border-radius:12px;
-  background:#eef1f4;
-  min-height:48px;
-  font-weight:800;
-  cursor:pointer;
-}
-.arrow-btn{font-size:24px}
-.arrow-btn:disabled{opacity:.28;cursor:default}
+
 .day-btn{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:2px;
-}
-.day-btn.selected{background:#dbeeff}
-.day-btn .dow{font-size:14px}
-.day-btn .date{font-size:11px}
-.day-btn.sat .dow,.day-btn.sat .date{color:#1769aa}
-.day-btn.sun .dow,.day-btn.sun .date{color:#cf2727}
-.day-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin:14px 4px 8px;
-}
-.day-head h2{margin:0;font-size:20px}
-.count{
-  padding:5px 9px;
-  border-radius:999px;
-  background:#edf5ff;
-  color:#1764ad;
-  font-weight:800;
-}
-.message{
-  padding:28px 8px;
-  text-align:center;
-  color:#788594;
-}
-.message:empty{display:none}
-.shift-list{display:grid;gap:11px}
-.shift-card{
-  padding:14px 15px;
-  border:1px solid #d9e1e8;
-  border-radius:16px;
-  background:#fff;
-}
-.shift-card.expected{border-style:dashed}
-.shift-card.cancelled{opacity:.6}
-.shift-top{
-  display:grid;
-  grid-template-columns:auto 1fr auto;
-  gap:12px;
-  align-items:center;
-}
-.shift-time{font-size:17px;font-weight:900}
-.shift-name{font-size:17px;font-weight:900}
-.shift-state{
-  padding:4px 8px;
-  border-radius:999px;
-  background:#eef4fa;
+  min-height:48px;
+  border:0;
+  border-radius:10px;
+  background:#eef1f4;
   font-size:12px;
   font-weight:800;
 }
-.shift-service{
-  margin-top:6px;
-  padding-bottom:8px;
-  border-bottom:1px solid #edf0f2;
-  font-size:15px;
+
+.day-btn .date{
+  display:block;
+  font-size:9px;
 }
-.shift-meta{
+
+.day-btn.active{
+  background:#dff1ff;
+}
+
+.day-btn.today{
+  border:2px solid var(--today-border);
+}
+
+.day-btn.saturday{
+  color:var(--sat);
+}
+
+.day-btn.sunday,
+.day-btn.holiday{
+  color:var(--sun);
+}
+
+
+/* 過去日 */
+.day-btn.past{
+  color:#9aa3ad;
+}
+
+.day-btn.past .date{
+  color:#9aa3ad;
+}
+
+
+/* ==================================================
+   一覧
+================================================== */
+
+.content{
+  padding:10px;
+}
+
+.day-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:2px 2px 9px;
+}
+
+.count{
+  border-radius:999px;
+  padding:5px 9px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+}
+
+.message{
+  padding:18px 10px;
+  text-align:center;
+  color:#7a8793;
+  font-size:13px;
+  white-space:pre-line;
+}
+
+.message[hidden]{
+  display:none;
+}
+
+.list{
+  display:grid;
+  gap:9px;
+}
+
+.card{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:11px 12px;
+  background:#fff;
+}
+
+
+/* 過去カード */
+.card.past{
+  color:#8f99a4;
+  background:#f7f8f9;
+}
+
+.card.past .name,
+.card.past .time,
+.card.past .service,
+.card.past .report b,
+.card.past .value{
+  color:#8f99a4;
+}
+
+.card.past .label,
+.card.past .report{
+  color:#a8b0b8;
+}
+
+
+/* ==================================================
+   カード1行目
+================================================== */
+
+.top{
+  display:grid;
+  grid-template-columns:118px minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+
+.time{
+  white-space:nowrap;
+  font-size:17px;
+  font-weight:800;
+  letter-spacing:-0.2px;
+}
+
+.name{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:18px;
+  font-weight:800;
+}
+
+.badge{
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:11px;
+  font-weight:800;
+}
+
+.badge.add{
+  color:var(--accent);
+  background:#eaf2fb;
+}
+
+.badge.cancel{
+  color:var(--cancel);
+  background:#fdecec;
+}
+
+.badge.change{
+  color:var(--change);
+  background:#fff1e5;
+}
+
+.badge.staff{
+  color:var(--staff);
+  background:#f3e8fa;
+}
+
+.service{
+  margin-top:6px;
+  font-size:14px;
+}
+
+.service b{
+  margin-right:8px;
+}
+
+.report{
+  display:flex;
+  gap:7px;
+  margin-top:6px;
+  font-size:12px;
+  color:var(--sub);
+}
+
+.report b{
+  color:var(--text);
+}
+
+.meta{
   display:grid;
   gap:5px;
-  margin-top:9px;
+  margin-top:7px;
+  padding-top:7px;
+  border-top:1px solid #edf0f2;
+  font-size:12px;
+}
+
+.meta-row{
+  display:flex;
+  gap:7px;
+}
+
+.label{
+  color:#73808c;
+}
+
+.value{
+  font-weight:700;
+}
+
+.memo{
+  margin-top:6px;
+  border-radius:8px;
+  padding:6px 8px;
+  background:#f7f9fa;
+  font-size:12px;
+}
+
+.empty{
+  padding:24px 12px;
+  text-align:center;
+  color:#7a8793;
+  background:#fff;
+  border:1px dashed #cfd7df;
+  border-radius:14px;
+}
+
+
+/* ==================================================
+   登録フォーム
+================================================== */
+
+.request-dialog{
+  width:min(94vw,520px);
+  max-height:90vh;
+  border:0;
+  border-radius:16px;
+  padding:0;
+}
+
+.request-dialog::backdrop{
+  background:rgba(0,0,0,.45);
+}
+
+.request-form{
+  display:flex;
+  flex-direction:column;
+  max-height:90vh;
+}
+
+.form-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px;
+  border-bottom:1px solid var(--line);
+}
+
+.close-btn{
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:#eef1f4;
+  font-size:22px;
+}
+
+.form-body{
+  overflow:auto;
+  padding:12px 14px;
+  display:grid;
+  gap:10px;
+}
+
+.field{
+  display:grid;
+  gap:5px;
+}
+
+.field>span{
+  font-size:12px;
+  font-weight:700;
+  color:#596674;
+}
+
+.field input,
+.field select,
+.field textarea{
+  width:100%;
+  min-height:44px;
+  border:1px solid #cfd7df;
+  border-radius:9px;
+  padding:9px 10px;
+  background:#fff;
+  font-size:16px;
+}
+
+.two-col{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.request-date-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 40px;
+  gap:6px;
+  margin-top:5px;
+}
+
+.request-date-row:first-child{
+  grid-template-columns:1fr;
+}
+
+.date-add-btn{
+  min-height:40px;
+  border:0;
+  border-radius:9px;
+  background:#eef1f4;
+  color:#46515d;
+  font-weight:700;
+}
+
+.date-remove-btn{
+  border:0;
+  border-radius:9px;
+  background:#eef1f4;
+  font-weight:800;
+}
+
+.form-actions{
+  display:flex;
+  gap:8px;
+  padding:10px 14px 14px;
+  border-top:1px solid var(--line);
+}
+
+.form-actions button{
+  flex:1;
+  min-height:44px;
+  border:0;
+  border-radius:10px;
+  font-weight:800;
+}
+
+.secondary-btn{
+  background:#eef1f4;
+}
+
+.primary-btn{
+  background:var(--accent);
+  color:#fff;
+}
+
+.save-message{
+  padding:9px 10px;
+  background:#f7f9fa;
+  border-radius:9px;
+  white-space:pre-line;
   font-size:13px;
 }
-.meta-row{display:flex;gap:8px;align-items:baseline}
-.meta-label{min-width:72px;color:#718090}
-.meta-value{font-weight:800}
-.expected-note{
+
+
+@media(max-width:390px){
+
+  .top{
+    grid-template-columns:112px minmax(0,1fr) auto;
+  }
+
+  .time{
+    font-size:16px;
+  }
+
+  .name{
+    font-size:16px;
+  }
+
+  .register-btn{
+    padding:0 8px;
+  }
+
+  .scope-btn{
+    padding:0 6px;
+  }
+
+}
+
+
+/* ==================================================
+   人数 / 担当 / ドライバー
+   3列 × 2段
+================================================== */
+
+.staff-driver-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.staff-driver-grid .field{
+  min-width:0;
+}
+
+.staff-driver-grid .field>span{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.staff-driver-grid select{
+  width:100%;
+  min-width:0;
+  padding-left:6px;
+  padding-right:6px;
+  font-size:14px;
+}
+
+@media(max-width:390px){
+
+  .staff-driver-grid{
+    gap:6px;
+  }
+
+  .staff-driver-grid .field>span{
+    font-size:11px;
+  }
+
+  .staff-driver-grid select{
+    font-size:13px;
+    padding-left:4px;
+    padding-right:4px;
+  }
+
+}
+
+
+/* ==================================================
+   キャンセル対象予定
+================================================== */
+
+.cancel-target-picker{
+  margin-top:-2px;
+  margin-bottom:12px;
+}
+
+.cancel-target-load-btn{
+  width:100%;
+  min-height:42px;
+  border:1px solid #cfd6dc;
+  border-radius:9px;
+  background:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.cancel-target-status{
+  margin-top:8px;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.cancel-target-list{
+  display:grid;
+  gap:8px;
+  margin-top:8px;
+}
+
+.cancel-target-card{
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:8px;
+  align-items:start;
+  padding:10px;
+  border:1px solid #d7dde3;
+  border-radius:10px;
+  background:#fff;
+}
+
+.cancel-target-card input[type="checkbox"]{
+  width:20px;
+  height:20px;
+  margin-top:2px;
+}
+
+.cancel-target-main{
+  min-width:0;
+}
+
+.cancel-target-date{
+  font-size:12px;
+  font-weight:700;
+}
+
+.cancel-target-title{
+  margin-top:2px;
+  font-size:14px;
+  font-weight:700;
+}
+
+.cancel-target-sub{
+  margin-top:3px;
+  font-size:12px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+
+.cancel-target-card.is-cancelled{
+  opacity:.55;
+}
+
+.cancel-target-card.is-cancelled .cancel-target-title{
+  text-decoration:line-through;
+}
+
+
+/* ==================================================
+   一覧カード操作
+================================================== */
+
+.card-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:7px;
   margin-top:10px;
-  padding:7px 9px;
+  padding-top:9px;
+  border-top:1px solid #edf0f2;
+}
+
+.card-action-btn{
+  min-height:36px;
+  padding:7px 11px;
+  border:1px solid #cfd6dc;
+  border-radius:8px;
+  background:#fff;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.card-action-btn:disabled{
+  opacity:.55;
+  cursor:default;
+}
+
+
+/* ==================================================
+   担当変更 - 現在値
+================================================== */
+
+.staff-current-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:14px;
+}
+
+.staff-current-cell{
+  min-width:0;
+  padding:9px 7px;
+  border:1px solid #d8dee4;
+  border-radius:9px;
+  background:#f7f8f9;
+}
+
+.staff-current-cell span{
+  display:block;
+  margin-bottom:4px;
+  font-size:11px;
+  white-space:nowrap;
+}
+
+.staff-current-cell b{
+  display:block;
+  min-height:1.5em;
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+
+.staff-change-current-line{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:2px 0 12px;
+  padding:9px 10px;
+  border-radius:8px;
+  background:#f7f8f9;
+}
+
+.staff-change-current-line span{
+  flex:0 0 auto;
+  font-size:12px;
+}
+
+.staff-change-current-line b{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+
+/* ==================================================
+   詳細・履歴
+================================================== */
+
+.history-dialog{
+  max-width:640px;
+}
+
+.history-summary{
+  margin-bottom:12px;
+  padding:10px 12px;
+  border-radius:9px;
+  background:#f5f7f9;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.history-list{
+  display:grid;
+  gap:10px;
+}
+
+.history-item{
+  padding:11px 12px;
+  border:1px solid #dce2e7;
+  border-radius:10px;
+  background:#fff;
+}
+
+.history-item-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:6px;
+}
+
+.history-item-type{
+  font-weight:800;
+  font-size:13px;
+}
+
+.history-item-id{
+  font-size:11px;
+  opacity:.7;
+}
+
+.history-item-main{
+  font-size:13px;
+  font-weight:700;
+}
+
+.history-item-sub{
+  margin-top:4px;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.history-item-reason{
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.card-action-btn.detail{
+  font-weight:600;
+}
+
+
+/* 人数変更注意 */
+.people-change-note{
+  margin-top:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#f7f8f9;
+  font-size:12px;
+  line-height:1.5;
+}
+
+
+/* ==================================================
+   一覧カード - 変更情報
+================================================== */
+
+.change-info-box{
+  display:grid;
+  gap:6px;
+  margin-top:9px;
+  padding:9px 10px;
+  border:1px solid #ead8aa;
+  border-radius:9px;
+  background:#fff8e8;
+  font-size:12px;
+}
+
+.change-info-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:7px;
+}
+
+.change-info-label{
+  color:#6f6245;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.change-info-value{
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+
+
+
+/* ==================================================
+   シフト一覧固有
+   request-view.css を基準に、必要な差分だけ追加
+================================================== */
+
+.shift-request-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+}
+
+.shift-week-info{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:0 10px 7px;
+}
+
+.shift-week-state,
+.shift-week-source{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#eef1f4;
+  color:#596674;
+  font-size:11px;
+  font-weight:700;
+}
+
+.shift-week-state{
+  background:var(--accent-soft);
+  color:var(--accent);
+}
+
+.shift-plan-badge{
+  color:var(--text);
+  background:#eef1f4;
+}
+
+.shift-expected{
+  border-style:dashed;
+}
+
+.shift-cancelled{
+  opacity:.55;
+}
+
+.expected-note{
+  margin-top:8px;
+  padding:6px 8px;
   border-radius:8px;
   background:#fff8e8;
   color:#756029;
   font-size:12px;
 }
-.warning{
-  margin:10px 0;
-  padding:9px 11px;
-  border-radius:9px;
-  background:#fff3f3;
-  color:#9b3333;
-  font-size:13px;
-}
-@media(max-width:560px){
-  .page{padding-left:8px;padding-right:8px}
-  .day-nav{grid-template-columns:38px 1fr 38px;gap:4px}
-  .days{gap:3px}
-  .arrow-btn,.day-btn{min-height:56px}
-  .shift-top{grid-template-columns:auto 1fr}
-  .shift-state{grid-column:2;justify-self:end}
-}
 
-
-/* 人数は通常非表示。担当状況と不一致の時だけ注意表示 */
 .people-mismatch{
   display:inline-flex;
   align-items:center;
-  gap:6px;
-  margin-top:8px;
-  padding:6px 8px;
+  gap:5px;
+  margin-top:7px;
+  padding:5px 8px;
+  border:1px solid #f0d2a3;
   border-radius:8px;
   background:#fff4e5;
-  border:1px solid #f0d2a3;
   font-size:12px;
   font-weight:800;
 }
+
 .people-mismatch small{
-  font-weight:600;
   color:#785f3a;
+  font-weight:600;
 }
 
-
-/* ==================================================
-   シフト操作
-================================================== */
-
-.shift-actions{
-  display:flex;
-  justify-content:flex-end;
-  gap:7px;
-  margin-top:10px;
-  padding-top:10px;
-  border-top:1px solid #edf0f2;
-}
-
-.shift-action-btn{
-  min-height:36px;
-  padding:0 12px;
-  border:1px solid #cfd9e3;
-  border-radius:9px;
-  background:#fff;
-  font-weight:800;
-  cursor:pointer;
-}
-
-.shift-action-btn:hover{
-  background:#f6f8fa;
-}
-
-
-/* ==================================================
-   ダイアログ
-================================================== */
-
-.shift-dialog{
-  width:min(94vw,560px);
-  padding:0;
-  border:0;
-  border-radius:16px;
-  box-shadow:0 14px 45px rgba(0,0,0,.22);
-}
-
-.shift-dialog::backdrop{
-  background:rgba(0,0,0,.42);
-}
-
-.dialog-card{
-  margin:0;
-}
-
-.dialog-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:14px 16px;
-  border-bottom:1px solid #e6eaee;
-  font-size:18px;
-}
-
-.dialog-close{
-  width:42px;
-  height:42px;
-  border:0;
-  border-radius:50%;
-  background:#f0f3f6;
-  font-size:24px;
-  cursor:pointer;
-}
-
-.dialog-body{
-  display:grid;
-  gap:13px;
-  padding:14px 16px 16px;
-}
-
-.dialog-summary{
-  padding:10px 12px;
-  border-radius:9px;
-  background:#f5f7f9;
-  font-size:13px;
-  font-weight:700;
-  line-height:1.55;
-}
-
-.current-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:7px;
-}
-
-.current-box{
-  min-height:70px;
-  padding:8px 9px;
-  border:1px solid #d8e0e7;
-  border-radius:10px;
-  background:#fafbfc;
-}
-
-.current-box span{
-  display:block;
-  margin-bottom:5px;
-  color:#5e6a75;
-  font-size:11px;
-}
-
-.current-box b{
-  font-size:13px;
-}
-
-.field{
-  display:grid;
-  gap:6px;
-}
-
-.field > span{
-  color:#65727e;
-  font-size:12px;
-  font-weight:800;
-}
-
-.field select,
-.field textarea{
-  width:100%;
-  padding:10px 11px;
-  border:1px solid #ccd6df;
-  border-radius:9px;
-  background:#fff;
-  font:inherit;
-}
-
-.before-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
+.warning{
+  margin:0 0 9px;
   padding:9px 10px;
-  border-radius:8px;
-  background:#f5f6f7;
-  font-size:13px;
-}
-
-.before-row span{
-  color:#66727d;
-}
-
-.dialog-actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:9px;
-  padding-top:2px;
-}
-
-.sub-btn,
-.primary-btn,
-.danger-btn{
-  min-height:44px;
-  border:0;
-  border-radius:10px;
-  font-weight:900;
-  cursor:pointer;
-}
-
-.sub-btn{
-  background:#eef0f2;
-}
-
-.primary-btn{
-  background:#286bb2;
-  color:#fff;
+  border-radius:9px;
+  background:#fff3f3;
+  color:#9b3333;
+  font-size:12px;
 }
 
 .danger-btn{
@@ -360,8 +961,33 @@ h1{margin:0;font-size:21px}
   color:#fff;
 }
 
-@media(max-width:440px){
-  .current-grid{
-    grid-template-columns:repeat(2,1fr);
+/* request-view と同じ「ラベル→値」の間隔を明示 */
+.meta-row .label{
+  flex:0 0 auto;
+  min-width:0;
+}
+
+.meta-row .value{
+  min-width:0;
+}
+
+/* シフト一覧では報告者行がないため、そのぶん自然な余白に */
+.service + .meta{
+  margin-top:7px;
+}
+
+/* 担当変更ダイアログの概要 */
+.dialog-summary{
+  padding:9px 10px;
+  border-radius:9px;
+  background:#f7f9fa;
+  font-size:13px;
+  line-height:1.5;
+}
+
+@media(max-width:390px){
+  .shift-week-info{
+    padding-left:8px;
+    padding-right:8px;
   }
 }
