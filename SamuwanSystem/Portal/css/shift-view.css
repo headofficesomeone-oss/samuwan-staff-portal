@@ -991,3 +991,37 @@ textarea{
     padding-right:8px;
   }
 }
+
+
+/* ==================================================
+   選択中曜日 + 件数
+   曜日ナビのグループ内にまとめる
+================================================== */
+
+.selected-day-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:0 8px 8px;
+}
+
+.selected-day-title{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:16px;
+  font-weight:700;
+  line-height:1.25;
+  letter-spacing:0;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* もともとの content 上部余白を少し詰める */
+.content{
+  padding-top:6px;
+}
+
+/* 旧 day-head は shift-view では使わない */
+.day-head{
+  display:none;
+}
