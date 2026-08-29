@@ -49,7 +49,10 @@
     actionMap: {},
 
     staffChangeShift:
-      null
+      null,
+
+    latestItems:
+      []
 
   };
 
@@ -265,7 +268,20 @@
       $('staffChangeReason'),
 
     saveStaffChange:
-      $('saveStaffChange')
+      $('saveStaffChange'),
+
+
+    historyDialog:
+      $('historyDialog'),
+
+    closeHistoryDialog:
+      $('closeHistoryDialog'),
+
+    historySummary:
+      $('historySummary'),
+
+    historyList:
+      $('historyList')
 
   };
 
@@ -537,12 +553,28 @@
           );
 
         }
+        else if (
+          action === 'detail'
+        ) {
+
+          openHistoryFromList_(
+            requestId
+          );
+
+        }
 
       }
     );
 
 
-    E.closeStaffChangeDialog.addEventListener(
+    E.closeHistoryDialog.addEventListener(
+      'click',
+      () =>
+        E.historyDialog.close()
+    );
+
+
+    E.closeStaffChangeDialog.addEventListener
       'click',
       () =>
         E.staffChangeDialog.close()
@@ -1076,6 +1108,122 @@
   // 現在表示週
   // ==================================================
 
+  // ==================================================
+  // 一覧は「最新状態」だけ表示
+  // ==================================================
+
+  function requestSequence_(
+    item
+  ) {
+
+    const match =
+      String(
+        item?.requestId ||
+        ''
+      )
+        .match(
+          /(\d+)$/
+        );
+
+
+    return match
+      ? Number(
+          match[1]
+        )
+      : 0;
+
+  }
+
+
+  function groupKeyForItem_(
+    item
+  ) {
+
+    const requestId =
+      String(
+        item?.requestId ||
+        ''
+      ).trim();
+
+
+    const action =
+      S.actionMap[
+        requestId
+      ] ||
+      {};
+
+
+    return (
+      action.groupKey ||
+      (
+        requestId
+          ? 'request:' +
+            requestId
+          : ''
+      )
+    );
+
+  }
+
+
+  function latestRequestItems_() {
+
+    const grouped =
+      new Map();
+
+
+    (
+      S.data?.items ||
+      []
+    )
+      .forEach(
+        item => {
+
+          const key =
+            groupKeyForItem_(
+              item
+            );
+
+
+          if (!key) {
+            return;
+          }
+
+
+          const current =
+            grouped.get(
+              key
+            );
+
+
+          if (
+            !current ||
+            requestSequence_(
+              item
+            ) >
+            requestSequence_(
+              current
+            )
+          ) {
+
+            grouped.set(
+              key,
+              item
+            );
+
+          }
+
+        }
+      );
+
+
+    return [
+      ...grouped.values()
+    ];
+
+  }
+
+
   function getCurrentWeekDays() {
 
     const weekdays = [
@@ -1103,10 +1251,7 @@
 
 
         const items =
-          (
-            S.data?.items ||
-            []
-          )
+          latestRequestItems_()
             .filter(
               item =>
                 item.date ===
@@ -1710,8 +1855,7 @@
   ) {
 
     if (
-      isPastDay ||
-      item.status === '取消'
+      isPastDay
     ) {
 
       return '';
@@ -1740,6 +1884,20 @@
 
     const buttons =
       [];
+
+
+    buttons.push(`
+      <button
+        type="button"
+        class="card-action-btn detail"
+        data-action="detail"
+        data-request-id="${esc(
+          requestId
+        )}"
+      >
+        詳細
+      </button>
+    `);
 
 
     if (
@@ -1820,6 +1978,211 @@
     return `
       <div class="card-actions">
         ${buttons.join('')}
+      </div>
+    `;
+
+  }
+
+
+  function openHistoryFromList_(
+    requestId
+  ) {
+
+    const sourceItem =
+      (
+        S.data?.items ||
+        []
+      )
+        .find(
+          item =>
+            String(
+              item.requestId ||
+              ''
+            ) ===
+            String(
+              requestId ||
+              ''
+            )
+        );
+
+
+    if (!sourceItem) {
+      return;
+    }
+
+
+    const groupKey =
+      groupKeyForItem_(
+        sourceItem
+      );
+
+
+    const items =
+      (
+        S.data?.items ||
+        []
+      )
+        .filter(
+          item =>
+            groupKeyForItem_(
+              item
+            ) ===
+            groupKey
+        )
+        .sort(
+          (
+            a,
+            b
+          ) =>
+            requestSequence_(
+              b
+            ) -
+            requestSequence_(
+              a
+            )
+        );
+
+
+    E.historySummary.textContent =
+      (
+        sourceItem.clientName ||
+        ''
+      ) +
+      '　' +
+      (
+        sourceItem.date ||
+        ''
+      ) +
+      '　' +
+      range(
+        sourceItem.startTime,
+        sourceItem.endTime
+      );
+
+
+    E.historyList.innerHTML =
+      items
+        .map(
+          historyItemHtml_
+        )
+        .join('');
+
+
+    E.historyDialog.showModal();
+
+  }
+
+
+  function historyItemHtml_(
+    item
+  ) {
+
+    const displayType =
+      item.status === '取消'
+        ? '取消'
+        : (
+            item.requestType ||
+            ''
+          );
+
+
+    const changeText =
+      item.requestType === '担当変更'
+        ? [
+            item.oldStaffName ||
+              '未設定',
+            item.newStaffName ||
+              ''
+          ]
+            .filter(
+              Boolean
+            )
+            .join(
+              ' → '
+            )
+        : (
+            item.changeContent ||
+            ''
+          );
+
+
+    const sub =
+      [
+        item.service,
+        item.supportContent,
+        changeText
+      ]
+        .filter(
+          Boolean
+        )
+        .join(
+          '　'
+        );
+
+
+    const reason =
+      item.changeReason ||
+      '';
+
+
+    return `
+      <div class="history-item">
+
+        <div class="history-item-head">
+
+          <span class="history-item-type">
+            ${esc(
+              displayType
+            )}
+          </span>
+
+          <span class="history-item-id">
+            ${esc(
+              item.requestId ||
+              ''
+            )}
+          </span>
+
+        </div>
+
+        <div class="history-item-main">
+          ${esc(
+            range(
+              item.startTime,
+              item.endTime
+            )
+          )}
+         　
+          ${esc(
+            item.clientName ||
+            ''
+          )}
+        </div>
+
+        ${
+          sub
+            ? `
+              <div class="history-item-sub">
+                ${esc(
+                  sub
+                )}
+              </div>
+            `
+            : ''
+        }
+
+        ${
+          reason
+            ? `
+              <div class="history-item-reason">
+                理由：${esc(
+                  reason
+                )}
+              </div>
+            `
+            : ''
+        }
+
       </div>
     `;
 
@@ -2213,6 +2576,132 @@
   }
 
 
+  function calculatedPeopleAfterStaffChange_(
+    fieldKey,
+    newStaffId
+  ) {
+
+    const shift =
+      S.staffChangeShift ||
+      {};
+
+
+    const ids = {
+
+      main:
+        shift.mainStaffId ||
+        '',
+
+      staff2:
+        shift.staff2Id ||
+        '',
+
+      staff3:
+        shift.staff3Id ||
+        ''
+
+    };
+
+
+    if (
+      Object.prototype
+        .hasOwnProperty.call(
+          ids,
+          fieldKey
+        )
+    ) {
+
+      ids[
+        fieldKey
+      ] =
+        newStaffId ||
+        '';
+
+    }
+
+
+    if (
+      ids.staff3
+    ) {
+      return 3;
+    }
+
+
+    if (
+      ids.staff2
+    ) {
+      return 2;
+    }
+
+
+    if (
+      ids.main
+    ) {
+      return 1;
+    }
+
+
+    const current =
+      Number(
+        shift.people ||
+        0
+      );
+
+
+    return current > 0
+      ? current
+      : 1;
+
+  }
+
+
+  function currentPeopleValue_() {
+
+    const shift =
+      S.staffChangeShift ||
+      {};
+
+
+    const stored =
+      Number(
+        shift.people ||
+        0
+      );
+
+
+    if (
+      stored > 0
+    ) {
+      return stored;
+    }
+
+
+    if (
+      shift.staff3Id
+    ) {
+      return 3;
+    }
+
+
+    if (
+      shift.staff2Id
+    ) {
+      return 2;
+    }
+
+
+    if (
+      shift.mainStaffId
+    ) {
+      return 1;
+    }
+
+
+    return 1;
+
+  }
+
+
   async function saveStaffChangeFromList_(
     event
   ) {
@@ -2306,23 +2795,55 @@
     };
 
 
+    const currentPeople =
+      currentPeopleValue_();
+
+
+    const nextPeople =
+      calculatedPeopleAfterStaffChange_(
+        fieldKey,
+        newStaff.id
+      );
+
+
+    const confirmLines = [
+      '担当変更しますか？',
+      '',
+      '項目：' +
+        labels[
+          fieldKey
+        ],
+      '変更前：' +
+        (
+          current.name ||
+          '未設定'
+        ),
+      '変更後：' +
+        newStaff.name
+    ];
+
+
+    if (
+      currentPeople !==
+      nextPeople
+    ) {
+
+      confirmLines.push(
+        '',
+        '人数も変更されます：' +
+          currentPeople +
+          ' → ' +
+          nextPeople,
+        '',
+        '担当変更と同時に人数も変更してよろしいですか？'
+      );
+
+    }
+
+
     if (
       !window.confirm(
-        [
-          '担当変更しますか？',
-          '',
-          '項目：' +
-            labels[
-              fieldKey
-            ],
-          '変更前：' +
-            (
-              current.name ||
-              '未設定'
-            ),
-          '変更後：' +
-            newStaff.name
-        ].join(
+        confirmLines.join(
           '\n'
         )
       )
