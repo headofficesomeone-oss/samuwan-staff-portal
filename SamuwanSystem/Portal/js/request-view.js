@@ -44,7 +44,12 @@
       staffs: []
     },
 
-    cancelTargets: []
+    cancelTargets: [],
+
+    actionMap: {},
+
+    staffChangeShift:
+      null
 
   };
 
@@ -211,7 +216,56 @@
       $('saveMessage'),
 
     save:
-      $('saveRequest')
+      $('saveRequest'),
+
+
+    staffChangeDialog:
+      $('staffChangeDialog'),
+
+    staffChangeForm:
+      $('staffChangeForm'),
+
+    closeStaffChangeDialog:
+      $('closeStaffChangeDialog'),
+
+    cancelStaffChange:
+      $('cancelStaffChange'),
+
+    staffChangeMsg:
+      $('staffChangeMessage'),
+
+    currentPeople:
+      $('currentPeople'),
+
+    currentMainStaff:
+      $('currentMainStaff'),
+
+    currentStaff2:
+      $('currentStaff2'),
+
+    currentStaff3:
+      $('currentStaff3'),
+
+    currentOutDriver:
+      $('currentOutDriver'),
+
+    currentBackDriver:
+      $('currentBackDriver'),
+
+    staffChangeFieldSelect:
+      $('staffChangeField'),
+
+    staffChangeOldValue:
+      $('staffChangeOldValue'),
+
+    staffChangeNewStaff:
+      $('staffChangeNewStaff'),
+
+    staffChangeReason:
+      $('staffChangeReason'),
+
+    saveStaffChange:
+      $('saveStaffChange')
 
   };
 
@@ -420,6 +474,97 @@
     E.addDate.addEventListener(
       'click',
       addRequestDateRow
+    );
+
+
+    // ------------------------------------------
+    // 一覧カード操作
+    // ------------------------------------------
+
+    E.list.addEventListener(
+      'click',
+      event => {
+
+        const button =
+          event.target.closest(
+            '.card-action-btn'
+          );
+
+
+        if (!button) {
+          return;
+        }
+
+
+        const action =
+          button.dataset.action;
+
+
+        const requestId =
+          button.dataset.requestId ||
+          '';
+
+
+        const shiftId =
+          button.dataset.shiftId ||
+          '';
+
+
+        if (
+          action === 'withdraw'
+        ) {
+
+          withdrawFromList_(
+            requestId
+          );
+
+        }
+        else if (
+          action === 'cancel'
+        ) {
+
+          cancelFromList_(
+            shiftId
+          );
+
+        }
+        else if (
+          action === 'staffchange'
+        ) {
+
+          openStaffChangeFromList_(
+            shiftId
+          );
+
+        }
+
+      }
+    );
+
+
+    E.closeStaffChangeDialog.addEventListener(
+      'click',
+      () =>
+        E.staffChangeDialog.close()
+    );
+
+
+    E.cancelStaffChange.addEventListener(
+      'click',
+      () =>
+        E.staffChangeDialog.close()
+    );
+
+
+    E.staffChangeFieldSelect.addEventListener(
+      'change',
+      refreshStaffChangeOldValue_
+    );
+
+
+    E.staffChangeForm.addEventListener(
+      'submit',
+      saveStaffChangeFromList_
     );
 
 
@@ -779,6 +924,9 @@
       result;
 
 
+    await loadActionability_();
+
+
     S.minWeekStart =
       monday(
         parseDateString(
@@ -796,6 +944,77 @@
 
 
     render();
+
+  }
+
+
+  // ==================================================
+  // 一覧カード操作可否
+  // ==================================================
+
+  async function loadActionability_() {
+
+    const requestIds =
+      [
+        ...new Set(
+          (
+            S.data?.items ||
+            []
+          )
+            .map(
+              item =>
+                String(
+                  item.requestId ||
+                  ''
+                ).trim()
+            )
+            .filter(
+              Boolean
+            )
+        )
+      ];
+
+
+    if (
+      !requestIds.length
+    ) {
+
+      S.actionMap =
+        {};
+
+      return;
+
+    }
+
+
+    const result =
+      await api({
+
+        action:
+          'request.actions.resolve',
+
+        requestIds:
+          requestIds
+
+      });
+
+
+    if (
+      !result?.ok
+    ) {
+
+      throw new Error(
+        result?.message ||
+        result?.error ||
+        '操作対象の判定に失敗しました。'
+      );
+
+    }
+
+
+    S.actionMap =
+      result.actions ||
+      {};
 
   }
 
@@ -1453,8 +1672,752 @@
             : ''
         }
 
+
+        ${cardActionsHtml_(
+          item,
+          isPastDay
+        )}
+
       </article>
     `;
+
+  }
+
+
+  // ==================================================
+  // 一覧カード操作ボタン
+  // ==================================================
+
+  function cardActionsHtml_(
+    item,
+    isPastDay
+  ) {
+
+    if (
+      isPastDay ||
+      item.status === '取消'
+    ) {
+
+      return '';
+
+    }
+
+
+    const requestId =
+      String(
+        item.requestId ||
+        ''
+      ).trim();
+
+
+    if (!requestId) {
+      return '';
+    }
+
+
+    const action =
+      S.actionMap[
+        requestId
+      ] ||
+      {};
+
+
+    const buttons =
+      [];
+
+
+    if (
+      action.canWithdraw
+    ) {
+
+      buttons.push(`
+        <button
+          type="button"
+          class="card-action-btn"
+          data-action="withdraw"
+          data-request-id="${esc(
+            requestId
+          )}"
+        >
+          依頼取消
+        </button>
+      `);
+
+    }
+
+
+    if (
+      action.canStaffChange &&
+      action.shiftId
+    ) {
+
+      buttons.push(`
+        <button
+          type="button"
+          class="card-action-btn"
+          data-action="staffchange"
+          data-request-id="${esc(
+            requestId
+          )}"
+          data-shift-id="${esc(
+            action.shiftId
+          )}"
+        >
+          担当変更
+        </button>
+      `);
+
+    }
+
+
+    if (
+      action.canCancel &&
+      action.shiftId
+    ) {
+
+      buttons.push(`
+        <button
+          type="button"
+          class="card-action-btn"
+          data-action="cancel"
+          data-request-id="${esc(
+            requestId
+          )}"
+          data-shift-id="${esc(
+            action.shiftId
+          )}"
+        >
+          キャンセル
+        </button>
+      `);
+
+    }
+
+
+    if (
+      !buttons.length
+    ) {
+      return '';
+    }
+
+
+    return `
+      <div class="card-actions">
+        ${buttons.join('')}
+      </div>
+    `;
+
+  }
+
+
+  async function withdrawFromList_(
+    requestId
+  ) {
+
+    if (!requestId) {
+      return;
+    }
+
+
+    const reason =
+      window.prompt(
+        '依頼取消の理由を入力してください（任意）',
+        ''
+      );
+
+
+    if (
+      reason === null
+    ) {
+      return;
+    }
+
+
+    if (
+      !window.confirm(
+        'この依頼を取り消しますか？'
+      )
+    ) {
+      return;
+    }
+
+
+    try {
+
+      const result =
+        await api({
+
+          action:
+            'request.withdraw.multi',
+
+          requestIds: [
+            requestId
+          ],
+
+          cancelerId:
+            S.employee.id,
+
+          cancelerName:
+            S.employee.name,
+
+          reason:
+            String(
+              reason || ''
+            ).trim()
+
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '依頼取消に失敗しました。'
+        );
+
+      }
+
+
+      await loadRange();
+
+    }
+    catch (err) {
+
+      alert(
+        '依頼取消できませんでした。\n' +
+        (
+          err?.message ||
+          err
+        )
+      );
+
+    }
+
+  }
+
+
+  async function cancelFromList_(
+    shiftId
+  ) {
+
+    if (!shiftId) {
+      return;
+    }
+
+
+    const reason =
+      window.prompt(
+        'キャンセル理由を入力してください（任意）',
+        ''
+      );
+
+
+    if (
+      reason === null
+    ) {
+      return;
+    }
+
+
+    if (
+      !window.confirm(
+        'この支援をキャンセルしますか？'
+      )
+    ) {
+      return;
+    }
+
+
+    try {
+
+      const result =
+        await api({
+
+          action:
+            'request.cancel.multi',
+
+          shiftIds: [
+            shiftId
+          ],
+
+          reporterId:
+            S.employee.id,
+
+          reporterName:
+            S.employee.name,
+
+          reason:
+            String(
+              reason || ''
+            ).trim(),
+
+          note:
+            '',
+
+          registerMethod:
+            'WEB_LIST'
+
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          'キャンセルに失敗しました。'
+        );
+
+      }
+
+
+      await loadRange();
+
+    }
+    catch (err) {
+
+      alert(
+        'キャンセルできませんでした。\n' +
+        (
+          err?.message ||
+          err
+        )
+      );
+
+    }
+
+  }
+
+
+  async function openStaffChangeFromList_(
+    shiftId
+  ) {
+
+    if (!shiftId) {
+      return;
+    }
+
+
+    try {
+
+      const result =
+        await api({
+
+          action:
+            'request.shift.detail',
+
+          shiftId:
+            shiftId
+
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          'シフト情報を取得できません。'
+        );
+
+      }
+
+
+      S.staffChangeShift =
+        result.shift;
+
+
+      const shift =
+        result.shift;
+
+
+      E.currentPeople.textContent =
+        shift.people ||
+        '1';
+
+
+      E.currentMainStaff.textContent =
+        shift.mainStaffName ||
+        '－';
+
+
+      E.currentStaff2.textContent =
+        shift.staff2Name ||
+        '－';
+
+
+      E.currentStaff3.textContent =
+        shift.staff3Name ||
+        '－';
+
+
+      E.currentOutDriver.textContent =
+        shift.outDriverName ||
+        '－';
+
+
+      E.currentBackDriver.textContent =
+        shift.backDriverName ||
+        '－';
+
+
+      E.staffChangeFieldSelect.value =
+        '';
+
+
+      E.staffChangeNewStaff.innerHTML =
+        E.main.innerHTML;
+
+
+      E.staffChangeNewStaff.value =
+        '';
+
+
+      E.staffChangeReason.value =
+        '';
+
+
+      E.staffChangeMsg.hidden =
+        true;
+
+
+      E.staffChangeOldValue.textContent =
+        '－';
+
+
+      E.staffChangeDialog.showModal();
+
+    }
+    catch (err) {
+
+      alert(
+        '担当変更画面を開けませんでした。\n' +
+        (
+          err?.message ||
+          err
+        )
+      );
+
+    }
+
+  }
+
+
+  function currentStaffByField_(
+    fieldKey
+  ) {
+
+    const shift =
+      S.staffChangeShift ||
+      {};
+
+
+    const map = {
+
+      main: {
+        id:
+          shift.mainStaffId ||
+          '',
+        name:
+          shift.mainStaffName ||
+          ''
+      },
+
+      staff2: {
+        id:
+          shift.staff2Id ||
+          '',
+        name:
+          shift.staff2Name ||
+          ''
+      },
+
+      staff3: {
+        id:
+          shift.staff3Id ||
+          '',
+        name:
+          shift.staff3Name ||
+          ''
+      },
+
+      outDriver: {
+        id:
+          shift.outDriverId ||
+          '',
+        name:
+          shift.outDriverName ||
+          ''
+      },
+
+      backDriver: {
+        id:
+          shift.backDriverId ||
+          '',
+        name:
+          shift.backDriverName ||
+          ''
+      }
+
+    };
+
+
+    return (
+      map[
+        fieldKey
+      ] ||
+      {
+        id: '',
+        name: ''
+      }
+    );
+
+  }
+
+
+  function refreshStaffChangeOldValue_() {
+
+    const current =
+      currentStaffByField_(
+        E.staffChangeFieldSelect.value
+      );
+
+
+    E.staffChangeOldValue.textContent =
+      current.name ||
+      '未設定';
+
+  }
+
+
+  async function saveStaffChangeFromList_(
+    event
+  ) {
+
+    event.preventDefault();
+
+
+    const shift =
+      S.staffChangeShift;
+
+
+    if (!shift?.shiftId) {
+
+      staffChangeMessage_(
+        '対象シフトがありません。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    const fieldKey =
+      E.staffChangeFieldSelect.value;
+
+
+    if (!fieldKey) {
+
+      staffChangeMessage_(
+        '変更する項目を選択してください。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    const newStaff =
+      selectedMaster(
+        E.staffChangeNewStaff
+      );
+
+
+    if (!newStaff.id) {
+
+      staffChangeMessage_(
+        '変更後の従業員を選択してください。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    const current =
+      currentStaffByField_(
+        fieldKey
+      );
+
+
+    if (
+      current.id &&
+      current.id ===
+      newStaff.id
+    ) {
+
+      staffChangeMessage_(
+        '現在と同じ従業員が選択されています。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    const labels = {
+      main:
+        '主担当',
+      staff2:
+        '担当2',
+      staff3:
+        '担当3',
+      outDriver:
+        '行ドライバ',
+      backDriver:
+        '帰ドライバ'
+    };
+
+
+    if (
+      !window.confirm(
+        [
+          '担当変更しますか？',
+          '',
+          '項目：' +
+            labels[
+              fieldKey
+            ],
+          '変更前：' +
+            (
+              current.name ||
+              '未設定'
+            ),
+          '変更後：' +
+            newStaff.name
+        ].join(
+          '\n'
+        )
+      )
+    ) {
+      return;
+    }
+
+
+    E.saveStaffChange.disabled =
+      true;
+
+
+    staffChangeMessage_(
+      '担当変更しています...',
+      false
+    );
+
+
+    try {
+
+      const result =
+        await api({
+
+          action:
+            'request.staffchange.apply',
+
+          shiftId:
+            shift.shiftId,
+
+          fieldKey:
+            fieldKey,
+
+          newStaffId:
+            newStaff.id,
+
+          newStaffName:
+            newStaff.name,
+
+          reporterId:
+            S.employee.id,
+
+          reporterName:
+            S.employee.name,
+
+          reason:
+            E.staffChangeReason.value.trim(),
+
+          registerMethod:
+            'WEB_LIST'
+
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '担当変更に失敗しました。'
+        );
+
+      }
+
+
+      E.staffChangeDialog.close();
+
+
+      await loadRange();
+
+    }
+    catch (err) {
+
+      staffChangeMessage_(
+        '担当変更できませんでした。\n' +
+        (
+          err?.message ||
+          err
+        ),
+        true
+      );
+
+    }
+    finally {
+
+      E.saveStaffChange.disabled =
+        false;
+
+    }
+
+  }
+
+
+  function staffChangeMessage_(
+    text,
+    isError
+  ) {
+
+    E.staffChangeMsg.hidden =
+      false;
+
+
+    E.staffChangeMsg.textContent =
+      text;
+
+
+    E.staffChangeMsg.style.color =
+      isError
+        ? '#c62828'
+        : '#1f2933';
 
   }
 
