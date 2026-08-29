@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>シフト一覧</title>
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260829-1">
+</head>
+<body>
+
+<main class="page">
+
+  <header class="page-head">
+    <div>
+      <h1>シフト一覧</h1>
+      <div id="weekLabel" class="week-label">読み込み中...</div>
+    </div>
+
+    <a class="request-link" href="./request-view.html">
+      依頼情報
+    </a>
+  </header>
+
+  <div class="week-state-row">
+    <span id="weekState" class="week-state">状態確認中</span>
+    <span id="weekSource" class="week-source"></span>
+  </div>
+
+  <nav class="day-nav">
+    <button id="prevWeek" class="arrow-btn" type="button">‹</button>
+    <div id="daysNav" class="days"></div>
+    <button id="nextWeek" class="arrow-btn" type="button">›</button>
+  </nav>
+
+  <section class="day-head">
+    <h2 id="dayTitle">-</h2>
+    <span id="dayCount" class="count">0件</span>
+  </section>
+
+  <div id="message" class="message">シフトを取得しています...</div>
+  <div id="shiftList" class="shift-list"></div>
+
+</main>
+
+<script src="./js/request-view-config.js?v=20260829-1"></script>
+<script src="./js/shift-view.js?v=20260829-1"></script>
+</body>
+</html>
