@@ -8,10 +8,10 @@ body{
 }
 button,a{font:inherit}
 .page{
-  max-width:760px;
+  max-width:560px;
   min-height:100vh;
   margin:0 auto;
-  padding:14px 12px 40px;
+  padding:10px 12px 36px;
   background:#fff;
 }
 .page-head{
@@ -20,7 +20,7 @@ button,a{font:inherit}
   justify-content:space-between;
   gap:12px;
 }
-h1{margin:0;font-size:26px}
+h1{margin:0;font-size:21px}
 .week-label{margin-top:3px;color:#607080;font-size:14px}
 .request-link{
   display:inline-flex;
@@ -38,7 +38,7 @@ h1{margin:0;font-size:26px}
   display:flex;
   align-items:center;
   gap:8px;
-  margin:12px 0 10px;
+  margin:8px 0 8px;
 }
 .week-state,.week-source{
   display:inline-flex;
@@ -64,11 +64,11 @@ h1{margin:0;font-size:26px}
   border:0;
   border-radius:12px;
   background:#eef1f4;
-  min-height:60px;
+  min-height:48px;
   font-weight:800;
   cursor:pointer;
 }
-.arrow-btn{font-size:28px}
+.arrow-btn{font-size:24px}
 .arrow-btn:disabled{opacity:.28;cursor:default}
 .day-btn{
   display:flex;
@@ -86,7 +86,7 @@ h1{margin:0;font-size:26px}
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin:18px 4px 10px;
+  margin:14px 4px 8px;
 }
 .day-head h2{margin:0;font-size:20px}
 .count{
@@ -117,8 +117,8 @@ h1{margin:0;font-size:26px}
   gap:12px;
   align-items:center;
 }
-.shift-time{font-size:20px;font-weight:900}
-.shift-name{font-size:20px;font-weight:900}
+.shift-time{font-size:17px;font-weight:900}
+.shift-name{font-size:17px;font-weight:900}
 .shift-state{
   padding:4px 8px;
   border-radius:999px;
@@ -164,4 +164,23 @@ h1{margin:0;font-size:26px}
   .arrow-btn,.day-btn{min-height:56px}
   .shift-top{grid-template-columns:auto 1fr}
   .shift-state{grid-column:2;justify-self:end}
+}
+
+
+/* 人数は通常非表示。担当状況と不一致の時だけ注意表示 */
+.people-mismatch{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:8px;
+  padding:6px 8px;
+  border-radius:8px;
+  background:#fff4e5;
+  border:1px solid #f0d2a3;
+  font-size:12px;
+  font-weight:800;
+}
+.people-mismatch small{
+  font-weight:600;
+  color:#785f3a;
 }
