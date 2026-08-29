@@ -1576,87 +1576,98 @@
       [];
 
 
+    // ==================================================
+    // 現在の担当情報
+    //
+    // 担当変更カードであっても、
+    // 「現在誰が担当なのか」を先に表示します。
+    // ==================================================
+
+    const currentStaffNames =
+      [
+        item.mainStaffName,
+        item.staff2Name,
+        item.staff3Name
+      ]
+        .filter(
+          Boolean
+        );
+
+
     if (
-      item.requestType ===
-      '担当変更'
+      currentStaffNames.length
     ) {
 
-      const staffChange =
-        [
-          item.oldStaffName ||
-            '',
-
-          item.newStaffName ||
-            ''
-        ]
-          .filter(
-            Boolean
-          )
-          .join(
-            ' → '
-          );
-
-
-      if (
-        staffChange
-      ) {
-
-        rows.push([
-          '担当変更',
-          staffChange
-        ]);
-
-      }
+      rows.push([
+        '担当',
+        currentStaffNames.join(
+          '　'
+        )
+      ]);
 
     }
 
+
+    // ==================================================
+    // ドライバー表示
+    //
+    // 行だけある   → ドライバ
+    // 帰だけある   → ドライバ
+    // 行・帰両方   → 行ドライバ / 帰ドライバ
+    // ==================================================
+
+    const outDriverName =
+      item.outDriverName ||
+      '';
+
+
+    const backDriverName =
+      item.backDriverName ||
+      '';
+
+
+    if (
+      outDriverName &&
+      backDriverName
+    ) {
+
+      rows.push([
+        '行ドライバ',
+        outDriverName
+      ]);
+
+
+      rows.push([
+        '帰ドライバ',
+        backDriverName
+      ]);
+
+    }
     else if (
-      item.requestType ===
-      '変更'
+      outDriverName
     ) {
 
-      if (
-        item.changeContent
-      ) {
+      rows.push([
+        'ドライバ',
+        outDriverName
+      ]);
 
-        rows.push([
-          '変更内容',
-          item.changeContent
-        ]);
+    }
+    else if (
+      backDriverName
+    ) {
 
-      }
+      rows.push([
+        'ドライバ',
+        backDriverName
+      ]);
 
     }
 
-    else {
 
-      // 主担当・担当2・担当3を横並び
-      const staffNames =
-        [
-          item.mainStaffName,
-          item.staff2Name,
-          item.staff3Name
-        ]
-          .filter(
-            Boolean
-          );
-
-
-      if (
-        staffNames.length
-      ) {
-
-        rows.push([
-          '担当',
-          staffNames.join(
-            '　'
-          )
-        ]);
-
-      }
-
-    }
-
+    // ==================================================
+    // 行先
+    // ==================================================
 
     if (
       item.destination
@@ -1676,6 +1687,127 @@
     }
 
 
+    // ==================================================
+    // 今回の変更内容
+    //
+    // 「担当変更　行ドライバ」
+    // 「　　　　　大野 晴夫 → 塩田 美穂」
+    // のように2段で見せます。
+    // ==================================================
+
+    if (
+      item.requestType ===
+      '担当変更'
+    ) {
+
+      let changeLabel =
+        '担当変更';
+
+
+      const changeContent =
+        String(
+          item.changeContent ||
+          ''
+        ).trim();
+
+
+      const colonIndex =
+        changeContent.indexOf(
+          '：'
+        );
+
+
+      let changeTarget =
+        '';
+
+
+      let changeValue =
+        '';
+
+
+      if (
+        colonIndex >= 0
+      ) {
+
+        changeTarget =
+          changeContent.slice(
+            0,
+            colonIndex
+          ).trim();
+
+
+        changeValue =
+          changeContent.slice(
+            colonIndex + 1
+          ).trim();
+
+      }
+      else {
+
+        changeValue =
+          [
+            item.oldStaffName ||
+              '',
+            item.newStaffName ||
+              ''
+          ]
+            .filter(
+              Boolean
+            )
+            .join(
+              ' → '
+            );
+
+      }
+
+
+      if (
+        changeTarget
+      ) {
+
+        changeLabel +=
+          '　' +
+          changeTarget;
+
+      }
+
+
+      rows.push([
+        changeLabel,
+        ''
+      ]);
+
+
+      if (
+        changeValue
+      ) {
+
+        rows.push([
+          '',
+          changeValue
+        ]);
+
+      }
+
+    }
+    else if (
+      item.requestType ===
+      '変更' &&
+      item.changeContent
+    ) {
+
+      rows.push([
+        '変更内容',
+        item.changeContent
+      ]);
+
+    }
+
+
+    // ==================================================
+    // 待合せ
+    // ==================================================
+
     if (
       item.meetingPlace
     ) {
@@ -1687,6 +1819,10 @@
 
     }
 
+
+    // ==================================================
+    // 理由は最後
+    // ==================================================
 
     if (
       item.changeReason
@@ -1841,1120 +1977,6 @@
 
       </article>
     `;
-
-  }
-
-
-  // ==================================================
-  // 一覧カード操作ボタン
-  // ==================================================
-
-  function cardActionsHtml_(
-    item,
-    isPastDay
-  ) {
-
-    if (
-      isPastDay
-    ) {
-
-      return '';
-
-    }
-
-
-    const requestId =
-      String(
-        item.requestId ||
-        ''
-      ).trim();
-
-
-    if (!requestId) {
-      return '';
-    }
-
-
-    const action =
-      S.actionMap[
-        requestId
-      ] ||
-      {};
-
-
-    const buttons =
-      [];
-
-
-    buttons.push(`
-      <button
-        type="button"
-        class="card-action-btn detail"
-        data-action="detail"
-        data-request-id="${esc(
-          requestId
-        )}"
-      >
-        詳細
-      </button>
-    `);
-
-
-    if (
-      action.canWithdraw
-    ) {
-
-      buttons.push(`
-        <button
-          type="button"
-          class="card-action-btn"
-          data-action="withdraw"
-          data-request-id="${esc(
-            requestId
-          )}"
-        >
-          依頼取消
-        </button>
-      `);
-
-    }
-
-
-    if (
-      action.canStaffChange &&
-      action.shiftId
-    ) {
-
-      buttons.push(`
-        <button
-          type="button"
-          class="card-action-btn"
-          data-action="staffchange"
-          data-request-id="${esc(
-            requestId
-          )}"
-          data-shift-id="${esc(
-            action.shiftId
-          )}"
-        >
-          担当変更
-        </button>
-      `);
-
-    }
-
-
-    if (
-      action.canCancel &&
-      action.shiftId
-    ) {
-
-      buttons.push(`
-        <button
-          type="button"
-          class="card-action-btn"
-          data-action="cancel"
-          data-request-id="${esc(
-            requestId
-          )}"
-          data-shift-id="${esc(
-            action.shiftId
-          )}"
-        >
-          キャンセル
-        </button>
-      `);
-
-    }
-
-
-    if (
-      !buttons.length
-    ) {
-      return '';
-    }
-
-
-    return `
-      <div class="card-actions">
-        ${buttons.join('')}
-      </div>
-    `;
-
-  }
-
-
-  function openHistoryFromList_(
-    requestId
-  ) {
-
-    const sourceItem =
-      (
-        S.data?.items ||
-        []
-      )
-        .find(
-          item =>
-            String(
-              item.requestId ||
-              ''
-            ) ===
-            String(
-              requestId ||
-              ''
-            )
-        );
-
-
-    if (!sourceItem) {
-      return;
-    }
-
-
-    const groupKey =
-      groupKeyForItem_(
-        sourceItem
-      );
-
-
-    const items =
-      (
-        S.data?.items ||
-        []
-      )
-        .filter(
-          item =>
-            groupKeyForItem_(
-              item
-            ) ===
-            groupKey
-        )
-        .sort(
-          (
-            a,
-            b
-          ) =>
-            requestSequence_(
-              b
-            ) -
-            requestSequence_(
-              a
-            )
-        );
-
-
-    E.historySummary.textContent =
-      (
-        sourceItem.clientName ||
-        ''
-      ) +
-      '　' +
-      (
-        sourceItem.date ||
-        ''
-      ) +
-      '　' +
-      range(
-        sourceItem.startTime,
-        sourceItem.endTime
-      );
-
-
-    E.historyList.innerHTML =
-      items
-        .map(
-          historyItemHtml_
-        )
-        .join('');
-
-
-    E.historyDialog.showModal();
-
-  }
-
-
-  function historyItemHtml_(
-    item
-  ) {
-
-    const displayType =
-      item.status === '取消'
-        ? '取消'
-        : (
-            item.requestType ||
-            ''
-          );
-
-
-    const changeText =
-      item.requestType === '担当変更'
-        ? [
-            item.oldStaffName ||
-              '未設定',
-            item.newStaffName ||
-              ''
-          ]
-            .filter(
-              Boolean
-            )
-            .join(
-              ' → '
-            )
-        : (
-            item.changeContent ||
-            ''
-          );
-
-
-    const sub =
-      [
-        item.service,
-        item.supportContent,
-        changeText
-      ]
-        .filter(
-          Boolean
-        )
-        .join(
-          '　'
-        );
-
-
-    const reason =
-      item.changeReason ||
-      '';
-
-
-    return `
-      <div class="history-item">
-
-        <div class="history-item-head">
-
-          <span class="history-item-type">
-            ${esc(
-              displayType
-            )}
-          </span>
-
-          <span class="history-item-id">
-            ${esc(
-              item.requestId ||
-              ''
-            )}
-          </span>
-
-        </div>
-
-        <div class="history-item-main">
-          ${esc(
-            range(
-              item.startTime,
-              item.endTime
-            )
-          )}
-         　
-          ${esc(
-            item.clientName ||
-            ''
-          )}
-        </div>
-
-        ${
-          sub
-            ? `
-              <div class="history-item-sub">
-                ${esc(
-                  sub
-                )}
-              </div>
-            `
-            : ''
-        }
-
-        ${
-          reason
-            ? `
-              <div class="history-item-reason">
-                理由：${esc(
-                  reason
-                )}
-              </div>
-            `
-            : ''
-        }
-
-      </div>
-    `;
-
-  }
-
-
-  async function withdrawFromList_(
-    requestId
-  ) {
-
-    if (!requestId) {
-      return;
-    }
-
-
-    const reason =
-      window.prompt(
-        '依頼取消の理由を入力してください（任意）',
-        ''
-      );
-
-
-    if (
-      reason === null
-    ) {
-      return;
-    }
-
-
-    if (
-      !window.confirm(
-        'この依頼を取り消しますか？'
-      )
-    ) {
-      return;
-    }
-
-
-    try {
-
-      const result =
-        await api({
-
-          action:
-            'request.withdraw.multi',
-
-          requestIds: [
-            requestId
-          ],
-
-          cancelerId:
-            S.employee.id,
-
-          cancelerName:
-            S.employee.name,
-
-          reason:
-            String(
-              reason || ''
-            ).trim()
-
-        });
-
-
-      if (
-        !result?.ok
-      ) {
-
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          '依頼取消に失敗しました。'
-        );
-
-      }
-
-
-      await loadRange();
-
-    }
-    catch (err) {
-
-      alert(
-        '依頼取消できませんでした。\n' +
-        (
-          err?.message ||
-          err
-        )
-      );
-
-    }
-
-  }
-
-
-  async function cancelFromList_(
-    shiftId
-  ) {
-
-    if (!shiftId) {
-      return;
-    }
-
-
-    const reason =
-      window.prompt(
-        'キャンセル理由を入力してください（任意）',
-        ''
-      );
-
-
-    if (
-      reason === null
-    ) {
-      return;
-    }
-
-
-    if (
-      !window.confirm(
-        'この支援をキャンセルしますか？'
-      )
-    ) {
-      return;
-    }
-
-
-    try {
-
-      const result =
-        await api({
-
-          action:
-            'request.cancel.multi',
-
-          shiftIds: [
-            shiftId
-          ],
-
-          reporterId:
-            S.employee.id,
-
-          reporterName:
-            S.employee.name,
-
-          reason:
-            String(
-              reason || ''
-            ).trim(),
-
-          note:
-            '',
-
-          registerMethod:
-            'WEB_LIST'
-
-        });
-
-
-      if (
-        !result?.ok
-      ) {
-
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          'キャンセルに失敗しました。'
-        );
-
-      }
-
-
-      await loadRange();
-
-    }
-    catch (err) {
-
-      alert(
-        'キャンセルできませんでした。\n' +
-        (
-          err?.message ||
-          err
-        )
-      );
-
-    }
-
-  }
-
-
-  async function openStaffChangeFromList_(
-    shiftId
-  ) {
-
-    if (!shiftId) {
-      return;
-    }
-
-
-    try {
-
-      const result =
-        await api({
-
-          action:
-            'request.shift.detail',
-
-          shiftId:
-            shiftId
-
-        });
-
-
-      if (
-        !result?.ok
-      ) {
-
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          'シフト情報を取得できません。'
-        );
-
-      }
-
-
-      S.staffChangeShift =
-        result.shift;
-
-
-      const shift =
-        result.shift;
-
-
-      E.currentPeople.textContent =
-        shift.people ||
-        '1';
-
-
-      E.currentMainStaff.textContent =
-        shift.mainStaffName ||
-        '－';
-
-
-      E.currentStaff2.textContent =
-        shift.staff2Name ||
-        '－';
-
-
-      E.currentStaff3.textContent =
-        shift.staff3Name ||
-        '－';
-
-
-      E.currentOutDriver.textContent =
-        shift.outDriverName ||
-        '－';
-
-
-      E.currentBackDriver.textContent =
-        shift.backDriverName ||
-        '－';
-
-
-      E.staffChangeFieldSelect.value =
-        '';
-
-
-      E.staffChangeNewStaff.innerHTML =
-        E.main.innerHTML;
-
-
-      E.staffChangeNewStaff.value =
-        '';
-
-
-      E.staffChangeReason.value =
-        '';
-
-
-      E.staffChangeMsg.hidden =
-        true;
-
-
-      E.staffChangeOldValue.textContent =
-        '－';
-
-
-      E.staffChangeDialog.showModal();
-
-    }
-    catch (err) {
-
-      alert(
-        '担当変更画面を開けませんでした。\n' +
-        (
-          err?.message ||
-          err
-        )
-      );
-
-    }
-
-  }
-
-
-  function currentStaffByField_(
-    fieldKey
-  ) {
-
-    const shift =
-      S.staffChangeShift ||
-      {};
-
-
-    const map = {
-
-      main: {
-        id:
-          shift.mainStaffId ||
-          '',
-        name:
-          shift.mainStaffName ||
-          ''
-      },
-
-      staff2: {
-        id:
-          shift.staff2Id ||
-          '',
-        name:
-          shift.staff2Name ||
-          ''
-      },
-
-      staff3: {
-        id:
-          shift.staff3Id ||
-          '',
-        name:
-          shift.staff3Name ||
-          ''
-      },
-
-      outDriver: {
-        id:
-          shift.outDriverId ||
-          '',
-        name:
-          shift.outDriverName ||
-          ''
-      },
-
-      backDriver: {
-        id:
-          shift.backDriverId ||
-          '',
-        name:
-          shift.backDriverName ||
-          ''
-      }
-
-    };
-
-
-    return (
-      map[
-        fieldKey
-      ] ||
-      {
-        id: '',
-        name: ''
-      }
-    );
-
-  }
-
-
-  function refreshStaffChangeOldValue_() {
-
-    const current =
-      currentStaffByField_(
-        E.staffChangeFieldSelect.value
-      );
-
-
-    E.staffChangeOldValue.textContent =
-      current.name ||
-      '未設定';
-
-  }
-
-
-  function calculatedPeopleAfterStaffChange_(
-    fieldKey,
-    newStaffId
-  ) {
-
-    const shift =
-      S.staffChangeShift ||
-      {};
-
-
-    const ids = {
-
-      main:
-        shift.mainStaffId ||
-        '',
-
-      staff2:
-        shift.staff2Id ||
-        '',
-
-      staff3:
-        shift.staff3Id ||
-        ''
-
-    };
-
-
-    if (
-      Object.prototype
-        .hasOwnProperty.call(
-          ids,
-          fieldKey
-        )
-    ) {
-
-      ids[
-        fieldKey
-      ] =
-        newStaffId ||
-        '';
-
-    }
-
-
-    if (
-      ids.staff3
-    ) {
-      return 3;
-    }
-
-
-    if (
-      ids.staff2
-    ) {
-      return 2;
-    }
-
-
-    if (
-      ids.main
-    ) {
-      return 1;
-    }
-
-
-    const current =
-      Number(
-        shift.people ||
-        0
-      );
-
-
-    return current > 0
-      ? current
-      : 1;
-
-  }
-
-
-  function currentPeopleValue_() {
-
-    const shift =
-      S.staffChangeShift ||
-      {};
-
-
-    const stored =
-      Number(
-        shift.people ||
-        0
-      );
-
-
-    if (
-      stored > 0
-    ) {
-      return stored;
-    }
-
-
-    if (
-      shift.staff3Id
-    ) {
-      return 3;
-    }
-
-
-    if (
-      shift.staff2Id
-    ) {
-      return 2;
-    }
-
-
-    if (
-      shift.mainStaffId
-    ) {
-      return 1;
-    }
-
-
-    return 1;
-
-  }
-
-
-  async function saveStaffChangeFromList_(
-    event
-  ) {
-
-    event.preventDefault();
-
-
-    const shift =
-      S.staffChangeShift;
-
-
-    if (!shift?.shiftId) {
-
-      staffChangeMessage_(
-        '対象シフトがありません。',
-        true
-      );
-
-      return;
-
-    }
-
-
-    const fieldKey =
-      E.staffChangeFieldSelect.value;
-
-
-    if (!fieldKey) {
-
-      staffChangeMessage_(
-        '変更する項目を選択してください。',
-        true
-      );
-
-      return;
-
-    }
-
-
-    const newStaff =
-      selectedMaster(
-        E.staffChangeNewStaff
-      );
-
-
-    if (!newStaff.id) {
-
-      staffChangeMessage_(
-        '変更後の従業員を選択してください。',
-        true
-      );
-
-      return;
-
-    }
-
-
-    const current =
-      currentStaffByField_(
-        fieldKey
-      );
-
-
-    if (
-      current.id &&
-      current.id ===
-      newStaff.id
-    ) {
-
-      staffChangeMessage_(
-        '現在と同じ従業員が選択されています。',
-        true
-      );
-
-      return;
-
-    }
-
-
-    const labels = {
-      main:
-        '主担当',
-      staff2:
-        '担当2',
-      staff3:
-        '担当3',
-      outDriver:
-        '行ドライバ',
-      backDriver:
-        '帰ドライバ'
-    };
-
-
-    const currentPeople =
-      currentPeopleValue_();
-
-
-    const nextPeople =
-      calculatedPeopleAfterStaffChange_(
-        fieldKey,
-        newStaff.id
-      );
-
-
-    const confirmLines = [
-      '担当変更しますか？',
-      '',
-      '項目：' +
-        labels[
-          fieldKey
-        ],
-      '変更前：' +
-        (
-          current.name ||
-          '未設定'
-        ),
-      '変更後：' +
-        newStaff.name
-    ];
-
-
-    if (
-      currentPeople !==
-      nextPeople
-    ) {
-
-      confirmLines.push(
-        '',
-        '人数も変更されます：' +
-          currentPeople +
-          ' → ' +
-          nextPeople,
-        '',
-        '担当変更と同時に人数も変更してよろしいですか？'
-      );
-
-    }
-
-
-    if (
-      !window.confirm(
-        confirmLines.join(
-          '\n'
-        )
-      )
-    ) {
-      return;
-    }
-
-
-    E.saveStaffChange.disabled =
-      true;
-
-
-    staffChangeMessage_(
-      '担当変更しています...',
-      false
-    );
-
-
-    try {
-
-      const result =
-        await api({
-
-          action:
-            'request.staffchange.apply',
-
-          shiftId:
-            shift.shiftId,
-
-          fieldKey:
-            fieldKey,
-
-          newStaffId:
-            newStaff.id,
-
-          newStaffName:
-            newStaff.name,
-
-          reporterId:
-            S.employee.id,
-
-          reporterName:
-            S.employee.name,
-
-          reason:
-            E.staffChangeReason.value.trim(),
-
-          registerMethod:
-            'WEB_LIST'
-
-        });
-
-
-      if (
-        !result?.ok
-      ) {
-
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          '担当変更に失敗しました。'
-        );
-
-      }
-
-
-      E.staffChangeDialog.close();
-
-
-      await loadRange();
-
-    }
-    catch (err) {
-
-      staffChangeMessage_(
-        '担当変更できませんでした。\n' +
-        (
-          err?.message ||
-          err
-        ),
-        true
-      );
-
-    }
-    finally {
-
-      E.saveStaffChange.disabled =
-        false;
-
-    }
-
-  }
-
-
-  function staffChangeMessage_(
-    text,
-    isError
-  ) {
-
-    E.staffChangeMsg.hidden =
-      false;
-
-
-    E.staffChangeMsg.textContent =
-      text;
-
-
-    E.staffChangeMsg.style.color =
-      isError
-        ? '#c62828'
-        : '#1f2933';
 
   }
 
