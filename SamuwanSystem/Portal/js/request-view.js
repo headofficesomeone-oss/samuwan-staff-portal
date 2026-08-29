@@ -1572,6 +1572,20 @@
     isPastDay
   ) {
 
+    const requestId =
+      String(
+        item.requestId ||
+        ''
+      ).trim();
+
+
+    const action =
+      S.actionMap[
+        requestId
+      ] ||
+      {};
+
+
     const rows =
       [];
 
@@ -1582,9 +1596,14 @@
 
     const staffNames =
       [
-        item.mainStaffName,
-        item.staff2Name,
-        item.staff3Name
+        action.currentMainStaffName ||
+          item.mainStaffName,
+
+        action.currentStaff2Name ||
+          item.staff2Name,
+
+        action.currentStaff3Name ||
+          item.staff3Name
       ]
         .filter(
           Boolean
@@ -1615,6 +1634,7 @@
 
     const outDriverName =
       String(
+        action.currentOutDriverName ||
         item.outDriverName ||
         ''
       ).trim();
@@ -1622,6 +1642,7 @@
 
     const backDriverName =
       String(
+        action.currentBackDriverName ||
         item.backDriverName ||
         ''
       ).trim();
