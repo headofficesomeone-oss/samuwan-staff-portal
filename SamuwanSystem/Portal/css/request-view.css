@@ -833,3 +833,37 @@ textarea{
   font-size:12px;
   line-height:1.5;
 }
+
+
+/* ==================================================
+   一覧カード - 変更情報
+================================================== */
+
+.change-info-box{
+  display:grid;
+  gap:6px;
+  margin-top:9px;
+  padding:9px 10px;
+  border:1px solid #ead8aa;
+  border-radius:9px;
+  background:#fff8e8;
+  font-size:12px;
+}
+
+.change-info-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:7px;
+}
+
+.change-info-label{
+  color:#6f6245;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.change-info-value{
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
