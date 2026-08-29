@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>依頼情報</title>
-  <link rel="stylesheet" href="./css/request-view.css?v=20260829-3">
+  <link rel="stylesheet" href="./css/request-view.css?v=20260829-6">
 </head>
 
 <body>
@@ -206,10 +206,6 @@
 
         <option>
           変更
-        </option>
-
-        <option>
-          担当変更
         </option>
 
       </select>
@@ -697,8 +693,187 @@
 </dialog>
 
 
-<script src="./js/request-view-config.js?v=20260829-3"></script>
-<script src="./js/request-view.js?v=20260829-3"></script>
+<script src="./js/request-view-config.js?v=20260829-6"></script>
+<script src="./js/request-view.js?v=20260829-6"></script>
+
+
+<!-- ==================================================
+     一覧からの担当変更
+================================================== -->
+<dialog
+  id="staffChangeDialog"
+  class="request-dialog"
+>
+
+  <form
+    id="staffChangeForm"
+    class="request-form"
+  >
+
+    <div class="form-head">
+
+      <strong>
+        担当変更
+      </strong>
+
+      <button
+        type="button"
+        id="closeStaffChangeDialog"
+        class="close-btn"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div
+      id="staffChangeMessage"
+      class="save-message"
+      hidden
+    ></div>
+
+
+    <div class="form-body">
+
+      <div class="staff-current-grid">
+
+        <div class="staff-current-cell">
+          <span>人数</span>
+          <b id="currentPeople">－</b>
+        </div>
+
+        <div class="staff-current-cell">
+          <span>主担当</span>
+          <b id="currentMainStaff">－</b>
+        </div>
+
+        <div class="staff-current-cell">
+          <span>担当2</span>
+          <b id="currentStaff2">－</b>
+        </div>
+
+        <div class="staff-current-cell">
+          <span>担当3</span>
+          <b id="currentStaff3">－</b>
+        </div>
+
+        <div class="staff-current-cell">
+          <span>行ドライバ</span>
+          <b id="currentOutDriver">－</b>
+        </div>
+
+        <div class="staff-current-cell">
+          <span>帰ドライバ</span>
+          <b id="currentBackDriver">－</b>
+        </div>
+
+      </div>
+
+
+      <label class="field">
+
+        <span>
+          変更する項目
+        </span>
+
+        <select id="staffChangeField">
+
+          <option value="">
+            選択してください
+          </option>
+
+          <option value="main">
+            主担当
+          </option>
+
+          <option value="staff2">
+            担当2
+          </option>
+
+          <option value="staff3">
+            担当3
+          </option>
+
+          <option value="outDriver">
+            行ドライバ
+          </option>
+
+          <option value="backDriver">
+            帰ドライバ
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <div class="staff-change-current-line">
+
+        <span>
+          変更前
+        </span>
+
+        <b id="staffChangeOldValue">
+          －
+        </b>
+
+      </div>
+
+
+      <label class="field">
+
+        <span>
+          変更後
+        </span>
+
+        <select id="staffChangeNewStaff">
+
+          <option value="">
+            選択してください
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label class="field">
+
+        <span>
+          変更理由
+        </span>
+
+        <input id="staffChangeReason">
+
+      </label>
+
+
+      <div class="form-actions">
+
+        <button
+          type="button"
+          id="cancelStaffChange"
+          class="sub-btn"
+        >
+          閉じる
+        </button>
+
+        <button
+          type="submit"
+          id="saveStaffChange"
+          class="primary-btn"
+        >
+          担当変更する
+        </button>
+
+      </div>
+
+    </div>
+
+  </form>
+
+</dialog>
 
 </body>
 </html>
