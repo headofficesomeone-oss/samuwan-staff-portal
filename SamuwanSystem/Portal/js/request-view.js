@@ -1385,13 +1385,19 @@
 
           <div
             class="badge ${badge(
-              item.requestType
+              item.status === '取消'
+                ? '取消'
+                : item.requestType
             )}"
           >
 
             ${esc(
-              item.requestType ||
-              ''
+              item.status === '取消'
+                ? '取消'
+                : (
+                    item.requestType ||
+                    ''
+                  )
             )}
 
           </div>
@@ -3287,6 +3293,8 @@
 
 
     if (
+      type ===
+      '取消' ||
       type ===
       '依頼取消'
     ) {
