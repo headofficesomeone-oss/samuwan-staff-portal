@@ -184,3 +184,184 @@ h1{margin:0;font-size:21px}
   font-weight:600;
   color:#785f3a;
 }
+
+
+/* ==================================================
+   シフト操作
+================================================== */
+
+.shift-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid #edf0f2;
+}
+
+.shift-action-btn{
+  min-height:36px;
+  padding:0 12px;
+  border:1px solid #cfd9e3;
+  border-radius:9px;
+  background:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.shift-action-btn:hover{
+  background:#f6f8fa;
+}
+
+
+/* ==================================================
+   ダイアログ
+================================================== */
+
+.shift-dialog{
+  width:min(94vw,560px);
+  padding:0;
+  border:0;
+  border-radius:16px;
+  box-shadow:0 14px 45px rgba(0,0,0,.22);
+}
+
+.shift-dialog::backdrop{
+  background:rgba(0,0,0,.42);
+}
+
+.dialog-card{
+  margin:0;
+}
+
+.dialog-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid #e6eaee;
+  font-size:18px;
+}
+
+.dialog-close{
+  width:42px;
+  height:42px;
+  border:0;
+  border-radius:50%;
+  background:#f0f3f6;
+  font-size:24px;
+  cursor:pointer;
+}
+
+.dialog-body{
+  display:grid;
+  gap:13px;
+  padding:14px 16px 16px;
+}
+
+.dialog-summary{
+  padding:10px 12px;
+  border-radius:9px;
+  background:#f5f7f9;
+  font-size:13px;
+  font-weight:700;
+  line-height:1.55;
+}
+
+.current-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+
+.current-box{
+  min-height:70px;
+  padding:8px 9px;
+  border:1px solid #d8e0e7;
+  border-radius:10px;
+  background:#fafbfc;
+}
+
+.current-box span{
+  display:block;
+  margin-bottom:5px;
+  color:#5e6a75;
+  font-size:11px;
+}
+
+.current-box b{
+  font-size:13px;
+}
+
+.field{
+  display:grid;
+  gap:6px;
+}
+
+.field > span{
+  color:#65727e;
+  font-size:12px;
+  font-weight:800;
+}
+
+.field select,
+.field textarea{
+  width:100%;
+  padding:10px 11px;
+  border:1px solid #ccd6df;
+  border-radius:9px;
+  background:#fff;
+  font:inherit;
+}
+
+.before-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 10px;
+  border-radius:8px;
+  background:#f5f6f7;
+  font-size:13px;
+}
+
+.before-row span{
+  color:#66727d;
+}
+
+.dialog-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  padding-top:2px;
+}
+
+.sub-btn,
+.primary-btn,
+.danger-btn{
+  min-height:44px;
+  border:0;
+  border-radius:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.sub-btn{
+  background:#eef0f2;
+}
+
+.primary-btn{
+  background:#286bb2;
+  color:#fff;
+}
+
+.danger-btn{
+  background:#b83535;
+  color:#fff;
+}
+
+@media(max-width:440px){
+  .current-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
