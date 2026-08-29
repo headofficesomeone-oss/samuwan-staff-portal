@@ -574,7 +574,7 @@
     );
 
 
-    E.closeStaffChangeDialog.addEventListener
+    E.closeStaffChangeDialog.addEventListener(
       'click',
       () =>
         E.staffChangeDialog.close()
