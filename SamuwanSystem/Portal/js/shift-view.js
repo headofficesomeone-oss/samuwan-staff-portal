@@ -8,7 +8,11 @@
     weekOffset: 0,
     selectedDay: todayDayIndex(),
     weekData: null,
-    cache: {}
+    cache: {},
+    masters: {
+      staffs: []
+    },
+    selectedShift: null
   };
 
   const $ = id => document.getElementById(id);
@@ -23,7 +27,29 @@
     dayTitle: $('dayTitle'),
     dayCount: $('dayCount'),
     message: $('message'),
-    list: $('shiftList')
+    list: $('shiftList'),
+
+    staffChangeDialog: $('staffChangeDialog'),
+    staffChangeForm: $('staffChangeForm'),
+    closeStaffChangeDialog: $('closeStaffChangeDialog'),
+    cancelStaffChange: $('cancelStaffChange'),
+    staffChangeSummary: $('staffChangeSummary'),
+    currentPeople: $('currentPeople'),
+    currentMain: $('currentMain'),
+    currentStaff2: $('currentStaff2'),
+    currentOutDriver: $('currentOutDriver'),
+    currentBackDriver: $('currentBackDriver'),
+    staffChangeField: $('staffChangeField'),
+    staffChangeOld: $('staffChangeOld'),
+    staffChangeNew: $('staffChangeNew'),
+    staffChangeReason: $('staffChangeReason'),
+
+    shiftCancelDialog: $('shiftCancelDialog'),
+    shiftCancelForm: $('shiftCancelForm'),
+    closeShiftCancelDialog: $('closeShiftCancelDialog'),
+    cancelShiftCancel: $('cancelShiftCancel'),
+    shiftCancelSummary: $('shiftCancelSummary'),
+    shiftCancelReason: $('shiftCancelReason')
   };
 
   function monday(date) {
@@ -86,6 +112,99 @@
   function weekStart() {
     return addDays(S.todayMonday, S.weekOffset * 7);
   }
+
+  function currentUser() {
+    const params = new URLSearchParams(location.search);
+
+    if (params.get('employeeId')) {
+      return {
+        id: params.get('employeeId') || '',
+        name: params.get('employeeName') || ''
+      };
+    }
+
+    try {
+      const user = JSON.parse(
+        localStorage.getItem('currentUser') ||
+        'null'
+      );
+
+      return {
+        id: String(user?.employeeId || user?.id || ''),
+        name: String(user?.name || user?.employeeName || '')
+      };
+    }
+    catch (_) {
+      return {
+        id: '',
+        name: ''
+      };
+    }
+  }
+
+
+  async function loadMasters() {
+    const result = await api({
+      action:'request.masters'
+    });
+
+    if (!result?.ok) {
+      throw new Error(
+        result?.message ||
+        result?.error ||
+        '従業員マスタ取得エラー'
+      );
+    }
+
+    S.masters.staffs =
+      result.staffs ||
+      result.employees ||
+      [];
+
+    renderStaffOptions();
+  }
+
+
+  function staffId(staff) {
+    return String(
+      staff?.employeeId ||
+      staff?.staffId ||
+      staff?.id ||
+      ''
+    ).trim();
+  }
+
+
+  function staffName(staff) {
+    return String(
+      staff?.employeeName ||
+      staff?.staffName ||
+      staff?.name ||
+      ''
+    ).trim();
+  }
+
+
+  function renderStaffOptions() {
+    E.staffChangeNew.innerHTML =
+      '<option value="">選択してください</option>' +
+      S.masters.staffs
+        .map(staff => {
+          const id = staffId(staff);
+          const name = staffName(staff);
+
+          return `
+            <option
+              value="${esc(id)}"
+              data-name="${esc(name)}"
+            >
+              ${esc(name)}
+            </option>
+          `;
+        })
+        .join('');
+  }
+
 
   async function loadWeek() {
     const start = weekStart();
@@ -226,22 +345,9 @@
 
 
     let expectedPeople =
-      1;
-
-
-    if (
-      item.staff3Name
-    ) {
-      expectedPeople = 3;
-    }
-    else if (
       item.staff2Name
-    ) {
-      expectedPeople = 2;
-    }
-    else {
-      expectedPeople = 1;
-    }
+        ? 2
+        : 1;
 
 
     const peopleMismatch =
@@ -295,9 +401,365 @@
             規定値Mから表示している予定候補です。まだシフトIDはありません。
           </div>
         ` : ''}
+
+        ${
+          item.isActual &&
+          ['作成中','確認中'].includes(
+            S.weekData?.status
+          ) &&
+          ![
+            'キャンセル',
+            '無効',
+            '変更前'
+          ].includes(
+            item.state
+          )
+            ? `
+              <div class="shift-actions">
+                <button
+                  type="button"
+                  class="shift-action-btn"
+                  data-action="staffchange"
+                  data-shift-id="${esc(item.shiftId)}"
+                >
+                  担当変更
+                </button>
+
+                <button
+                  type="button"
+                  class="shift-action-btn"
+                  data-action="cancel"
+                  data-shift-id="${esc(item.shiftId)}"
+                >
+                  キャンセル
+                </button>
+              </div>
+            `
+            : ''
+        }
       </article>
     `;
   }
+
+  function findShift(shiftId) {
+    return (S.weekData?.items || [])
+      .find(
+        item =>
+          String(item.shiftId || '') ===
+          String(shiftId || '')
+      ) || null;
+  }
+
+
+  function shiftSummary(item) {
+    return [
+      item.date || '',
+      item.startTime || '',
+      item.endTime ? '〜' + item.endTime : '',
+      item.clientName || '',
+      item.service || ''
+    ]
+      .filter(Boolean)
+      .join('　');
+  }
+
+
+  function openStaffChange(item) {
+    S.selectedShift = item;
+
+    E.staffChangeSummary.textContent =
+      shiftSummary(item);
+
+    E.currentPeople.textContent =
+      String(
+        item.people ||
+        '1'
+      );
+
+    E.currentMain.textContent =
+      item.mainStaffName ||
+      '－';
+
+    E.currentStaff2.textContent =
+      item.staff2Name ||
+      '－';
+
+    E.currentOutDriver.textContent =
+      item.outDriverName ||
+      '－';
+
+    E.currentBackDriver.textContent =
+      item.backDriverName ||
+      '－';
+
+    E.staffChangeField.value = '';
+    E.staffChangeOld.textContent = '－';
+    E.staffChangeNew.value = '';
+    E.staffChangeReason.value = '';
+
+    E.staffChangeDialog.showModal();
+  }
+
+
+  function fieldCurrent(item, fieldKey) {
+    const map = {
+      main: {
+        id: item.mainStaffId || '',
+        name: item.mainStaffName || '－'
+      },
+      staff2: {
+        id: item.staff2Id || '',
+        name: item.staff2Name || '－'
+      },
+      outDriver: {
+        id: item.outDriverId || '',
+        name: item.outDriverName || '－'
+      },
+      backDriver: {
+        id: item.backDriverId || '',
+        name: item.backDriverName || '－'
+      }
+    };
+
+    return map[fieldKey] || {
+      id: '',
+      name: '－'
+    };
+  }
+
+
+  function updateOldStaff() {
+    const item = S.selectedShift;
+    const fieldKey = E.staffChangeField.value;
+
+    if (!item || !fieldKey) {
+      E.staffChangeOld.textContent = '－';
+      return;
+    }
+
+    E.staffChangeOld.textContent =
+      fieldCurrent(
+        item,
+        fieldKey
+      ).name;
+  }
+
+
+  function currentPeople(item) {
+    const raw = String(
+      item?.people ??
+      ''
+    ).trim();
+
+    return raw
+      ? Number(raw) || 1
+      : 1;
+  }
+
+
+  function peopleAfterChange(
+    item,
+    fieldKey,
+    newStaffId
+  ) {
+    // 介助人数は最大2人。
+    // 担当3は人数判定に使用しない。
+    let mainId =
+      item.mainStaffId ||
+      '';
+
+    let staff2Id =
+      item.staff2Id ||
+      '';
+
+    if (fieldKey === 'main') {
+      mainId = newStaffId || '';
+    }
+
+    if (fieldKey === 'staff2') {
+      staff2Id = newStaffId || '';
+    }
+
+    return staff2Id
+      ? 2
+      : 1;
+  }
+
+
+  async function saveStaffChange(event) {
+    event.preventDefault();
+
+    const item = S.selectedShift;
+    const fieldKey = E.staffChangeField.value;
+    const newStaffId = E.staffChangeNew.value;
+
+    if (!item || !fieldKey || !newStaffId) {
+      alert('変更する項目と変更後の担当者を選択してください。');
+      return;
+    }
+
+    const option =
+      E.staffChangeNew.selectedOptions[0];
+
+    const newStaffName =
+      option?.dataset?.name ||
+      option?.textContent?.trim() ||
+      '';
+
+    const old =
+      fieldCurrent(
+        item,
+        fieldKey
+      );
+
+    if (old.id === newStaffId) {
+      alert('現在と同じ従業員です。');
+      return;
+    }
+
+    const labels = {
+      main:'主担当',
+      staff2:'担当2',
+      outDriver:'行ドライバ',
+      backDriver:'帰ドライバ'
+    };
+
+    const oldPeople =
+      currentPeople(
+        item
+      );
+
+    const newPeople =
+      peopleAfterChange(
+        item,
+        fieldKey,
+        newStaffId
+      );
+
+    const lines = [
+      '担当変更しますか？',
+      '',
+      '項目：' + labels[fieldKey],
+      '変更前：' + old.name,
+      '変更後：' + newStaffName
+    ];
+
+    if (
+      oldPeople !==
+      newPeople
+    ) {
+      lines.push(
+        '',
+        '人数も変更されます：' +
+        oldPeople +
+        ' → ' +
+        newPeople,
+        '',
+        '担当変更と同時に人数も変更してよろしいですか？'
+      );
+    }
+
+    if (!confirm(lines.join('\n'))) {
+      return;
+    }
+
+    const reporter =
+      currentUser();
+
+    const result =
+      await api({
+        action:'request.staffchange.apply',
+        shiftId:item.shiftId,
+        fieldKey:fieldKey,
+        newStaffId:newStaffId,
+        newStaffName:newStaffName,
+        reporterId:reporter.id,
+        reporterName:reporter.name,
+        reason:E.staffChangeReason.value.trim(),
+        registerMethod:'WEB_SHIFT_LIST'
+      });
+
+    if (!result?.ok) {
+      throw new Error(
+        result?.message ||
+        result?.error ||
+        '担当変更に失敗しました。'
+      );
+    }
+
+    E.staffChangeDialog.close();
+
+    const key = ymd(weekStart());
+    delete S.cache[key];
+
+    await loadWeek();
+
+    alert('担当変更を登録しました。');
+  }
+
+
+  function openCancel(item) {
+    S.selectedShift = item;
+
+    E.shiftCancelSummary.textContent =
+      shiftSummary(item);
+
+    E.shiftCancelReason.value = '';
+
+    E.shiftCancelDialog.showModal();
+  }
+
+
+  async function saveCancel(event) {
+    event.preventDefault();
+
+    const item = S.selectedShift;
+
+    if (!item?.shiftId) {
+      return;
+    }
+
+    if (
+      !confirm(
+        'このシフトをキャンセルしますか？'
+      )
+    ) {
+      return;
+    }
+
+    const reporter =
+      currentUser();
+
+    const result =
+      await api({
+        action:'request.cancel.multi',
+        shiftIds:[
+          item.shiftId
+        ],
+        reporterId:reporter.id,
+        reporterName:reporter.name,
+        reason:E.shiftCancelReason.value.trim(),
+        registerMethod:'WEB_SHIFT_LIST'
+      });
+
+    if (!result?.ok) {
+      throw new Error(
+        result?.message ||
+        result?.error ||
+        'キャンセルに失敗しました。'
+      );
+    }
+
+    E.shiftCancelDialog.close();
+
+    const key = ymd(weekStart());
+    delete S.cache[key];
+
+    await loadWeek();
+
+    alert('キャンセルを登録しました。');
+  }
+
 
   E.prevWeek.addEventListener('click',() => {
     if (S.weekOffset <= -1) return;
@@ -321,5 +783,120 @@
     renderDay();
   });
 
-  loadWeek();
+  E.list.addEventListener(
+    'click',
+    event => {
+      const button =
+        event.target.closest(
+          '[data-action][data-shift-id]'
+        );
+
+      if (!button) {
+        return;
+      }
+
+      const item =
+        findShift(
+          button.dataset.shiftId
+        );
+
+      if (!item) {
+        return;
+      }
+
+      if (
+        button.dataset.action ===
+        'staffchange'
+      ) {
+        openStaffChange(item);
+      }
+
+      if (
+        button.dataset.action ===
+        'cancel'
+      ) {
+        openCancel(item);
+      }
+    }
+  );
+
+
+  E.staffChangeField.addEventListener(
+    'change',
+    updateOldStaff
+  );
+
+
+  E.staffChangeForm.addEventListener(
+    'submit',
+    event => {
+      saveStaffChange(event)
+        .catch(
+          err =>
+            alert(
+              err?.message ||
+              err
+            )
+        );
+    }
+  );
+
+
+  E.closeStaffChangeDialog.addEventListener(
+    'click',
+    () =>
+      E.staffChangeDialog.close()
+  );
+
+
+  E.cancelStaffChange.addEventListener(
+    'click',
+    () =>
+      E.staffChangeDialog.close()
+  );
+
+
+  E.shiftCancelForm.addEventListener(
+    'submit',
+    event => {
+      saveCancel(event)
+        .catch(
+          err =>
+            alert(
+              err?.message ||
+              err
+            )
+        );
+    }
+  );
+
+
+  E.closeShiftCancelDialog.addEventListener(
+    'click',
+    () =>
+      E.shiftCancelDialog.close()
+  );
+
+
+  E.cancelShiftCancel.addEventListener(
+    'click',
+    () =>
+      E.shiftCancelDialog.close()
+  );
+
+
+  Promise.all([
+    loadMasters(),
+    loadWeek()
+  ])
+    .catch(
+      err => {
+        E.message.textContent =
+          '取得できませんでした：' +
+          (
+            err?.message ||
+            err
+          );
+      }
+    );
 })();
