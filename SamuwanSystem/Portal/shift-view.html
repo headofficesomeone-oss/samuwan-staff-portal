@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-1">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-2">
 </head>
 <body>
 
@@ -42,7 +42,111 @@
 
 </main>
 
-<script src="./js/request-view-config.js?v=20260829-1"></script>
-<script src="./js/shift-view.js?v=20260830-1"></script>
+
+<!-- 担当変更 -->
+<dialog id="staffChangeDialog" class="shift-dialog">
+  <form id="staffChangeForm" class="dialog-card">
+
+    <div class="dialog-head">
+      <strong>担当変更</strong>
+      <button type="button" id="closeStaffChangeDialog" class="dialog-close">×</button>
+    </div>
+
+    <div class="dialog-body">
+
+      <div id="staffChangeSummary" class="dialog-summary"></div>
+
+      <div class="current-grid">
+        <div class="current-box">
+          <span>人数</span>
+          <b id="currentPeople">1</b>
+        </div>
+        <div class="current-box">
+          <span>主担当</span>
+          <b id="currentMain">－</b>
+        </div>
+        <div class="current-box">
+          <span>担当2</span>
+          <b id="currentStaff2">－</b>
+        </div>
+        <div class="current-box">
+          <span>行ドライバ</span>
+          <b id="currentOutDriver">－</b>
+        </div>
+        <div class="current-box">
+          <span>帰ドライバ</span>
+          <b id="currentBackDriver">－</b>
+        </div>
+      </div>
+
+      <label class="field">
+        <span>変更する項目</span>
+        <select id="staffChangeField" required>
+          <option value="">選択してください</option>
+          <option value="main">主担当</option>
+          <option value="staff2">担当2</option>
+          <option value="outDriver">行ドライバ</option>
+          <option value="backDriver">帰ドライバ</option>
+        </select>
+      </label>
+
+      <div class="before-row">
+        <span>変更前</span>
+        <b id="staffChangeOld">－</b>
+      </div>
+
+      <label class="field">
+        <span>変更後</span>
+        <select id="staffChangeNew" required>
+          <option value="">選択してください</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>変更理由</span>
+        <textarea id="staffChangeReason" rows="2"></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button type="button" id="cancelStaffChange" class="sub-btn">閉じる</button>
+        <button type="submit" class="primary-btn">担当変更する</button>
+      </div>
+
+    </div>
+
+  </form>
+</dialog>
+
+
+<!-- キャンセル -->
+<dialog id="shiftCancelDialog" class="shift-dialog">
+  <form id="shiftCancelForm" class="dialog-card">
+
+    <div class="dialog-head">
+      <strong>シフトキャンセル</strong>
+      <button type="button" id="closeShiftCancelDialog" class="dialog-close">×</button>
+    </div>
+
+    <div class="dialog-body">
+
+      <div id="shiftCancelSummary" class="dialog-summary"></div>
+
+      <label class="field">
+        <span>キャンセル理由</span>
+        <textarea id="shiftCancelReason" rows="3"></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button type="button" id="cancelShiftCancel" class="sub-btn">閉じる</button>
+        <button type="submit" class="danger-btn">キャンセルする</button>
+      </div>
+
+    </div>
+
+  </form>
+</dialog>
+
+<script src="./js/request-view-config.js?v=20260830-2"></script>
+<script src="./js/shift-view.js?v=20260830-2"></script>
 </body>
 </html>
