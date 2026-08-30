@@ -1164,3 +1164,22 @@ textarea{
   color:#7a8793;
   font-size:12px;
 }
+
+
+/* ==================================================
+   週確定
+================================================== */
+
+.confirm-week-btn{
+  background:#2f7d4a;
+}
+
+.week-confirm-note{
+  padding:10px 12px;
+  border:1px solid #d8e4da;
+  border-radius:9px;
+  background:#f3faf5;
+  color:#42584a;
+  font-size:12px;
+  line-height:1.6;
+}
