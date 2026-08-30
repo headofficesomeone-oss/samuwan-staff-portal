@@ -351,8 +351,12 @@
     if (out && back) {
       rows.push(['行ドライバ',out]);
       rows.push(['帰ドライバ',back]);
-    } else if (out || back) {
-      rows.push(['ドライバ',out || back]);
+    } else if (out) {
+      // 行きだけなら「ドライバ」
+      rows.push(['ドライバ',out]);
+    } else if (back) {
+      // 帰りだけなら「帰ドライバ」
+      rows.push(['帰ドライバ',back]);
     }
 
     if (item.destination) rows.push(['行先',item.destination]);

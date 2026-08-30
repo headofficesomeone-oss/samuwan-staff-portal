@@ -1669,6 +1669,7 @@
       outDriverName
     ) {
 
+      // 行きだけなら「ドライバ」
       rows.push([
         'ドライバ',
         outDriverName
@@ -1679,8 +1680,10 @@
       backDriverName
     ) {
 
+      // 帰りだけ残っている場合は
+      // 行きドライバーと誤認しないよう「帰ドライバ」
       rows.push([
-        'ドライバ',
+        '帰ドライバ',
         backDriverName
       ]);
 
