@@ -64,7 +64,15 @@
     closeShiftHistoryDialog: $('closeShiftHistoryDialog'),
     backToShiftDetail: $('backToShiftDetail'),
     shiftHistorySummary: $('shiftHistorySummary'),
-    shiftHistoryList: $('shiftHistoryList')
+    shiftHistoryList: $('shiftHistoryList'),
+
+    confirmWeekButton: $('confirmWeekButton'),
+    weekConfirmDialog: $('weekConfirmDialog'),
+    weekConfirmForm: $('weekConfirmForm'),
+    closeWeekConfirmDialog: $('closeWeekConfirmDialog'),
+    cancelWeekConfirm: $('cancelWeekConfirm'),
+    submitWeekConfirm: $('submitWeekConfirm'),
+    weekConfirmSummary: $('weekConfirmSummary')
   };
 
   function monday(date) {
@@ -292,6 +300,16 @@
     E.weekLabel.textContent = `${md(start)}〜${md(end)}`;
     E.weekState.textContent = data.status || '未作成';
     E.weekSource.textContent = data.source ? `参照：${data.source}` : '';
+
+    // テスト中はログイン有無に関係なく、
+    // 作成中 / 確認中 の週なら確定ボタンを表示する。
+    E.confirmWeekButton.hidden =
+      ![
+        '作成中',
+        '確認中'
+      ].includes(
+        data.status
+      );
 
     E.prevWeek.disabled = S.weekOffset <= -1;
     E.nextWeek.disabled = S.weekOffset >= 1;
@@ -521,6 +539,166 @@
     ]
       .filter(Boolean)
       .join('　');
+  }
+
+
+  function openWeekConfirm_() {
+
+    const data =
+      S.weekData ||
+      {};
+
+
+    if (
+      ![
+        '作成中',
+        '確認中'
+      ].includes(
+        data.status
+      )
+    ) {
+
+      alert(
+        'この週は現在確定できません。'
+      );
+
+      return;
+
+    }
+
+
+    const activeCount =
+      (
+        data.items ||
+        []
+      )
+        .filter(
+          item =>
+            ![
+              'キャンセル',
+              '無効',
+              '変更前'
+            ].includes(
+              item.state
+            )
+        )
+        .length;
+
+
+    E.weekConfirmSummary.textContent =
+      `${data.weekStart || ''}〜${data.weekEnd || ''}　${activeCount}件`;
+
+
+    E.weekConfirmDialog.showModal();
+
+  }
+
+
+  async function confirmWeek_(
+    event
+  ) {
+
+    event.preventDefault();
+
+
+    const data =
+      S.weekData ||
+      {};
+
+
+    if (
+      !data.weekStart
+    ) {
+      return;
+    }
+
+
+    if (
+      !window.confirm(
+        'この週を正式に確定しますか？'
+      )
+    ) {
+      return;
+    }
+
+
+    E.submitWeekConfirm.disabled =
+      true;
+
+    E.submitWeekConfirm.textContent =
+      '確定処理中…';
+
+
+    try {
+
+      // 現在は未ログインでのテストを許可。
+      // 本番認証導入後は currentUser() の値をそのまま使用する。
+      const reporter =
+        typeof currentUser ===
+        'function'
+          ? (
+              currentUser() ||
+              {}
+            )
+          : {};
+
+
+      const result =
+        await api({
+          action:
+            'week.confirm',
+
+          weekStart:
+            data.weekStart,
+
+          reporterId:
+            reporter.id ||
+            'TEST',
+
+          reporterName:
+            reporter.name ||
+            'TEST'
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '週確定に失敗しました。'
+        );
+
+      }
+
+
+      E.weekConfirmDialog.close();
+
+
+      S.cache =
+        {};
+
+
+      await loadWeek();
+
+
+      alert(
+        `週を確定しました。${result.confirmedCount || 0}件を基本表Mへ登録しました。`
+      );
+
+    }
+    finally {
+
+      E.submitWeekConfirm.disabled =
+        false;
+
+      E.submitWeekConfirm.textContent =
+        '確定する';
+
+    }
+
   }
 
 
@@ -1394,6 +1572,45 @@
         E.shiftDetailDialog.showModal();
       }
     }
+  );
+
+
+  E.confirmWeekButton.addEventListener(
+    'click',
+    openWeekConfirm_
+  );
+
+
+  E.weekConfirmForm.addEventListener(
+    'submit',
+    event => {
+
+      confirmWeek_(
+        event
+      )
+        .catch(
+          err =>
+            alert(
+              err?.message ||
+              err
+            )
+        );
+
+    }
+  );
+
+
+  E.closeWeekConfirmDialog.addEventListener(
+    'click',
+    () =>
+      E.weekConfirmDialog.close()
+  );
+
+
+  E.cancelWeekConfirm.addEventListener(
+    'click',
+    () =>
+      E.weekConfirmDialog.close()
   );
 
 
