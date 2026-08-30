@@ -471,17 +471,7 @@
         ` : ''}
 
         ${
-          item.isActual &&
-          ['作成中','確認中'].includes(
-            S.weekData?.status
-          ) &&
-          ![
-            'キャンセル',
-            '無効',
-            '変更前'
-          ].includes(
-            item.state
-          )
+          item.isActual
             ? `
               <div class="card-actions">
 
@@ -494,23 +484,39 @@
                   詳細
                 </button>
 
-                <button
-                  type="button"
-                  class="card-action-btn"
-                  data-action="staffchange"
-                  data-shift-id="${esc(item.shiftId)}"
-                >
-                  担当変更
-                </button>
+                ${
+                  ['作成中','確認中'].includes(
+                    S.weekData?.status
+                  ) &&
+                  ![
+                    'キャンセル',
+                    '無効',
+                    '変更前'
+                  ].includes(
+                    item.state
+                  )
+                    ? `
+                      <button
+                        type="button"
+                        class="card-action-btn"
+                        data-action="staffchange"
+                        data-shift-id="${esc(item.shiftId)}"
+                      >
+                        担当変更
+                      </button>
 
-                <button
-                  type="button"
-                  class="card-action-btn"
-                  data-action="cancel"
-                  data-shift-id="${esc(item.shiftId)}"
-                >
-                  キャンセル
-                </button>
+                      <button
+                        type="button"
+                        class="card-action-btn"
+                        data-action="cancel"
+                        data-shift-id="${esc(item.shiftId)}"
+                      >
+                        キャンセル
+                      </button>
+                    `
+                    : ''
+                }
+
               </div>
             `
             : ''
