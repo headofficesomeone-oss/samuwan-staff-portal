@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-5">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-6">
 </head>
 <body>
 
@@ -134,6 +134,13 @@
         <span>変更後</span>
         <select id="staffChangeNew" required>
           <option value="">選択してください</option>
+          <option
+            value="__CLEAR__"
+            data-clear-option="true"
+            data-name=""
+          >
+            空欄にする
+          </option>
         </select>
       </label>
 
@@ -181,7 +188,7 @@
   </form>
 </dialog>
 
-<script src="./js/request-view-config.js?v=20260830-5"></script>
-<script src="./js/shift-view.js?v=20260830-5"></script>
+<script src="./js/request-view-config.js?v=20260830-6"></script>
+<script src="./js/shift-view.js?v=20260830-6"></script>
 </body>
 </html>
