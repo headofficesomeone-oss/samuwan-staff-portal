@@ -185,9 +185,24 @@
   }
 
 
-  function renderStaffOptions() {
+  function renderStaffOptions(
+    fieldKey
+  ) {
+
+    const clearDisabled =
+      fieldKey ===
+      'main';
+
+
     E.staffChangeNew.innerHTML =
       '<option value="">選択してください</option>' +
+      '<option value="__CLEAR__" data-name=""' +
+      (
+        clearDisabled
+          ? ' disabled'
+          : ''
+      ) +
+      '>空欄にする</option>' +
       S.masters.staffs
         .map(staff => {
           const id = staffId(staff);
@@ -203,6 +218,22 @@
           `;
         })
         .join('');
+
+  }
+
+
+  function refreshShiftStaffChangeOptions_(
+    fieldKey
+  ) {
+
+    renderStaffOptions(
+      fieldKey
+    );
+
+
+    E.staffChangeNew.value =
+      '';
+
   }
 
 
@@ -494,7 +525,7 @@
 
     E.staffChangeField.value = '';
     E.staffChangeOld.textContent = '－';
-    E.staffChangeNew.value = '';
+    refreshShiftStaffChangeOptions_('');
     E.staffChangeReason.value = '';
 
     E.staffChangeDialog.showModal();
@@ -542,6 +573,11 @@
         item,
         fieldKey
       ).name;
+
+
+    refreshShiftStaffChangeOptions_(
+      fieldKey
+    );
   }
 
 
@@ -591,20 +627,58 @@
 
     const item = S.selectedShift;
     const fieldKey = E.staffChangeField.value;
-    const newStaffId = E.staffChangeNew.value;
 
-    if (!item || !fieldKey || !newStaffId) {
-      alert('変更する項目と変更後の担当者を選択してください。');
-      return;
-    }
+    const selectedValue =
+      String(
+        E.staffChangeNew.value ||
+        ''
+      ).trim();
+
+    const clearRequested =
+      selectedValue ===
+      '__CLEAR__';
+
+    const newStaffId =
+      clearRequested
+        ? ''
+        : selectedValue;
 
     const option =
       E.staffChangeNew.selectedOptions[0];
 
     const newStaffName =
-      option?.dataset?.name ||
-      option?.textContent?.trim() ||
-      '';
+      clearRequested
+        ? ''
+        : (
+            option?.dataset?.name ||
+            option?.textContent?.trim() ||
+            ''
+          );
+
+    if (!item || !fieldKey) {
+      alert('変更する項目を選択してください。');
+      return;
+    }
+
+    if (
+      fieldKey === 'main' &&
+      (
+        clearRequested ||
+        !newStaffId
+      )
+    ) {
+      alert('主担当は空欄にできません。');
+      return;
+    }
+
+    if (
+      fieldKey !== 'main' &&
+      !clearRequested &&
+      !newStaffId
+    ) {
+      alert('変更後の担当者、または「空欄にする」を選択してください。');
+      return;
+    }
 
     const old =
       fieldCurrent(
@@ -612,8 +686,21 @@
         fieldKey
       );
 
-    if (old.id === newStaffId) {
-      alert('現在と同じ従業員です。');
+    if (
+      (
+        old.id &&
+        old.id === newStaffId
+      ) ||
+      (
+        !old.id &&
+        clearRequested
+      )
+    ) {
+      alert(
+        clearRequested
+          ? 'この項目はすでに空欄です。'
+          : '現在と同じ従業員です。'
+      );
       return;
     }
 
@@ -641,7 +728,12 @@
       '',
       '項目：' + labels[fieldKey],
       '変更前：' + old.name,
-      '変更後：' + newStaffName
+      '変更後：' +
+        (
+          clearRequested
+            ? '空欄'
+            : newStaffName
+        )
     ];
 
     if (
@@ -673,6 +765,7 @@
         fieldKey:fieldKey,
         newStaffId:newStaffId,
         newStaffName:newStaffName,
+        clearStaff:clearRequested,
         reporterId:reporter.id,
         reporterName:reporter.name,
         reason:E.staffChangeReason.value.trim(),

@@ -2691,12 +2691,9 @@
         '';
 
 
-      E.staffChangeNewStaff.innerHTML =
-        E.main.innerHTML;
-
-
-      E.staffChangeNewStaff.value =
-        '';
+      refreshStaffChangeNewOptions_(
+        ''
+      );
 
 
       E.staffChangeReason.value =
@@ -2803,15 +2800,75 @@
 
   function refreshStaffChangeOldValue_() {
 
+    const fieldKey =
+      E.staffChangeFieldSelect.value;
+
+
     const current =
       currentStaffByField_(
-        E.staffChangeFieldSelect.value
+        fieldKey
       );
 
 
     E.staffChangeOldValue.textContent =
       current.name ||
       '未設定';
+
+
+    refreshStaffChangeNewOptions_(
+      fieldKey
+    );
+
+  }
+
+
+  function refreshStaffChangeNewOptions_(
+    fieldKey
+  ) {
+
+    // 従業員一覧を毎回作り直す。
+    // 「空欄にする」はHTMLに固定で置き、ここで表示可否だけ制御する。
+    E.staffChangeNewStaff.innerHTML =
+      E.main.innerHTML;
+
+
+    const clearOption =
+      document.createElement(
+        'option'
+      );
+
+
+    clearOption.value =
+      '__CLEAR__';
+
+
+    clearOption.dataset.clearOption =
+      'true';
+
+
+    clearOption.dataset.name =
+      '';
+
+
+    clearOption.textContent =
+      '空欄にする';
+
+
+    clearOption.disabled =
+      fieldKey ===
+      'main';
+
+
+    // 「選択してください」の直後に入れる
+    E.staffChangeNewStaff.insertBefore(
+      clearOption,
+      E.staffChangeNewStaff.options[1] ||
+      null
+    );
+
+
+    E.staffChangeNewStaff.value =
+      '';
 
   }
 
@@ -2826,70 +2883,25 @@
       {};
 
 
-    const ids = {
-
-      main:
-        shift.mainStaffId ||
-        '',
-
-      staff2:
-        shift.staff2Id ||
-        '',
-
-      staff3:
-        shift.staff3Id ||
-        ''
-
-    };
+    let staff2Id =
+      shift.staff2Id ||
+      '';
 
 
     if (
-      Object.prototype
-        .hasOwnProperty.call(
-          ids,
-          fieldKey
-        )
+      fieldKey ===
+      'staff2'
     ) {
 
-      ids[
-        fieldKey
-      ] =
+      staff2Id =
         newStaffId ||
         '';
 
     }
 
 
-    if (
-      ids.staff3
-    ) {
-      return 3;
-    }
-
-
-    if (
-      ids.staff2
-    ) {
-      return 2;
-    }
-
-
-    if (
-      ids.main
-    ) {
-      return 1;
-    }
-
-
-    const current =
-      Number(
-        shift.people ||
-        0
-      );
-
-
-    return current > 0
-      ? current
+    return staff2Id
+      ? 2
       : 1;
 
   }
@@ -2902,42 +2914,21 @@
       {};
 
 
-    const stored =
-      Number(
-        shift.people ||
-        0
-      );
+    const raw =
+      String(
+        shift.people ??
+        ''
+      ).trim();
 
 
-    if (
-      stored > 0
-    ) {
-      return stored;
-    }
-
-
-    if (
-      shift.staff3Id
-    ) {
-      return 3;
-    }
-
-
-    if (
-      shift.staff2Id
-    ) {
-      return 2;
-    }
-
-
-    if (
-      shift.mainStaffId
-    ) {
-      return 1;
-    }
-
-
-    return 1;
+    return raw
+      ? (
+          Number(
+            raw
+          ) ||
+          1
+        )
+      : 1;
 
   }
 
@@ -2981,16 +2972,55 @@
     }
 
 
+    const selectedValue =
+      String(
+        E.staffChangeNewStaff.value ||
+        ''
+      ).trim();
+
+
+    const clearRequested =
+      selectedValue ===
+      '__CLEAR__';
+
+
     const newStaff =
-      selectedMaster(
-        E.staffChangeNewStaff
-      );
+      clearRequested
+        ? {
+            id: '',
+            name: ''
+          }
+        : selectedMaster(
+            E.staffChangeNewStaff
+          );
 
 
-    if (!newStaff.id) {
+    if (
+      fieldKey === 'main' &&
+      (
+        clearRequested ||
+        !newStaff.id
+      )
+    ) {
 
       staffChangeMessage_(
-        '変更後の従業員を選択してください。',
+        '主担当は空欄にできません。',
+        true
+      );
+
+      return;
+
+    }
+
+
+    if (
+      fieldKey !== 'main' &&
+      !clearRequested &&
+      !newStaff.id
+    ) {
+
+      staffChangeMessage_(
+        '変更後の従業員、または「空欄にする」を選択してください。',
         true
       );
 
@@ -3006,13 +3036,21 @@
 
 
     if (
-      current.id &&
-      current.id ===
-      newStaff.id
+      (
+        current.id &&
+        current.id ===
+        newStaff.id
+      ) ||
+      (
+        !current.id &&
+        clearRequested
+      )
     ) {
 
       staffChangeMessage_(
-        '現在と同じ従業員が選択されています。',
+        clearRequested
+          ? 'この項目はすでに空欄です。'
+          : '現在と同じ従業員が選択されています。',
         true
       );
 
@@ -3059,7 +3097,11 @@
           '未設定'
         ),
       '変更後：' +
-        newStaff.name
+        (
+          clearRequested
+            ? '空欄'
+            : newStaff.name
+        )
     ];
 
 
@@ -3121,6 +3163,9 @@
 
           newStaffName:
             newStaff.name,
+
+          clearStaff:
+            clearRequested,
 
           reporterId:
             S.employee.id,
