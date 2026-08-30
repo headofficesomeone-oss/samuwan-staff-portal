@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-10">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260831-01">
 </head>
 <body>
 
@@ -20,9 +20,20 @@
       </div>
 
       <div class="header-actions">
+
+        <button
+          id="confirmWeekButton"
+          class="register-btn confirm-week-btn"
+          type="button"
+          hidden
+        >
+          週を確定
+        </button>
+
         <a class="register-btn shift-request-link" href="./request-view.html">
           依頼情報
         </a>
+
       </div>
 
     </div>
@@ -292,7 +303,66 @@
 </dialog>
 
 
-<script src="./js/request-view-config.js?v=20260830-10"></script>
-<script src="./js/shift-view.js?v=20260830-10"></script>
+
+<!-- 週確定 -->
+<dialog id="weekConfirmDialog" class="request-dialog">
+
+  <form id="weekConfirmForm" class="request-form">
+
+    <div class="form-head">
+      <strong>週を確定</strong>
+
+      <button
+        type="button"
+        id="closeWeekConfirmDialog"
+        class="close-btn"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="form-body">
+
+      <div
+        id="weekConfirmSummary"
+        class="dialog-summary"
+      ></div>
+
+      <div class="week-confirm-note">
+        週編成Wの現在の有効シフトを基本表Mへ登録し、
+        週管理Rを「確定」にします。<br><br>
+        シフトIDは変更しません。<br>
+        テスト中は未ログインでも実行できます。
+      </div>
+
+      <div class="form-actions">
+
+        <button
+          type="button"
+          id="cancelWeekConfirm"
+          class="secondary-btn"
+        >
+          戻る
+        </button>
+
+        <button
+          type="submit"
+          id="submitWeekConfirm"
+          class="primary-btn"
+        >
+          確定する
+        </button>
+
+      </div>
+
+    </div>
+
+  </form>
+
+</dialog>
+
+
+<script src="./js/request-view-config.js?v=20260831-01"></script>
+<script src="./js/shift-view.js?v=20260831-01"></script>
 </body>
 </html>
