@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-8">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260830-10">
 </head>
 <body>
 
@@ -193,7 +193,106 @@
   </form>
 </dialog>
 
-<script src="./js/request-view-config.js?v=20260830-8"></script>
-<script src="./js/shift-view.js?v=20260830-8"></script>
+
+<!-- シフト詳細 -->
+<dialog id="shiftDetailDialog" class="request-dialog">
+
+  <div class="request-form">
+
+    <div class="form-head">
+      <strong>シフト詳細</strong>
+      <button
+        type="button"
+        id="closeShiftDetailDialog"
+        class="close-btn"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="form-body">
+
+      <div
+        id="shiftDetailTitle"
+        class="shift-detail-title"
+      ></div>
+
+      <div
+        id="shiftDetailBody"
+        class="shift-detail-body"
+      ></div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          id="openShiftHistory"
+          class="secondary-btn"
+        >
+          変更履歴
+        </button>
+
+        <button
+          type="button"
+          id="closeShiftDetailBottom"
+          class="primary-btn"
+        >
+          閉じる
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+
+<!-- 変更履歴 -->
+<dialog id="shiftHistoryDialog" class="request-dialog">
+
+  <div class="request-form">
+
+    <div class="form-head">
+      <strong>変更履歴</strong>
+      <button
+        type="button"
+        id="closeShiftHistoryDialog"
+        class="close-btn"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="form-body">
+
+      <div
+        id="shiftHistorySummary"
+        class="history-summary"
+      ></div>
+
+      <div
+        id="shiftHistoryList"
+        class="history-list"
+      ></div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          id="backToShiftDetail"
+          class="secondary-btn"
+        >
+          詳細へ戻る
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</dialog>
+
+
+<script src="./js/request-view-config.js?v=20260830-10"></script>
+<script src="./js/shift-view.js?v=20260830-10"></script>
 </body>
 </html>
