@@ -367,6 +367,64 @@
     E.list.innerHTML = items.map(cardHtml).join('');
   }
 
+  function canOperateShift_(
+    item
+  ) {
+
+    if (
+      !item?.isActual ||
+      [
+        'キャンセル',
+        '無効',
+        '変更前'
+      ].includes(
+        item.state
+      )
+    ) {
+      return false;
+    }
+
+
+    const weekStatus =
+      S.weekData?.status ||
+      '';
+
+
+    if (
+      [
+        '作成中',
+        '確認中'
+      ].includes(
+        weekStatus
+      )
+    ) {
+      return true;
+    }
+
+
+    if (
+      weekStatus !==
+      '確定'
+    ) {
+      return false;
+    }
+
+
+    const today =
+      ymd(
+        new Date()
+      );
+
+
+    // 確定後は当日以降の正式シフトを変更可能とする。
+    return String(
+      item.date ||
+      ''
+    ) >= today;
+
+  }
+
+
   function cardHtml(item) {
     const staff = [
       item.mainStaffName,
@@ -485,15 +543,8 @@
                 </button>
 
                 ${
-                  ['作成中','確認中'].includes(
-                    S.weekData?.status
-                  ) &&
-                  ![
-                    'キャンセル',
-                    '無効',
-                    '変更前'
-                  ].includes(
-                    item.state
+                  canOperateShift_(
+                    item
                   )
                     ? `
                       <button
@@ -1313,7 +1364,7 @@
 
     const result =
       await api({
-        action:'request.staffchange.apply',
+        action:'shift.staffchange.apply',
         shiftId:item.shiftId,
         fieldKey:fieldKey,
         newStaffId:newStaffId,
@@ -1378,7 +1429,7 @@
 
     const result =
       await api({
-        action:'request.cancel.multi',
+        action:'shift.cancel.apply',
         shiftIds:[
           item.shiftId
         ],
