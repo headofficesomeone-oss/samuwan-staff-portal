@@ -12,7 +12,8 @@
     masters: {
       staffs: []
     },
-    selectedShift: null
+    selectedShift: null,
+    detailShift: null
   };
 
   const $ = id => document.getElementById(id);
@@ -50,7 +51,20 @@
     closeShiftCancelDialog: $('closeShiftCancelDialog'),
     cancelShiftCancel: $('cancelShiftCancel'),
     shiftCancelSummary: $('shiftCancelSummary'),
-    shiftCancelReason: $('shiftCancelReason')
+    shiftCancelReason: $('shiftCancelReason'),
+
+    shiftDetailDialog: $('shiftDetailDialog'),
+    closeShiftDetailDialog: $('closeShiftDetailDialog'),
+    closeShiftDetailBottom: $('closeShiftDetailBottom'),
+    shiftDetailTitle: $('shiftDetailTitle'),
+    shiftDetailBody: $('shiftDetailBody'),
+    openShiftHistory: $('openShiftHistory'),
+
+    shiftHistoryDialog: $('shiftHistoryDialog'),
+    closeShiftHistoryDialog: $('closeShiftHistoryDialog'),
+    backToShiftDetail: $('backToShiftDetail'),
+    shiftHistorySummary: $('shiftHistorySummary'),
+    shiftHistoryList: $('shiftHistoryList')
   };
 
   function monday(date) {
@@ -452,6 +466,16 @@
           )
             ? `
               <div class="card-actions">
+
+                <button
+                  type="button"
+                  class="card-action-btn detail"
+                  data-action="detail"
+                  data-shift-id="${esc(item.shiftId)}"
+                >
+                  詳細
+                </button>
+
                 <button
                   type="button"
                   class="card-action-btn"
@@ -497,6 +521,337 @@
     ]
       .filter(Boolean)
       .join('　');
+  }
+
+
+  function openShiftDetail(
+    item
+  ) {
+
+    S.detailShift =
+      item;
+
+
+    E.shiftDetailTitle.textContent =
+      shiftSummary(
+        item
+      );
+
+
+    E.shiftDetailBody.innerHTML =
+      shiftDetailHtml_(
+        item
+      );
+
+
+    E.shiftDetailDialog.showModal();
+
+  }
+
+
+  function shiftDetailHtml_(
+    item
+  ) {
+
+    const empty =
+      '<span class="shift-detail-empty">－</span>';
+
+
+    const row = (
+      label,
+      value
+    ) => `
+      <div class="shift-detail-row">
+        <div class="shift-detail-label">
+          ${esc(label)}
+        </div>
+        <div class="shift-detail-value">
+          ${
+            value
+              ? esc(value)
+              : empty
+          }
+        </div>
+      </div>
+    `;
+
+
+    const staffValue =
+      [
+        item.mainStaffName,
+        item.staff2Name,
+        item.staff3Name
+      ]
+        .filter(
+          Boolean
+        )
+        .join(
+          '　'
+        );
+
+
+    let driverValue =
+      '';
+
+
+    const out =
+      String(
+        item.outDriverName ||
+        ''
+      ).trim();
+
+
+    const back =
+      String(
+        item.backDriverName ||
+        ''
+      ).trim();
+
+
+    if (
+      out &&
+      back
+    ) {
+      driverValue =
+        '行：' +
+        out +
+        '　帰：' +
+        back;
+    }
+    else if (
+      out
+    ) {
+      driverValue =
+        out;
+    }
+    else if (
+      back
+    ) {
+      driverValue =
+        '帰：' +
+        back;
+    }
+
+
+    return `
+      <section class="shift-detail-section">
+
+        <div class="shift-detail-section-title">
+          基本情報
+        </div>
+
+        <div class="shift-detail-rows">
+          ${row('利用者', item.clientName || '')}
+          ${row('日付', item.date || '')}
+          ${row(
+            '時間',
+            [
+              item.startTime || '',
+              item.endTime || ''
+            ]
+              .filter(Boolean)
+              .join('〜')
+          )}
+          ${row('制度', item.system || '')}
+          ${row('サービス', item.service || '')}
+        </div>
+
+      </section>
+
+
+      <section class="shift-detail-section">
+
+        <div class="shift-detail-section-title">
+          支援内容・指示
+        </div>
+
+        <div class="shift-detail-rows">
+          ${row('支援内容', item.supportContent || '')}
+          ${row('行先', item.destination || '')}
+          ${row('予約時間', item.appointmentTime || '')}
+          ${row('待合せ', item.meetingPlace || '')}
+          ${row('移動手段', item.transportMethod || '')}
+          ${row('送迎補足', item.transportNote || '')}
+          ${row('備考・指示', item.note || '')}
+        </div>
+
+      </section>
+
+
+      <section class="shift-detail-section">
+
+        <div class="shift-detail-section-title">
+          担当
+        </div>
+
+        <div class="shift-detail-rows">
+          ${row('担当', staffValue)}
+          ${row('ドライバ', driverValue)}
+        </div>
+
+      </section>
+    `;
+
+  }
+
+
+  async function openShiftHistoryPage_() {
+
+    const item =
+      S.detailShift;
+
+
+    if (
+      !item?.shiftId
+    ) {
+      return;
+    }
+
+
+    E.shiftDetailDialog.close();
+
+
+    E.shiftHistorySummary.textContent =
+      shiftSummary(
+        item
+      );
+
+
+    E.shiftHistoryList.innerHTML =
+      '<div class="shift-history-empty">履歴を取得しています...</div>';
+
+
+    E.shiftHistoryDialog.showModal();
+
+
+    try {
+
+      const result =
+        await api({
+          action:
+            'shift.history',
+
+          shiftId:
+            item.shiftId
+        });
+
+
+      if (
+        !result?.ok
+      ) {
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '履歴取得エラー'
+        );
+
+      }
+
+
+      const history =
+        result.history ||
+        [];
+
+
+      E.shiftHistoryList.innerHTML =
+        history.length
+          ? history
+              .map(
+                shiftHistoryHtml_
+              )
+              .join('')
+          : '<div class="shift-history-empty">変更履歴はありません。</div>';
+
+    }
+    catch (
+      err
+    ) {
+
+      E.shiftHistoryList.innerHTML =
+        `
+          <div class="shift-history-empty">
+            履歴を取得できませんでした：${esc(
+              err?.message ||
+              err
+            )}
+          </div>
+        `;
+
+    }
+
+  }
+
+
+  function shiftHistoryHtml_(
+    item
+  ) {
+
+    const displayType =
+      item.status ===
+      '取消'
+        ? '依頼取消'
+        : (
+            item.requestType ||
+            ''
+          );
+
+
+    return `
+      <div class="history-item">
+
+        <div class="history-item-head">
+          <span class="history-item-type">
+            ${esc(displayType)}
+          </span>
+
+          <span class="history-item-date">
+            ${esc(
+              item.registeredAt ||
+              ''
+            )}
+          </span>
+        </div>
+
+        ${
+          item.changeContent
+            ? `
+              <div class="history-item-change">
+                ${esc(
+                  item.changeContent
+                )}
+              </div>
+            `
+            : ''
+        }
+
+        ${
+          item.changeReason
+            ? `
+              <div class="history-item-reason">
+                理由　${esc(
+                  item.changeReason
+                )}
+              </div>
+            `
+            : ''
+        }
+
+        ${
+          item.reporterName
+            ? `
+              <div class="history-item-reporter">
+                報告者　${esc(
+                  item.reporterName
+                )}
+              </div>
+            `
+            : ''
+        }
+
+      </div>
+    `;
+
   }
 
 
@@ -913,6 +1268,13 @@
 
       if (
         button.dataset.action ===
+        'detail'
+      ) {
+        openShiftDetail(item);
+      }
+
+      if (
+        button.dataset.action ===
         'staffchange'
       ) {
         openStaffChange(item);
@@ -989,6 +1351,49 @@
     'click',
     () =>
       E.shiftCancelDialog.close()
+  );
+
+
+  E.closeShiftDetailDialog.addEventListener(
+    'click',
+    () =>
+      E.shiftDetailDialog.close()
+  );
+
+
+  E.closeShiftDetailBottom.addEventListener(
+    'click',
+    () =>
+      E.shiftDetailDialog.close()
+  );
+
+
+  E.openShiftHistory.addEventListener(
+    'click',
+    () => {
+      openShiftHistoryPage_();
+    }
+  );
+
+
+  E.closeShiftHistoryDialog.addEventListener(
+    'click',
+    () =>
+      E.shiftHistoryDialog.close()
+  );
+
+
+  E.backToShiftDetail.addEventListener(
+    'click',
+    () => {
+      E.shiftHistoryDialog.close();
+
+      if (
+        S.detailShift
+      ) {
+        E.shiftDetailDialog.showModal();
+      }
+    }
   );
 
 
