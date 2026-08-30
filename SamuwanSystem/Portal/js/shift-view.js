@@ -37,6 +37,7 @@
     currentPeople: $('currentPeople'),
     currentMain: $('currentMain'),
     currentStaff2: $('currentStaff2'),
+    currentStaff3: $('currentStaff3'),
     currentOutDriver: $('currentOutDriver'),
     currentBackDriver: $('currentBackDriver'),
     staffChangeField: $('staffChangeField'),
@@ -519,6 +520,10 @@
       item.staff2Name ||
       '－';
 
+    E.currentStaff3.textContent =
+      item.staff3Name ||
+      '－';
+
     E.currentOutDriver.textContent =
       item.outDriverName ||
       '－';
@@ -545,6 +550,10 @@
       staff2: {
         id: item.staff2Id || '',
         name: item.staff2Name || '－'
+      },
+      staff3: {
+        id: item.staff3Id || '',
+        name: item.staff3Name || '－'
       },
       outDriver: {
         id: item.outDriverId || '',
@@ -711,6 +720,7 @@
     const labels = {
       main:'主担当',
       staff2:'担当2',
+      staff3:'担当3（見習）',
       outDriver:'行ドライバ',
       backDriver:'帰ドライバ'
     };

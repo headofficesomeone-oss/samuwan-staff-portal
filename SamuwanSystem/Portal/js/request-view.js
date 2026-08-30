@@ -1596,14 +1596,26 @@
 
     const staffNames =
       [
-        action.currentMainStaffName ||
-          item.mainStaffName,
+        Object.prototype.hasOwnProperty.call(
+          action,
+          'currentMainStaffName'
+        )
+          ? action.currentMainStaffName
+          : item.mainStaffName,
 
-        action.currentStaff2Name ||
-          item.staff2Name,
+        Object.prototype.hasOwnProperty.call(
+          action,
+          'currentStaff2Name'
+        )
+          ? action.currentStaff2Name
+          : item.staff2Name,
 
-        action.currentStaff3Name ||
-          item.staff3Name
+        Object.prototype.hasOwnProperty.call(
+          action,
+          'currentStaff3Name'
+        )
+          ? action.currentStaff3Name
+          : item.staff3Name
       ]
         .filter(
           Boolean
@@ -1634,17 +1646,29 @@
 
     const outDriverName =
       String(
-        action.currentOutDriverName ||
-        item.outDriverName ||
-        ''
+        Object.prototype.hasOwnProperty.call(
+          action,
+          'currentOutDriverName'
+        )
+          ? action.currentOutDriverName
+          : (
+              item.outDriverName ||
+              ''
+            )
       ).trim();
 
 
     const backDriverName =
       String(
-        action.currentBackDriverName ||
-        item.backDriverName ||
-        ''
+        Object.prototype.hasOwnProperty.call(
+          action,
+          'currentBackDriverName'
+        )
+          ? action.currentBackDriverName
+          : (
+              item.backDriverName ||
+              ''
+            )
       ).trim();
 
 
