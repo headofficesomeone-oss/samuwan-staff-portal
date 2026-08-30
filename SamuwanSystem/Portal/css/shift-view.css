@@ -1025,3 +1025,142 @@ textarea{
 .day-head{
   display:none;
 }
+
+
+/* ==================================================
+   シフト詳細
+================================================== */
+
+.shift-detail-title{
+  padding:10px 12px;
+  border-radius:9px;
+  background:#f5f7f9;
+  font-size:14px;
+  font-weight:800;
+  line-height:1.55;
+}
+
+.shift-detail-body{
+  display:grid;
+  gap:10px;
+}
+
+.shift-detail-section{
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  background:#fff;
+}
+
+.shift-detail-section-title{
+  padding:7px 10px;
+  background:#f7f9fa;
+  color:#5d6975;
+  font-size:12px;
+  font-weight:800;
+}
+
+.shift-detail-rows{
+  display:grid;
+  gap:0;
+}
+
+.shift-detail-row{
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr);
+  gap:8px;
+  padding:8px 10px;
+  border-top:1px solid #edf0f2;
+  font-size:12px;
+}
+
+.shift-detail-row:first-child{
+  border-top:0;
+}
+
+.shift-detail-label{
+  color:#73808c;
+}
+
+.shift-detail-value{
+  min-width:0;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+
+.shift-detail-empty{
+  color:#9aa3ad;
+  font-weight:500;
+}
+
+
+/* ==================================================
+   変更履歴
+================================================== */
+
+.history-summary{
+  margin-bottom:4px;
+  padding:10px 12px;
+  border-radius:9px;
+  background:#f5f7f9;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.history-list{
+  display:grid;
+  gap:9px;
+}
+
+.history-item{
+  padding:10px;
+  border:1px solid #dce2e7;
+  border-radius:9px;
+  background:#fff;
+}
+
+.history-item-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:5px;
+}
+
+.history-item-type{
+  font-size:13px;
+  font-weight:800;
+}
+
+.history-item-date{
+  color:#7a8793;
+  font-size:11px;
+}
+
+.history-item-change{
+  padding:6px 8px;
+  border-radius:8px;
+  background:#fff8e8;
+  font-size:12px;
+  font-weight:700;
+}
+
+.history-item-reason,
+.history-item-reporter{
+  margin-top:5px;
+  font-size:12px;
+}
+
+.history-item-reporter{
+  color:#7a8793;
+  font-size:11px;
+}
+
+.shift-history-empty{
+  padding:18px 10px;
+  border:1px dashed #cfd7df;
+  border-radius:9px;
+  text-align:center;
+  color:#7a8793;
+  font-size:12px;
+}
