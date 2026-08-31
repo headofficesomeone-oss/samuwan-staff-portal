@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260831-01">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260831-04">
 </head>
 <body>
 
@@ -70,7 +70,13 @@
 
     <div class="selected-day-row">
       <div id="dayTitle" class="selected-day-title">-</div>
-      <span id="dayCount" class="count">0件</span>
+      <div class="day-tools">
+        <div class="shift-view-toggle">
+          <button id="timeViewButton" type="button" class="shift-view-btn active">時間順</button>
+          <button id="staffViewButton" type="button" class="shift-view-btn">従業員別</button>
+        </div>
+        <span id="dayCount" class="count">0件</span>
+      </div>
     </div>
 
   </header>
@@ -159,6 +165,11 @@
           </option>
         </select>
       </label>
+
+      <div id="staffConflictArea" class="staff-conflict-area" hidden>
+        <div id="staffConflictTitle" class="staff-conflict-title"></div>
+        <div id="staffConflictList" class="staff-conflict-list"></div>
+      </div>
 
       <label class="field">
         <span>変更理由</span>
@@ -363,6 +374,6 @@
 
 
 <script src="./js/request-view-config.js?v=20260831-01"></script>
-<script src="./js/shift-view.js?v=20260831-03"></script>
+<script src="./js/shift-view.js?v=20260831-04"></script>
 </body>
 </html>
