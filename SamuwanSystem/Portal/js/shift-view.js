@@ -462,31 +462,167 @@
   }
 
 
-  function employeeCompactHtml_(items) {
-    const rows = employeeCompactRows_(items);
+  function employeeCompactHtml_(
+    items
+  ) {
 
-    if (!rows.length) {
+    const rows =
+      employeeCompactRows_(
+        items
+      );
+
+
+    if (
+      !rows.length
+    ) {
       return '<div class="message">担当者が登録されているシフトはありません。</div>';
     }
 
-    const conflicts = employeeConflictKeys_(rows);
 
-    return `<div class="employee-compact-list">${
-      rows.map(row => {
-        const item = row.item;
-        const conflict = conflicts.has(
-          (row.staffId || row.staffName) + '|' + item.shiftId
-        );
+    const conflicts =
+      employeeConflictKeys_(
+        rows
+      );
 
-        return `
-          <div class="employee-compact-row${conflict ? ' conflict' : ''}">
-            <span class="employee-compact-cell employee-compact-name">${conflict ? '<span class="employee-compact-conflict">⚠</span>' : ''}${esc(item.clientName||'')}</span>
-            <span class="employee-compact-cell employee-compact-time">${esc(item.startTime||'')}${effectiveEndTime_(item) ? '～'+esc(effectiveEndTime_(item)) : ''}</span>
-            <span class="employee-compact-cell">${esc(item.service||'')}</span>
-            <span class="employee-compact-cell">${esc(item.supportContent||'')}</span>
-          </div>`;
-      }).join('')
-    }</div>`;
+
+    const groups =
+      new Map();
+
+
+    rows.forEach(
+      row => {
+
+        const key =
+          row.staffId ||
+          row.staffName;
+
+
+        if (
+          !groups.has(
+            key
+          )
+        ) {
+
+          groups.set(
+            key,
+            {
+              staffId:
+                row.staffId,
+              staffName:
+                row.staffName,
+              rows:[]
+            }
+          );
+
+        }
+
+
+        groups
+          .get(
+            key
+          )
+          .rows
+          .push(
+            row
+          );
+
+      }
+    );
+
+
+    return `
+      <div class="employee-compact-list">
+        ${
+          Array.from(
+            groups.values()
+          )
+            .map(
+              group => {
+
+                const groupHasConflict =
+                  group.rows.some(
+                    row =>
+                      conflicts.has(
+                        (
+                          row.staffId ||
+                          row.staffName
+                        ) +
+                        '|' +
+                        row.item.shiftId
+                      )
+                  );
+
+
+                return `
+                  <section class="employee-compact-group">
+
+                    <div class="employee-compact-group-title${groupHasConflict ? ' conflict' : ''}">
+                      ${
+                        groupHasConflict
+                          ? '⚠ '
+                          : ''
+                      }${esc(group.staffName || '未設定')}
+                    </div>
+
+                    ${
+                      group.rows
+                        .map(
+                          row => {
+
+                            const item =
+                              row.item;
+
+
+                            const conflict =
+                              conflicts.has(
+                                (
+                                  row.staffId ||
+                                  row.staffName
+                                ) +
+                                '|' +
+                                item.shiftId
+                              );
+
+
+                            return `
+                              <div class="employee-compact-row${conflict ? ' conflict' : ''}">
+                                <span class="employee-compact-cell employee-compact-name">
+                                  ${
+                                    conflict
+                                      ? '<span class="employee-compact-conflict">⚠</span>'
+                                      : ''
+                                  }${esc(item.clientName || '')}
+                                </span>
+
+                                <span class="employee-compact-cell employee-compact-time">
+                                  ${esc(item.startTime || '')}${effectiveEndTime_(item) ? '～' + esc(effectiveEndTime_(item)) : ''}
+                                </span>
+
+                                <span class="employee-compact-cell">
+                                  ${esc(item.service || '')}
+                                </span>
+
+                                <span class="employee-compact-cell">
+                                  ${esc(item.supportContent || '')}
+                                </span>
+                              </div>
+                            `;
+
+                          }
+                        )
+                        .join('')
+                    }
+
+                  </section>
+                `;
+
+              }
+            )
+            .join('')
+        }
+      </div>
+    `;
+
   }
 
 
