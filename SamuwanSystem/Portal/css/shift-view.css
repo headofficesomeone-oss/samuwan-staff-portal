@@ -1220,3 +1220,28 @@ textarea{
   .staff-conflict-row{grid-template-columns:minmax(54px,.9fr) 64px minmax(50px,.82fr) minmax(62px,1.15fr)}
   .shift-view-btn{padding:0 5px;font-size:9px}
 }
+
+
+/* ==================================================
+   時間未設定時の簡易重複警告
+================================================== */
+
+.staff-conflict-row.possible{
+  border-color:#d7b65b;
+  background:#fffdf3;
+}
+
+.staff-conflict-possible{
+  color:#9a7400;
+  font-weight:900;
+}
+
+.staff-conflict-note{
+  margin-top:6px;
+  padding:6px 8px;
+  border-radius:7px;
+  background:#fffdf3;
+  color:#7a640f;
+  font-size:10px;
+  line-height:1.5;
+}
