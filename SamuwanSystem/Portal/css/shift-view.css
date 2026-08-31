@@ -1245,3 +1245,32 @@ textarea{
   font-size:10px;
   line-height:1.5;
 }
+
+
+/* ==================================================
+   従業員別 簡易一覧グループ見出し
+================================================== */
+
+.employee-compact-group{
+  display:grid;
+  gap:4px;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+}
+
+.employee-compact-group + .employee-compact-group{
+  margin-top:6px;
+}
+
+.employee-compact-group-title{
+  padding:2px 3px 1px;
+  color:#263440;
+  font-size:10px;
+  font-weight:900;
+  line-height:1.25;
+}
+
+.employee-compact-group-title.conflict{
+  color:#9a5a00;
+}
