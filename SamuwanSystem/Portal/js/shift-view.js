@@ -472,21 +472,16 @@
     return `<div class="employee-compact-list">${
       rows.map(row => {
         const item = row.item;
-        const allStaff = [
-          item.mainStaffName,item.staff2Name,item.staff3Name
-        ].filter(Boolean).join('・');
-
         const conflict = conflicts.has(
           (row.staffId || row.staffName) + '|' + item.shiftId
         );
 
         return `
           <div class="employee-compact-row${conflict ? ' conflict' : ''}">
-            <span class="employee-compact-cell employee-compact-name">${conflict ? '<span class="employee-compact-conflict">⚠</span>' : ''}${esc(row.staffName)}</span>
+            <span class="employee-compact-cell employee-compact-name">${conflict ? '<span class="employee-compact-conflict">⚠</span>' : ''}${esc(item.clientName||'')}</span>
             <span class="employee-compact-cell employee-compact-time">${esc(item.startTime||'')}${item.endTime ? '～'+esc(item.endTime) : ''}</span>
             <span class="employee-compact-cell">${esc(item.service||'')}</span>
             <span class="employee-compact-cell">${esc(item.supportContent||'')}</span>
-            <span class="employee-compact-cell">担当:${esc(allStaff)}</span>
           </div>`;
       }).join('')
     }</div>`;
@@ -1270,16 +1265,12 @@
       const overlap = timeOverlap_(
         item.startTime,item.endTime,other.startTime,other.endTime
       );
-      const staff = [
-        other.mainStaffName,other.staff2Name,other.staff3Name
-      ].filter(Boolean).join('・');
-
       return `
         <div class="staff-conflict-row${overlap ? ' overlap' : ''}">
-          <span class="staff-conflict-time">${overlap ? '<span class="staff-conflict-warning">⚠</span>' : ''}${esc(other.startTime||'')}${other.endTime ? '～'+esc(other.endTime) : ''}</span>
+          <span>${overlap ? '<span class="staff-conflict-warning">⚠</span>' : ''}${esc(other.clientName||'')}</span>
+          <span class="staff-conflict-time">${esc(other.startTime||'')}${other.endTime ? '～'+esc(other.endTime) : ''}</span>
           <span>${esc(other.service||'')}</span>
           <span>${esc(other.supportContent||'')}</span>
-          <span>担当:${esc(staff)}</span>
         </div>`;
     }).join('');
   }
