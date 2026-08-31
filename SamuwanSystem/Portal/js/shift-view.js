@@ -446,8 +446,10 @@
       for (let i=0;i<group.length;i++) {
         for (let j=i+1;j<group.length;j++) {
           if (timeOverlap_(
-            group[i].item.startTime,group[i].item.endTime,
-            group[j].item.startTime,group[j].item.endTime
+            group[i].item.startTime,
+            effectiveEndTime_(group[i].item),
+            group[j].item.startTime,
+            effectiveEndTime_(group[j].item)
           )) {
             keys.add((group[i].staffId || group[i].staffName) + '|' + group[i].item.shiftId);
             keys.add((group[j].staffId || group[j].staffName) + '|' + group[j].item.shiftId);
@@ -479,7 +481,7 @@
         return `
           <div class="employee-compact-row${conflict ? ' conflict' : ''}">
             <span class="employee-compact-cell employee-compact-name">${conflict ? '<span class="employee-compact-conflict">⚠</span>' : ''}${esc(item.clientName||'')}</span>
-            <span class="employee-compact-cell employee-compact-time">${esc(item.startTime||'')}${item.endTime ? '～'+esc(item.endTime) : ''}</span>
+            <span class="employee-compact-cell employee-compact-time">${esc(item.startTime||'')}${effectiveEndTime_(item) ? '～'+esc(effectiveEndTime_(item)) : ''}</span>
             <span class="employee-compact-cell">${esc(item.service||'')}</span>
             <span class="employee-compact-cell">${esc(item.supportContent||'')}</span>
           </div>`;
@@ -1212,6 +1214,66 @@
   }
 
 
+  function effectiveEndTime_(
+    item
+  ) {
+
+    if (!item) {
+      return '';
+    }
+
+
+    const direct =
+      String(
+        item.endTime ||
+        ''
+      ).trim();
+
+
+    if (
+      direct
+    ) {
+      return direct;
+    }
+
+
+    // API側の別名や旧キーが混在していても
+    // 終了時刻を拾えるようにする。
+    const candidates =
+      [
+        item.end,
+        item.finishTime,
+        item.end_time,
+        item['終了時刻']
+      ];
+
+
+    for (
+      const value of
+      candidates
+    ) {
+
+      const text =
+        String(
+          value ||
+          ''
+        ).trim();
+
+
+      if (
+        text
+      ) {
+        return text;
+      }
+
+    }
+
+
+    return '';
+
+  }
+
+
   function updateStaffConflict_() {
     const item = S.selectedShift;
     const fieldKey = E.staffChangeField.value;
@@ -1246,7 +1308,12 @@
       .sort((a,b) => String(a.startTime||'').localeCompare(String(b.startTime||'')));
 
     const overlaps = schedules.filter(other =>
-      timeOverlap_(item.startTime,item.endTime,other.startTime,other.endTime)
+      timeOverlap_(
+        item.startTime,
+        effectiveEndTime_(item),
+        other.startTime,
+        effectiveEndTime_(other)
+      )
     );
 
     E.staffConflictArea.hidden = false;
@@ -1263,12 +1330,15 @@
 
     E.staffConflictList.innerHTML = schedules.map(other => {
       const overlap = timeOverlap_(
-        item.startTime,item.endTime,other.startTime,other.endTime
+        item.startTime,
+        effectiveEndTime_(item),
+        other.startTime,
+        effectiveEndTime_(other)
       );
       return `
         <div class="staff-conflict-row${overlap ? ' overlap' : ''}">
           <span>${overlap ? '<span class="staff-conflict-warning">⚠</span>' : ''}${esc(other.clientName||'')}</span>
-          <span class="staff-conflict-time">${esc(other.startTime||'')}${other.endTime ? '～'+esc(other.endTime) : ''}</span>
+          <span class="staff-conflict-time">${esc(other.startTime||'')}${effectiveEndTime_(other) ? '～'+esc(effectiveEndTime_(other)) : ''}</span>
           <span>${esc(other.service||'')}</span>
           <span>${esc(other.supportContent||'')}</span>
         </div>`;
