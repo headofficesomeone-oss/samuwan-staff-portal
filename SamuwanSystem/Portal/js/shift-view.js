@@ -1274,6 +1274,147 @@
   }
 
 
+  function pointInsideRange_(
+    pointTime,
+    rangeStart,
+    rangeEnd
+  ) {
+
+    const point =
+      timeMinutes_(
+        pointTime
+      );
+
+
+    const start =
+      timeMinutes_(
+        rangeStart
+      );
+
+
+    const end =
+      timeMinutes_(
+        rangeEnd
+      );
+
+
+    if (
+      [
+        point,
+        start,
+        end
+      ].some(
+        value =>
+          value ===
+          null
+      )
+    ) {
+      return false;
+    }
+
+
+    return (
+      point >=
+      start
+    ) &&
+    (
+      point <
+      end
+    );
+
+  }
+
+
+  function conflictKind_(
+    target,
+    other
+  ) {
+
+    const targetStart =
+      String(
+        target?.startTime ||
+        ''
+      ).trim();
+
+
+    const targetEnd =
+      effectiveEndTime_(
+        target
+      );
+
+
+    const otherStart =
+      String(
+        other?.startTime ||
+        ''
+      ).trim();
+
+
+    const otherEnd =
+      effectiveEndTime_(
+        other
+      );
+
+
+    if (
+      targetStart &&
+      targetEnd &&
+      otherStart &&
+      otherEnd
+    ) {
+
+      return timeOverlap_(
+        targetStart,
+        targetEnd,
+        otherStart,
+        otherEnd
+      )
+        ? 'overlap'
+        : '';
+
+    }
+
+
+    // 変更対象の終了時刻が無い場合:
+    // 開始時刻が既存予定の時間帯に入っていれば
+    // 「重複の可能性」として警告する。
+    if (
+      targetStart &&
+      !targetEnd &&
+      otherStart &&
+      otherEnd &&
+      pointInsideRange_(
+        targetStart,
+        otherStart,
+        otherEnd
+      )
+    ) {
+      return 'possible';
+    }
+
+
+    // 既存予定側の終了時刻が無い場合も、
+    // 既存開始が変更対象の時間帯に入っていれば可能性あり。
+    if (
+      targetStart &&
+      targetEnd &&
+      otherStart &&
+      !otherEnd &&
+      pointInsideRange_(
+        otherStart,
+        targetStart,
+        targetEnd
+      )
+    ) {
+      return 'possible';
+    }
+
+
+    return '';
+
+  }
+
+
   function updateStaffConflict_() {
     const item = S.selectedShift;
     const fieldKey = E.staffChangeField.value;
@@ -1307,20 +1448,60 @@
       })
       .sort((a,b) => String(a.startTime||'').localeCompare(String(b.startTime||'')));
 
-    const overlaps = schedules.filter(other =>
-      timeOverlap_(
-        item.startTime,
-        effectiveEndTime_(item),
-        other.startTime,
-        effectiveEndTime_(other)
-      )
-    );
+    const conflicts =
+      schedules.map(
+        other => ({
+          other:other,
+          kind:
+            conflictKind_(
+              item,
+              other
+            )
+        })
+      );
+
+
+    const overlaps =
+      conflicts.filter(
+        row =>
+          row.kind ===
+          'overlap'
+      );
+
+
+    const possibles =
+      conflicts.filter(
+        row =>
+          row.kind ===
+          'possible'
+      );
+
 
     E.staffConflictArea.hidden = false;
-    E.staffConflictTitle.textContent =
+
+
+    if (
       overlaps.length
-        ? `⚠ ${selectedName}さんは ${overlaps.length}件 時間が重複しています`
-        : `${selectedName}さんの当日予定`;
+    ) {
+
+      E.staffConflictTitle.textContent =
+        `⚠ ${selectedName}さんは ${overlaps.length}件 時間が重複しています`;
+
+    }
+    else if (
+      possibles.length
+    ) {
+
+      E.staffConflictTitle.textContent =
+        `△ ${selectedName}さんは ${possibles.length}件 重複の可能性があります`;
+
+    }
+    else {
+
+      E.staffConflictTitle.textContent =
+        `${selectedName}さんの当日予定`;
+
+    }
 
     if (!schedules.length) {
       E.staffConflictList.innerHTML =
@@ -1328,21 +1509,72 @@
       return;
     }
 
-    E.staffConflictList.innerHTML = schedules.map(other => {
-      const overlap = timeOverlap_(
-        item.startTime,
-        effectiveEndTime_(item),
-        other.startTime,
-        effectiveEndTime_(other)
+    E.staffConflictList.innerHTML =
+      conflicts.map(
+        row => {
+
+          const other =
+            row.other;
+
+
+          const kind =
+            row.kind;
+
+
+          const marker =
+            kind ===
+            'overlap'
+              ? '<span class="staff-conflict-warning">⚠</span>'
+              : (
+                  kind ===
+                  'possible'
+                    ? '<span class="staff-conflict-possible">△</span>'
+                    : ''
+                );
+
+
+          const rowClass =
+            kind ===
+            'overlap'
+              ? ' overlap'
+              : (
+                  kind ===
+                  'possible'
+                    ? ' possible'
+                    : ''
+                );
+
+
+          return `
+            <div class="staff-conflict-row${rowClass}">
+              <span>${marker}${esc(other.clientName||'')}</span>
+              <span class="staff-conflict-time">${esc(other.startTime||'')}${effectiveEndTime_(other) ? '～'+esc(effectiveEndTime_(other)) : '～未設定'}</span>
+              <span>${esc(other.service||'')}</span>
+              <span>${esc(other.supportContent||'')}</span>
+            </div>
+          `;
+
+        }
+      )
+      .join('');
+
+
+    const targetEnd =
+      effectiveEndTime_(
+        item
       );
-      return `
-        <div class="staff-conflict-row${overlap ? ' overlap' : ''}">
-          <span>${overlap ? '<span class="staff-conflict-warning">⚠</span>' : ''}${esc(other.clientName||'')}</span>
-          <span class="staff-conflict-time">${esc(other.startTime||'')}${effectiveEndTime_(other) ? '～'+esc(effectiveEndTime_(other)) : ''}</span>
-          <span>${esc(other.service||'')}</span>
-          <span>${esc(other.supportContent||'')}</span>
-        </div>`;
-    }).join('');
+
+
+    if (
+      !targetEnd
+    ) {
+
+      E.staffConflictList.insertAdjacentHTML(
+        'beforeend',
+        '<div class="staff-conflict-note">※変更対象の終了時刻が未設定のため、開始時刻を使って簡易判定しています。</div>'
+      );
+
+    }
   }
 
 
