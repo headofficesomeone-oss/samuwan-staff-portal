@@ -13,7 +13,8 @@
       staffs: []
     },
     selectedShift: null,
-    detailShift: null
+    detailShift: null,
+    viewMode: 'time'
   };
 
   const $ = id => document.getElementById(id);
@@ -27,6 +28,8 @@
     nextWeek: $('nextWeek'),
     dayTitle: $('dayTitle'),
     dayCount: $('dayCount'),
+    timeViewButton: $('timeViewButton'),
+    staffViewButton: $('staffViewButton'),
     message: $('message'),
     list: $('shiftList'),
 
@@ -44,6 +47,9 @@
     staffChangeField: $('staffChangeField'),
     staffChangeOld: $('staffChangeOld'),
     staffChangeNew: $('staffChangeNew'),
+    staffConflictArea: $('staffConflictArea'),
+    staffConflictTitle: $('staffConflictTitle'),
+    staffConflictList: $('staffConflictList'),
     staffChangeReason: $('staffChangeReason'),
 
     shiftCancelDialog: $('shiftCancelDialog'),
@@ -350,7 +356,13 @@
       .filter(x => x.date === dateKey)
       .sort((a,b) => String(a.startTime||'').localeCompare(String(b.startTime||'')));
 
-    E.dayCount.textContent = items.length + '件';
+    E.timeViewButton.classList.toggle('active',S.viewMode === 'time');
+    E.staffViewButton.classList.toggle('active',S.viewMode === 'staff');
+
+    E.dayCount.textContent =
+      S.viewMode === 'staff'
+        ? employeeCompactRows_(items).length + '枠'
+        : items.length + '件';
 
     if (S.weekData?.warning) {
       E.message.innerHTML = `<div class="warning">${esc(S.weekData.warning)}</div>`;
@@ -364,8 +376,123 @@
       return;
     }
 
+    if (S.viewMode === 'staff') {
+      E.list.innerHTML = employeeCompactHtml_(items);
+      return;
+    }
+
     E.list.innerHTML = items.map(cardHtml).join('');
   }
+
+
+  function employeeCompactRows_(items) {
+    const rows = [];
+
+    items.forEach(item => {
+      const assigned = [
+        {id:item.mainStaffId,name:item.mainStaffName},
+        {id:item.staff2Id,name:item.staff2Name},
+        {id:item.staff3Id,name:item.staff3Name}
+      ].filter(x => String(x.id || x.name || '').trim());
+
+      const seen = new Set();
+
+      assigned.forEach(staff => {
+        const key = String(staff.id || staff.name || '').trim();
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        rows.push({
+          staffId:String(staff.id || ''),
+          staffName:String(staff.name || ''),
+          item:item
+        });
+      });
+    });
+
+    rows.sort((a,b) => {
+      const n = a.staffName.localeCompare(b.staffName,'ja');
+      if (n !== 0) return n;
+      return String(a.item.startTime||'').localeCompare(String(b.item.startTime||''));
+    });
+
+    return rows;
+  }
+
+
+  function timeMinutes_(value) {
+    const m = String(value || '').trim().match(/^(\d{1,2}):(\d{2})/);
+    return m ? Number(m[1])*60 + Number(m[2]) : null;
+  }
+
+
+  function timeOverlap_(s1,e1,s2,e2) {
+    const a=timeMinutes_(s1), b=timeMinutes_(e1), c=timeMinutes_(s2), d=timeMinutes_(e2);
+    if ([a,b,c,d].some(x => x === null)) return false;
+    return a < d && b > c;
+  }
+
+
+  function employeeConflictKeys_(rows) {
+    const keys = new Set();
+    const groups = new Map();
+
+    rows.forEach(row => {
+      const key = row.staffId || row.staffName;
+      if (!groups.has(key)) groups.set(key,[]);
+      groups.get(key).push(row);
+    });
+
+    groups.forEach(group => {
+      for (let i=0;i<group.length;i++) {
+        for (let j=i+1;j<group.length;j++) {
+          if (timeOverlap_(
+            group[i].item.startTime,group[i].item.endTime,
+            group[j].item.startTime,group[j].item.endTime
+          )) {
+            keys.add((group[i].staffId || group[i].staffName) + '|' + group[i].item.shiftId);
+            keys.add((group[j].staffId || group[j].staffName) + '|' + group[j].item.shiftId);
+          }
+        }
+      }
+    });
+
+    return keys;
+  }
+
+
+  function employeeCompactHtml_(items) {
+    const rows = employeeCompactRows_(items);
+
+    if (!rows.length) {
+      return '<div class="message">担当者が登録されているシフトはありません。</div>';
+    }
+
+    const conflicts = employeeConflictKeys_(rows);
+
+    return `<div class="employee-compact-list">${
+      rows.map(row => {
+        const item = row.item;
+        const allStaff = [
+          item.mainStaffName,item.staff2Name,item.staff3Name
+        ].filter(Boolean).join('・');
+
+        const conflict = conflicts.has(
+          (row.staffId || row.staffName) + '|' + item.shiftId
+        );
+
+        return `
+          <div class="employee-compact-row${conflict ? ' conflict' : ''}">
+            <span class="employee-compact-cell employee-compact-name">${conflict ? '<span class="employee-compact-conflict">⚠</span>' : ''}${esc(row.staffName)}</span>
+            <span class="employee-compact-cell employee-compact-time">${esc(item.startTime||'')}${item.endTime ? '～'+esc(item.endTime) : ''}</span>
+            <span class="employee-compact-cell">${esc(item.service||'')}</span>
+            <span class="employee-compact-cell">${esc(item.supportContent||'')}</span>
+            <span class="employee-compact-cell">担当:${esc(allStaff)}</span>
+          </div>`;
+      }).join('')
+    }</div>`;
+  }
+
+
 
   function canOperateShift_(
     item
@@ -1090,6 +1217,74 @@
   }
 
 
+  function updateStaffConflict_() {
+    const item = S.selectedShift;
+    const fieldKey = E.staffChangeField.value;
+    const selectedId = String(E.staffChangeNew.value || '').trim();
+    const option = E.staffChangeNew.selectedOptions[0];
+    const selectedName = String(option?.dataset?.name || option?.textContent || '').trim();
+
+    const shouldCheck =
+      ['main','staff2','staff3'].includes(fieldKey) &&
+      selectedId &&
+      selectedId !== '__CLEAR__';
+
+    if (!item || !shouldCheck) {
+      E.staffConflictArea.hidden = true;
+      E.staffConflictList.innerHTML = '';
+      return;
+    }
+
+    const schedules = (S.weekData?.items || [])
+      .filter(other => {
+        if (other.shiftId === item.shiftId) return false;
+        if (other.date !== item.date) return false;
+        if (['キャンセル','無効','変更前'].includes(other.state)) return false;
+
+        const ids = [other.mainStaffId,other.staff2Id,other.staff3Id]
+          .map(x => String(x || '').trim());
+        const names = [other.mainStaffName,other.staff2Name,other.staff3Name]
+          .map(x => String(x || '').trim());
+
+        return ids.includes(selectedId) || (selectedName && names.includes(selectedName));
+      })
+      .sort((a,b) => String(a.startTime||'').localeCompare(String(b.startTime||'')));
+
+    const overlaps = schedules.filter(other =>
+      timeOverlap_(item.startTime,item.endTime,other.startTime,other.endTime)
+    );
+
+    E.staffConflictArea.hidden = false;
+    E.staffConflictTitle.textContent =
+      overlaps.length
+        ? `⚠ ${selectedName}さんは ${overlaps.length}件 時間が重複しています`
+        : `${selectedName}さんの当日予定`;
+
+    if (!schedules.length) {
+      E.staffConflictList.innerHTML =
+        '<div class="staff-conflict-empty">同日の他の担当予定はありません。</div>';
+      return;
+    }
+
+    E.staffConflictList.innerHTML = schedules.map(other => {
+      const overlap = timeOverlap_(
+        item.startTime,item.endTime,other.startTime,other.endTime
+      );
+      const staff = [
+        other.mainStaffName,other.staff2Name,other.staff3Name
+      ].filter(Boolean).join('・');
+
+      return `
+        <div class="staff-conflict-row${overlap ? ' overlap' : ''}">
+          <span class="staff-conflict-time">${overlap ? '<span class="staff-conflict-warning">⚠</span>' : ''}${esc(other.startTime||'')}${other.endTime ? '～'+esc(other.endTime) : ''}</span>
+          <span>${esc(other.service||'')}</span>
+          <span>${esc(other.supportContent||'')}</span>
+          <span>担当:${esc(staff)}</span>
+        </div>`;
+    }).join('');
+  }
+
+
   function openStaffChange(item) {
     S.selectedShift = item;
 
@@ -1126,6 +1321,8 @@
     E.staffChangeOld.textContent = '－';
     refreshShiftStaffChangeOptions_('');
     E.staffChangeReason.value = '';
+    E.staffConflictArea.hidden = true;
+    E.staffConflictList.innerHTML = '';
 
     E.staffChangeDialog.showModal();
   }
@@ -1168,20 +1365,17 @@
 
     if (!item || !fieldKey) {
       E.staffChangeOld.textContent = '－';
+      E.staffConflictArea.hidden = true;
       return;
     }
 
     E.staffChangeOld.textContent =
-      fieldCurrent(
-        item,
-        fieldKey
-      ).name;
+      fieldCurrent(item,fieldKey).name;
 
-
-    refreshShiftStaffChangeOptions_(
-      fieldKey
-    );
+    refreshShiftStaffChangeOptions_(fieldKey);
+    updateStaffConflict_();
   }
+
 
 
   function currentPeople(item) {
@@ -1456,6 +1650,19 @@
 
     alert('キャンセルを登録しました。');
   }
+
+
+  E.timeViewButton.addEventListener('click',() => {
+    S.viewMode = 'time';
+    renderDay();
+  });
+
+  E.staffViewButton.addEventListener('click',() => {
+    S.viewMode = 'staff';
+    renderDay();
+  });
+
+  E.staffChangeNew.addEventListener('change',updateStaffConflict_);
 
 
   E.prevWeek.addEventListener('click',() => {
