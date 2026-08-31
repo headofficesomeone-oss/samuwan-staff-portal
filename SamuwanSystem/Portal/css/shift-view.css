@@ -1183,3 +1183,39 @@ textarea{
   font-size:12px;
   line-height:1.6;
 }
+
+.day-tools{display:flex;align-items:center;gap:6px;min-width:0}
+.shift-view-toggle{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:#eef1f4}
+.shift-view-btn{height:27px;border:0;border-radius:6px;padding:0 7px;background:transparent;color:#5e6974;font-size:10px;font-weight:800;white-space:nowrap}
+.shift-view-btn.active{background:#fff;color:var(--accent)}
+
+.employee-compact-list{display:grid;gap:4px;width:100%;max-width:100%;overflow:hidden}
+.employee-compact-row{
+  display:grid;
+  grid-template-columns:minmax(46px,.7fr) 70px minmax(46px,.8fr) minmax(54px,1fr) minmax(78px,1.3fr);
+  gap:4px;align-items:center;width:100%;max-width:100%;min-width:0;
+  padding:6px 7px;border:1px solid var(--line);border-radius:8px;background:#fff;
+  font-size:10px;line-height:1.25
+}
+.employee-compact-row.conflict{border-color:#d38c35;background:#fff8ec}
+.employee-compact-cell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.employee-compact-name,.employee-compact-time{font-weight:800}
+.employee-compact-conflict{color:#a45a00;font-weight:900;margin-right:2px}
+
+.staff-conflict-area{padding:9px;border:1px solid #dfe5ea;border-radius:9px;background:#f8fafb}
+.staff-conflict-title{margin-bottom:6px;font-size:11px;font-weight:800;color:#586572}
+.staff-conflict-list{display:grid;gap:4px}
+.staff-conflict-empty{font-size:10px;color:#7b8792}
+.staff-conflict-row{
+  display:grid;grid-template-columns:70px minmax(50px,.8fr) minmax(64px,1fr) minmax(82px,1.2fr);
+  gap:4px;align-items:center;min-width:0;padding:5px 6px;border:1px solid #e1e6ea;border-radius:7px;background:#fff;font-size:9px
+}
+.staff-conflict-row.overlap{border-color:#d38c35;background:#fff8ec}
+.staff-conflict-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.staff-conflict-time{font-weight:800}
+.staff-conflict-warning{color:#a45a00;font-weight:900}
+
+@media(max-width:390px){
+  .employee-compact-row{grid-template-columns:minmax(40px,.65fr) 64px minmax(42px,.72fr) minmax(48px,.9fr) minmax(68px,1.1fr);gap:3px;padding:6px 5px;font-size:9px}
+  .shift-view-btn{padding:0 5px;font-size:9px}
+}
