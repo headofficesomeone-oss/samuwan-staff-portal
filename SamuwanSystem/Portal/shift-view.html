@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260831-08">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260901-01">
 </head>
 <body>
 
@@ -373,7 +373,36 @@
 </dialog>
 
 
+
+<dialog id="shiftEditDialog" class="request-dialog">
+  <form id="shiftEditForm" class="request-form">
+    <div class="form-head">
+      <strong>シフト内容変更</strong>
+      <button type="button" id="closeShiftEditDialog" class="close-btn">×</button>
+    </div>
+    <div class="form-body">
+      <div id="shiftEditSummary" class="dialog-summary"></div>
+      <div class="shift-edit-grid">
+        <label class="field"><span>開始時刻</span><input id="shiftEditStart" type="time"></label>
+        <label class="field"><span>終了時刻</span><input id="shiftEditEnd" type="time"></label>
+      </div>
+      <label class="field"><span>行先</span><input id="shiftEditDestination" type="text"></label>
+      <label class="field"><span>支援内容</span><textarea id="shiftEditSupport" rows="2"></textarea></label>
+      <label class="field"><span>指示・備考</span><textarea id="shiftEditNote" rows="2"></textarea></label>
+      <div id="shiftEditConflictArea" class="staff-conflict-area" hidden>
+        <div id="shiftEditConflictTitle" class="staff-conflict-title"></div>
+        <div id="shiftEditConflictList" class="staff-conflict-list"></div>
+      </div>
+      <label class="field"><span>変更理由</span><textarea id="shiftEditReason" rows="2"></textarea></label>
+      <div class="form-actions">
+        <button type="button" id="cancelShiftEdit" class="secondary-btn">閉じる</button>
+        <button type="submit" id="submitShiftEdit" class="primary-btn">変更する</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
 <script src="./js/request-view-config.js?v=20260831-01"></script>
-<script src="./js/shift-view.js?v=20260831-08"></script>
+<script src="./js/shift-view.js?v=20260901-01"></script>
 </body>
 </html>
