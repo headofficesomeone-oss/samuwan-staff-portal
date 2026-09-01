@@ -78,7 +78,22 @@
     closeWeekConfirmDialog: $('closeWeekConfirmDialog'),
     cancelWeekConfirm: $('cancelWeekConfirm'),
     submitWeekConfirm: $('submitWeekConfirm'),
-    weekConfirmSummary: $('weekConfirmSummary')
+    weekConfirmSummary: $('weekConfirmSummary'),
+    shiftEditDialog: $('shiftEditDialog'),
+    shiftEditForm: $('shiftEditForm'),
+    closeShiftEditDialog: $('closeShiftEditDialog'),
+    cancelShiftEdit: $('cancelShiftEdit'),
+    submitShiftEdit: $('submitShiftEdit'),
+    shiftEditSummary: $('shiftEditSummary'),
+    shiftEditStart: $('shiftEditStart'),
+    shiftEditEnd: $('shiftEditEnd'),
+    shiftEditDestination: $('shiftEditDestination'),
+    shiftEditSupport: $('shiftEditSupport'),
+    shiftEditNote: $('shiftEditNote'),
+    shiftEditReason: $('shiftEditReason'),
+    shiftEditConflictArea: $('shiftEditConflictArea'),
+    shiftEditConflictTitle: $('shiftEditConflictTitle'),
+    shiftEditConflictList: $('shiftEditConflictList')
   };
 
   function monday(date) {
@@ -814,6 +829,15 @@
                         data-shift-id="${esc(item.shiftId)}"
                       >
                         担当変更
+                      </button>
+
+                      <button
+                        type="button"
+                        class="card-action-btn"
+                        data-action="edit"
+                        data-shift-id="${esc(item.shiftId)}"
+                      >
+                        内容変更
                       </button>
 
                       <button
@@ -1714,6 +1738,100 @@
   }
 
 
+
+  function openShiftEdit_(item) {
+    S.selectedShift = item;
+    E.shiftEditSummary.textContent = shiftSummary(item);
+    E.shiftEditStart.value = String(item.startTime || '').slice(0,5);
+    E.shiftEditEnd.value = String(effectiveEndTime_(item) || '').slice(0,5);
+    E.shiftEditDestination.value = item.destination || '';
+    E.shiftEditSupport.value = item.supportContent || '';
+    E.shiftEditNote.value = item.note || '';
+    E.shiftEditReason.value = '';
+    E.shiftEditConflictArea.hidden = true;
+    E.shiftEditConflictList.innerHTML = '';
+    updateShiftEditConflict_();
+    E.shiftEditDialog.showModal();
+  }
+
+  function updateShiftEditConflict_() {
+    const item = S.selectedShift;
+    if (!item) return;
+
+    const start = String(E.shiftEditStart.value || '').trim();
+    const end = String(E.shiftEditEnd.value || '').trim();
+
+    const assignedIds = [item.mainStaffId,item.staff2Id,item.staff3Id]
+      .map(x => String(x || '').trim()).filter(Boolean);
+    const assignedNames = [item.mainStaffName,item.staff2Name,item.staff3Name]
+      .map(x => String(x || '').trim()).filter(Boolean);
+
+    const others = (S.weekData?.items || []).filter(other => {
+      if (other.shiftId === item.shiftId || other.date !== item.date) return false;
+      if (['キャンセル','無効','変更前'].includes(other.state)) return false;
+      const ids = [other.mainStaffId,other.staff2Id,other.staff3Id].map(x => String(x||'').trim());
+      const names = [other.mainStaffName,other.staff2Name,other.staff3Name].map(x => String(x||'').trim());
+      return assignedIds.some(id => ids.includes(id)) || assignedNames.some(name => names.includes(name));
+    });
+
+    const target = {startTime:start,endTime:end};
+    const conflicts = others.map(other => ({other,kind:conflictKind_(target,other)})).filter(x => x.kind);
+
+    if (!conflicts.length) {
+      E.shiftEditConflictArea.hidden = true;
+      E.shiftEditConflictList.innerHTML = '';
+      return;
+    }
+
+    E.shiftEditConflictArea.hidden = false;
+    const exact = conflicts.filter(x => x.kind === 'overlap').length;
+    const possible = conflicts.filter(x => x.kind === 'possible').length;
+    E.shiftEditConflictTitle.textContent = exact
+      ? `⚠ 時刻変更により ${exact}件 重複します`
+      : `△ ${possible}件 重複の可能性があります`;
+
+    E.shiftEditConflictList.innerHTML = conflicts.map(({other,kind}) => `
+      <div class="staff-conflict-row${kind === 'overlap' ? ' overlap' : ' possible'}">
+        <span>${kind === 'overlap' ? '<span class="staff-conflict-warning">⚠</span>' : '<span class="staff-conflict-possible">△</span>'}${esc(other.clientName||'')}</span>
+        <span class="staff-conflict-time">${esc(other.startTime||'')}${effectiveEndTime_(other) ? '～'+esc(effectiveEndTime_(other)) : '～未設定'}</span>
+        <span>${esc(other.service||'')}</span>
+        <span>${esc(other.supportContent||'')}</span>
+      </div>`).join('');
+  }
+
+  async function submitShiftEdit_(event) {
+    event.preventDefault();
+    const item = S.selectedShift;
+    if (!item) return;
+
+    E.submitShiftEdit.disabled = true;
+    E.submitShiftEdit.textContent = '変更中…';
+
+    try {
+      const reporter = typeof currentUser === 'function' ? (currentUser() || {}) : {};
+      const result = await api({
+        action:'shift.content.apply',
+        shiftId:item.shiftId,
+        startTime:E.shiftEditStart.value,
+        endTime:E.shiftEditEnd.value,
+        destination:E.shiftEditDestination.value.trim(),
+        supportContent:E.shiftEditSupport.value.trim(),
+        note:E.shiftEditNote.value.trim(),
+        reason:E.shiftEditReason.value.trim(),
+        reporterId:reporter.id || 'TEST',
+        reporterName:reporter.name || 'TEST'
+      });
+      if (!result?.ok) throw new Error(result?.message || result?.error || 'シフト内容変更に失敗しました。');
+      E.shiftEditDialog.close();
+      S.cache = {};
+      await loadWeek();
+      alert('シフト内容を変更しました。');
+    } finally {
+      E.submitShiftEdit.disabled = false;
+      E.submitShiftEdit.textContent = '変更する';
+    }
+  }
+
   function openStaffChange(item) {
     S.selectedShift = item;
 
@@ -2094,6 +2212,15 @@
   E.staffChangeNew.addEventListener('change',updateStaffConflict_);
 
 
+
+  E.shiftEditStart.addEventListener('change',updateShiftEditConflict_);
+  E.shiftEditEnd.addEventListener('change',updateShiftEditConflict_);
+  E.shiftEditForm.addEventListener('submit',event => {
+    submitShiftEdit_(event).catch(err => alert(err?.message || err));
+  });
+  E.closeShiftEditDialog.addEventListener('click',() => E.shiftEditDialog.close());
+  E.cancelShiftEdit.addEventListener('click',() => E.shiftEditDialog.close());
+
   E.prevWeek.addEventListener('click',() => {
     if (S.weekOffset <= -1) return;
     S.weekOffset -= 1;
@@ -2149,6 +2276,13 @@
         'staffchange'
       ) {
         openStaffChange(item);
+      }
+
+      if (
+        button.dataset.action ===
+        'edit'
+      ) {
+        openShiftEdit_(item);
       }
 
       if (
