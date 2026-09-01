@@ -1274,3 +1274,5 @@ textarea{
 .employee-compact-group-title.conflict{
   color:#9a5a00;
 }
+
+.shift-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.shift-edit-grid .field{min-width:0}
