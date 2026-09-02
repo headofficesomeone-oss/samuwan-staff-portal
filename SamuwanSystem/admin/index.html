@@ -1,63 +1,162 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SamuwanAdmin</title>
-<link rel="stylesheet" href="./admin.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SamuwanAdmin</title>
+  <link rel="stylesheet" href="./admin.css">
 </head>
 <body>
 <div class="app">
-<aside>
-  <div class="brand">SamuwanAdmin</div>
-  <button class="nav active" data-view="home">ホーム</button>
-  <button class="nav" data-view="master">場所M一覧</button>
-  <button class="nav" data-view="alias">場所別名R</button>
-  <button class="nav" data-view="candidate">場所登録候補R</button>
-</aside>
-<main>
-<header><h1>場所辞書管理</h1><span id="apiStatus" class="status">未接続</span></header>
+  <aside>
+    <div class="brand">SamuwanAdmin</div>
+    <button class="nav active" data-view="home">ホーム</button>
+    <button class="nav" data-view="master">場所M一覧</button>
+    <button class="nav" data-view="alias">場所別名R</button>
+    <button class="nav" data-view="candidate">場所登録候補R</button>
+  </aside>
 
-<section id="view-home" class="view active">
-<div class="cards">
-<div class="card"><small>場所M</small><b id="placeCount">-</b></div>
-<div class="card"><small>場所別名R</small><b id="aliasCount">-</b></div>
-<div class="card"><small>場所登録候補R</small><b id="candidateCount">-</b></div>
+  <main>
+    <header>
+      <h1>場所辞書管理</h1>
+      <span id="apiStatus" class="status">未接続</span>
+    </header>
+
+    <section id="view-home" class="view active">
+      <div class="cards">
+        <div class="card"><small>場所M</small><b id="placeCount">-</b></div>
+        <div class="card"><small>場所別名R</small><b id="aliasCount">-</b></div>
+        <div class="card"><small>場所登録候補R</small><b id="candidateCount">-</b></div>
+      </div>
+      <div class="panel">
+        <h2>接続確認</h2>
+        <button id="testBtn" class="primary">接続テスト</button>
+        <pre id="testResult"></pre>
+      </div>
+    </section>
+
+    <section id="view-master" class="view">
+      <div class="panel">
+        <div class="toolbar">
+          <h2>場所M一覧</h2>
+          <input id="placeSearch" type="search" placeholder="名称・住所などで検索">
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead id="placeHead"></thead>
+            <tbody id="placeBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-alias" class="view">
+      <div class="panel">
+        <div class="toolbar">
+          <h2>場所別名R</h2>
+          <input id="aliasSearch" type="search" placeholder="別名・場所IDなどで検索">
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead id="aliasHead"></thead>
+            <tbody id="aliasBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-candidate" class="view">
+      <div class="panel">
+        <div class="toolbar">
+          <h2>場所登録候補R</h2>
+          <input id="candidateSearch" type="search" placeholder="入力名称・場所ID・確認状態などで検索">
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead id="candidateHead"></thead>
+            <tbody id="candidateBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
-<div class="panel"><h2>接続確認</h2><button id="testBtn" class="primary">接続テスト</button><pre id="testResult"></pre></div>
-</section>
 
-<section id="view-master" class="view"><div class="panel"><div class="toolbar"><h2>場所M一覧</h2><input id="placeSearch" type="search" placeholder="名称・住所などで検索"></div><div class="tableWrap"><table><thead id="placeHead"></thead><tbody id="placeBody"></tbody></table></div></div></section>
-<section id="view-alias" class="view"><div class="panel"><div class="toolbar"><h2>場所別名R</h2><input id="aliasSearch" type="search" placeholder="別名・場所IDなどで検索"></div><div class="tableWrap"><table><thead id="aliasHead"></thead><tbody id="aliasBody"></tbody></table></div></div></section>
-<section id="view-candidate" class="view"><div class="panel"><div class="toolbar"><h2>場所登録候補R</h2><input id="candidateSearch" type="search" placeholder="入力名称・場所ID・確認状態などで検索"></div><div class="tableWrap"><table><thead id="candidateHead"></thead><tbody id="candidateBody"></tbody></table></div></div></section>
-</main>
+<!-- 場所M編集 -->
+<div id="placeEditModal" class="modalBack">
+  <div class="modal">
+    <h2>場所Mを編集</h2>
+    <div class="notice">場所IDは変更しません。名称や住所だけを訂正できます。</div>
+
+    <div class="grid">
+      <div class="field"><label>場所ID</label><input id="ePlaceId" readonly></div>
+      <div class="field"><label>登録状態</label><input id="eStatus" readonly></div>
+      <div class="field span2"><label>場所名 *</label><input id="ePlaceName"></div>
+      <div class="field span2"><label>正式名称 *</label><input id="eFormalName"></div>
+      <div class="field"><label>基本名称</label><input id="eBaseName"></div>
+      <div class="field"><label>種別</label><input id="eType"></div>
+
+      <div class="field span2">
+        <label>住所全文</label>
+        <div class="inline">
+          <input id="eAddress">
+          <button type="button" id="parseEditAddress" class="secondary compact">住所を分解</button>
+        </div>
+      </div>
+
+      <div class="field"><label>郵便番号</label><input id="ePostal"></div>
+      <div class="field"><label>都道府県</label><input id="ePref"></div>
+      <div class="field"><label>市区町村</label><input id="eCity"></div>
+      <div class="field"><label>町丁目</label><input id="eTown"></div>
+      <div class="field"><label>番地</label><input id="eStreet"></div>
+      <div class="field"><label>建物名</label><input id="eBuilding"></div>
+      <div class="field span2"><label>備考</label><textarea id="eNote"></textarea></div>
+    </div>
+
+    <div id="editMessage" class="message"></div>
+    <div class="actions">
+      <button id="closeEditModal" class="secondary">閉じる</button>
+      <button id="savePlaceBtn" class="primary">変更を保存</button>
+    </div>
+  </div>
 </div>
 
+<!-- 仮登録確定 -->
 <div id="confirmModal" class="modalBack">
-<div class="modal">
-<h2>仮登録を正式名称へ確定</h2>
-<div id="candidateInfo" class="info"></div>
-<div class="grid">
-<div class="field"><label>場所ID</label><input id="fPlaceId" readonly></div>
-<div class="field"><label>候補ID</label><input id="fCandidateId" readonly></div>
-<div class="field span2"><label>正式名称 *</label><input id="fFormalName" placeholder="例：セキ薬局 若葉店"></div>
-<div class="field"><label>基本名称</label><input id="fBaseName" placeholder="例：ｾｷ薬局"></div>
-<div class="field"><label>種別</label><input id="fType" placeholder="例：薬局"></div>
-<div class="field"><label>郵便番号</label><input id="fPostal"></div>
-<div class="field"><label>都道府県</label><input id="fPref" value="埼玉県"></div>
-<div class="field"><label>市区町村</label><input id="fCity"></div>
-<div class="field"><label>町丁目</label><input id="fTown"></div>
-<div class="field"><label>番地</label><input id="fStreet"></div>
-<div class="field"><label>建物名</label><input id="fBuilding"></div>
-<div class="field span2"><label>住所全文</label><input id="fAddress"></div>
-<div class="field span2"><label>備考</label><textarea id="fNote"></textarea></div>
-</div>
-<div id="modalMessage" class="message"></div>
-<div class="actions">
-<button id="closeModal" class="secondary">閉じる</button>
-<button id="confirmBtn" class="primary">正式名称として確定</button>
-</div>
-</div>
+  <div class="modal">
+    <h2>仮登録を正式名称へ確定</h2>
+    <div id="candidateInfo" class="info"></div>
+
+    <div class="grid">
+      <div class="field"><label>場所ID</label><input id="fPlaceId" readonly></div>
+      <div class="field"><label>候補ID</label><input id="fCandidateId" readonly></div>
+      <div class="field span2"><label>正式名称 *</label><input id="fFormalName"></div>
+      <div class="field"><label>基本名称</label><input id="fBaseName"></div>
+      <div class="field"><label>種別</label><input id="fType"></div>
+
+      <div class="field span2">
+        <label>住所全文</label>
+        <div class="inline">
+          <input id="fAddress">
+          <button type="button" id="parseCandidateAddress" class="secondary compact">住所を分解</button>
+        </div>
+      </div>
+
+      <div class="field"><label>郵便番号</label><input id="fPostal"></div>
+      <div class="field"><label>都道府県</label><input id="fPref" value="埼玉県"></div>
+      <div class="field"><label>市区町村</label><input id="fCity"></div>
+      <div class="field"><label>町丁目</label><input id="fTown"></div>
+      <div class="field"><label>番地</label><input id="fStreet"></div>
+      <div class="field"><label>建物名</label><input id="fBuilding"></div>
+      <div class="field span2"><label>備考</label><textarea id="fNote"></textarea></div>
+    </div>
+
+    <div id="modalMessage" class="message"></div>
+    <div class="actions">
+      <button id="closeModal" class="secondary">閉じる</button>
+      <button id="confirmBtn" class="primary">正式名称として確定</button>
+    </div>
+  </div>
 </div>
 
 <script src="./admin.js"></script>
