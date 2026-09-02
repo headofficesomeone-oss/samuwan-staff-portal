@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addAliasBtn').onclick = openAddAliasModal;
   document.getElementById('closeAliasModal').onclick = closeAliasModal;
   document.getElementById('saveAliasBtn').onclick = saveAlias;
+  document.getElementById('saveOutputModeBtn').onclick = saveRequestOutputMode;
 
   document.getElementById('confirmModal').onclick = e => { if (e.target.id === 'confirmModal') closeConfirmModal(); };
   document.getElementById('placeEditModal').onclick = e => { if (e.target.id === 'placeEditModal') closePlaceEditModal(); };
@@ -49,6 +50,7 @@ function switchView(view, button) {
   if (view === 'master' && store.master.rows.length === 0) loadDataset('master', 'places');
   if (view === 'alias' && store.alias.rows.length === 0) loadDataset('alias', 'aliases');
   if (view === 'candidate' && store.candidate.rows.length === 0) loadDataset('candidate', 'candidates');
+  if (view === 'settings') loadRequestOutputMode();
 }
 
 async function apiGet(action) {
@@ -616,3 +618,23 @@ function showMessage(id,text,type){const el=document.getElementById(id);el.textC
 function clearMessage(id){const el=document.getElementById(id);el.textContent='';el.className='message'}
 function setStatus(text,cls){const el=document.getElementById('apiStatus');el.textContent=text;el.className=`status ${cls||''}`}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+
+async function loadRequestOutputMode(){
+  const box=document.getElementById('outputModeMessage');
+  try{
+    const r=await apiGet('requestOutputMode');
+    const radio=document.querySelector(`input[name="requestOutputMode"][value="${r.mode}"]`);
+    if(radio)radio.checked=true;
+    if(box){box.textContent='現在：'+r.mode;box.className='message ok'}
+  }catch(e){if(box){box.textContent='取得エラー: '+e.message;box.className='message ng'}}
+}
+async function saveRequestOutputMode(){
+  const selected=document.querySelector('input[name="requestOutputMode"]:checked');
+  if(!selected){showMessage('outputModeMessage','出力モードを選択してください。','ng');return}
+  if(!confirm('依頼出力方式を「'+selected.value+'」に変更しますか？'))return;
+  const btn=document.getElementById('saveOutputModeBtn');btn.disabled=true;btn.textContent='保存中...';
+  try{const r=await apiPost({action:'setRequestOutputMode',mode:selected.value,updaterId:'admin'});showMessage('outputModeMessage','保存しました：'+r.mode,'ok')}
+  catch(e){showMessage('outputModeMessage','エラー: '+e.message,'ng')}
+  finally{btn.disabled=false;btn.textContent='設定を保存'}
+}

@@ -48,3 +48,5 @@ pre{white-space:pre-wrap;background:#f6f8fb;border:1px solid var(--line);padding
   .toolbar{align-items:flex-start;flex-direction:column}
   .toolbarRight input{width:100%}
 }
+
+.settingsPanel{max-width:760px}.outputModeChoices{display:grid;gap:12px;margin:20px 0}.outputModeChoices label{display:grid;grid-template-columns:26px 120px 1fr;align-items:center;gap:8px;border:1px solid #d7dee5;border-radius:12px;padding:16px;background:#fff;cursor:pointer}.outputModeChoices input{width:auto}.outputModeChoices span{color:#64717d;font-size:13px}@media(max-width:700px){.outputModeChoices label{grid-template-columns:26px 1fr}.outputModeChoices span{grid-column:2}}
