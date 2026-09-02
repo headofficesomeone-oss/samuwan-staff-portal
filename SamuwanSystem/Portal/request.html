@@ -1,3 +1,336 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>支援依頼</title><link rel="stylesheet" href="./css/common.css"></head>
-<body><header class="app-header"><div class="app-title">支援依頼</div></header><main class="app-main"><section class="status-card"><h2>支援依頼</h2><p>新規・変更・キャンセル</p><p>ここから個別機能を実装します。</p><button class="menu-button" onclick="location.href='./index.html'">PORTALへ戻る</button></section></main><script src="./js/common.js"></script></body></html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>利用者依頼受付</title>
+  <link rel="stylesheet" href="./css/request.css?v=20260902-1">
+</head>
+<body>
+<header class="request-header">
+  <button type="button" class="header-back" onclick="location.href='./index.html'">‹</button>
+  <div class="header-center">
+    <strong>利用者依頼受付</strong>
+    <small id="headerReporter">読込中...</small>
+  </div>
+  <span class="header-spacer"></span>
+</header>
+
+<main class="request-page">
+  <div id="requestMessage" class="message hidden"></div>
+
+  <nav class="mobile-progress" aria-label="入力進行">
+    <button type="button" class="progress-item active" data-step-jump="1"><span>1</span><b>基本</b></button>
+    <i></i>
+    <button type="button" class="progress-item" data-step-jump="2"><span>2</span><b>日時</b></button>
+    <i></i>
+    <button type="button" class="progress-item" data-step-jump="3"><span>3</span><b>場所</b></button>
+    <i></i>
+    <button type="button" class="progress-item" data-step-jump="4"><span>4</span><b>確認</b></button>
+  </nav>
+
+  <form id="requestForm" novalidate>
+    <div class="pc-layout">
+      <div class="form-column">
+
+        <section class="request-card step-screen active" data-step="1">
+          <div class="section-title">
+            <span class="step-number">1</span>
+            <div>
+              <h2>依頼の基本情報</h2>
+              <p>利用者と依頼内容を指定します。</p>
+            </div>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>依頼種別 <em>必須</em></span>
+              <select id="requestType">
+                <option value="追加">追加</option>
+                <option value="変更">変更</option>
+                <option value="キャンセル">キャンセル</option>
+                <option value="担当変更">担当変更</option>
+              </select>
+            </label>
+
+            <label class="field hidden" id="targetShiftField">
+              <span>対象シフトID <em>必須</em></span>
+              <input id="targetShiftId" placeholder="例：S000123">
+            </label>
+          </div>
+
+          <label class="field">
+            <span>利用者 <em>必須</em></span>
+            <select id="clientName">
+              <option value="">利用者を取得しています...</option>
+            </select>
+          </label>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>制度</span>
+              <select id="system">
+                <option value="">指定なし</option>
+                <option value="障害福祉">障害福祉</option>
+                <option value="介護保険">介護保険</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>サービス <em>必須</em></span>
+              <input id="service" list="serviceCandidates" placeholder="例：居宅介護、同行援護">
+              <datalist id="serviceCandidates">
+                <option value="居宅介護">
+                <option value="重度訪問介護">
+                <option value="同行援護">
+                <option value="移動支援">
+                <option value="訪問介護">
+                <option value="通院介助">
+                <option value="担当者会議">
+              </datalist>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>報告者</span>
+            <input id="reporterName" readonly>
+          </label>
+        </section>
+
+        <section class="request-card step-screen" data-step="2">
+          <div class="section-title">
+            <span class="step-number">2</span>
+            <div>
+              <h2>日付・時間</h2>
+              <p>開始時刻は必須です。終了時刻は任意です。</p>
+            </div>
+          </div>
+
+          <div class="date-mode-tabs">
+            <button type="button" class="date-mode-btn active" data-date-mode="single">1日</button>
+            <button type="button" class="date-mode-btn" data-date-mode="multi">複数日</button>
+            <button type="button" class="date-mode-btn" data-date-mode="range">期間＋曜日</button>
+          </div>
+
+          <div class="date-mode-area" data-date-area="single">
+            <label class="field">
+              <span>依頼日 <em>必須</em></span>
+              <input type="date" id="singleDate">
+            </label>
+          </div>
+
+          <div class="date-mode-area hidden" data-date-area="multi">
+            <div id="multiDateList">
+              <div class="multi-date-row">
+                <input type="date" class="multi-date">
+                <button type="button" class="remove-date hidden" aria-label="日付を削除">×</button>
+              </div>
+            </div>
+            <button type="button" id="addMultiDate" class="sub-button">＋ 日付を追加</button>
+            <small class="field-note">現在のGAS仕様に合わせ、一度に最大5日までです。</small>
+          </div>
+
+          <div class="date-mode-area hidden" data-date-area="range">
+            <div class="field-grid two">
+              <label class="field">
+                <span>開始日</span>
+                <input type="date" id="rangeStart">
+              </label>
+              <label class="field">
+                <span>終了日</span>
+                <input type="date" id="rangeEnd">
+              </label>
+            </div>
+            <div class="weekday-select">
+              <span>曜日</span>
+              <button type="button" data-weekday="1">月</button>
+              <button type="button" data-weekday="2">火</button>
+              <button type="button" data-weekday="3">水</button>
+              <button type="button" data-weekday="4">木</button>
+              <button type="button" data-weekday="5">金</button>
+              <button type="button" data-weekday="6">土</button>
+              <button type="button" data-weekday="0">日</button>
+            </div>
+            <small class="field-note">期間から対象曜日を抽出します。最大5日まで登録できます。</small>
+          </div>
+
+          <label class="field">
+            <span>開始時刻 <em>必須</em></span>
+            <input type="time" id="startTime">
+          </label>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>支援時間数 <small>任意</small></span>
+              <div class="duration-input">
+                <input type="number" id="durationHours" min="0" max="24" step="0.5" inputmode="decimal" placeholder="例：2.5">
+                <b>時間</b>
+              </div>
+              <small class="field-note">入力すると終了時刻を自動計算します。</small>
+            </label>
+
+            <label class="field">
+              <span>終了時刻 <small>任意</small></span>
+              <input type="time" id="endTime">
+              <small id="endAutoNote" class="field-note hidden">支援時間数から自動計算しました。</small>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>予約時間 <small>任意</small></span>
+            <input type="time" id="appointmentTime">
+          </label>
+        </section>
+
+        <section class="request-card step-screen" data-step="3">
+          <div class="section-title">
+            <span class="step-number">3</span>
+            <div>
+              <h2>場所・支援内容</h2>
+              <p>場所辞書から選択します。該当がない場合は仮登録できます。</p>
+            </div>
+          </div>
+
+          <div class="place-field">
+            <label class="field">
+              <span>行き先</span>
+              <div class="place-search-wrap">
+                <input id="destination" autocomplete="off" placeholder="例：埼玉医大">
+                <input type="hidden" id="destinationPlaceId">
+                <div id="destinationResults" class="place-results hidden"></div>
+              </div>
+            </label>
+            <div id="destinationStatus" class="place-status">場所ID：未選択</div>
+          </div>
+
+          <div class="place-field">
+            <label class="field">
+              <span>待合せ場所</span>
+              <div class="place-search-wrap">
+                <input id="meetingPlace" autocomplete="off" placeholder="例：若葉駅東口">
+                <input type="hidden" id="meetingPlaceId">
+                <div id="meetingPlaceResults" class="place-results hidden"></div>
+              </div>
+            </label>
+            <div id="meetingPlaceStatus" class="place-status">場所ID：未選択</div>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>移動区分</span>
+              <select id="moveType">
+                <option value="">指定なし</option>
+                <option value="徒歩">徒歩</option>
+                <option value="公共交通">公共交通</option>
+                <option value="有償運送">有償運送</option>
+                <option value="家族送迎">家族送迎</option>
+                <option value="その他">その他</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>主担当</span>
+              <select id="mainStaffName">
+                <option value="">指定なし</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>担当2</span>
+              <select id="staff2Name"><option value="">指定なし</option></select>
+            </label>
+            <label class="field">
+              <span>担当3</span>
+              <select id="staff3Name"><option value="">指定なし</option></select>
+            </label>
+          </div>
+
+          <div id="staffChangeFields" class="field-grid two hidden">
+            <label class="field">
+              <span>変更前担当 <em>必須</em></span>
+              <select id="oldStaffName"><option value="">選択してください</option></select>
+            </label>
+            <label class="field">
+              <span>変更後担当 <em>必須</em></span>
+              <select id="newStaffName"><option value="">選択してください</option></select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>支援内容</span>
+            <input id="supportContent" placeholder="例：通院介助、買い物同行">
+          </label>
+
+          <label class="field hidden" id="changeContentField">
+            <span>変更内容</span>
+            <input id="changeContent">
+          </label>
+
+          <label class="field" id="changeReasonField">
+            <span>変更理由・キャンセル理由</span>
+            <input id="changeReason">
+          </label>
+
+          <label class="field">
+            <span>特記事項</span>
+            <textarea id="note" rows="4" placeholder="受診内容、待合せ時の注意、持ち物、ご家族からの伝達事項など"></textarea>
+          </label>
+        </section>
+
+        <section class="request-card step-screen confirm-screen" data-step="4">
+          <div class="section-title">
+            <span class="step-number">4</span>
+            <div>
+              <h2>入力内容の確認</h2>
+              <p>登録前に内容を確認してください。</p>
+            </div>
+          </div>
+
+          <div class="confirm-important">
+            <div><span>利用者</span><strong id="confirmClient">未選択</strong></div>
+            <div><span>サービス</span><strong id="confirmService">未選択</strong></div>
+            <div><span>日時</span><strong id="confirmDateTime">未選択</strong></div>
+          </div>
+
+          <h3 class="detail-heading">その他の依頼内容</h3>
+          <div id="confirmDetail" class="confirm-detail"></div>
+        </section>
+      </div>
+
+      <aside class="pc-summary">
+        <div class="pc-summary-card">
+          <span class="pc-summary-label">入力内容</span>
+          <strong id="pcSummaryClient">利用者未選択</strong>
+          <p id="pcSummaryService">サービス未選択</p>
+          <p id="pcSummaryTime">日時未選択</p>
+          <button type="button" id="pcPreviewButton" class="secondary-button">確認画面を見る</button>
+        </div>
+      </aside>
+    </div>
+  </form>
+</main>
+
+<footer class="mobile-footer">
+  <button type="button" id="prevStepButton" class="secondary-button hidden">戻る</button>
+  <button type="button" id="nextStepButton" class="primary-button">次へ</button>
+</footer>
+
+<div class="desktop-footer">
+  <button type="button" class="secondary-button" onclick="location.href='./index.html'">ポータルへ戻る</button>
+  <button type="button" id="desktopConfirmButton" class="primary-button">入力内容を確認</button>
+</div>
+
+<div id="confirmActions" class="confirm-actions hidden">
+  <button type="button" id="editButton" class="secondary-button">修正する</button>
+  <button type="button" id="saveRequestButton" class="primary-button">登録する</button>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="./js/common.js?v=20260902-1"></script>
+<script src="./js/request-common.js?v=20260902-1"></script>
+<script src="./js/request.js?v=20260902-1"></script>
+</body>
+</html>
