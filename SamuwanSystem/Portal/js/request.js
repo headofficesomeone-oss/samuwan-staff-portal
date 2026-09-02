@@ -72,6 +72,9 @@
     confirmActions: $('confirmActions'),
     edit: $('editButton'),
     save: $('saveRequestButton'),
+    successPanel: $('successPanel'),
+    successRequestId: $('successRequestId'),
+    newRequest: $('newRequestButton'),
     toast: $('toast')
   };
 
@@ -189,6 +192,7 @@
 
     E.edit.addEventListener('click', () => {
       E.confirmActions.classList.add('hidden');
+      E.desktopConfirm.classList.remove('hidden');
       if (mobileQuery.matches) {
         state.step = 1;
         updateView();
@@ -198,6 +202,7 @@
     });
 
     E.save.addEventListener('click', submit);
+    E.newRequest?.addEventListener('click', resetForNewRequest);
 
     document.querySelectorAll('[data-step-jump]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -435,6 +440,30 @@
     element.classList.toggle('selected', !!selectedState);
   }
 
+  function getPeopleCount() {
+    let count = 0;
+
+    if (selected(E.mainStaff).id) {
+      count += 1;
+    }
+
+    if (selected(E.staff2).id) {
+      count += 1;
+    }
+
+    return count;
+  }
+
+  function updatePeopleCount() {
+    const count = getPeopleCount();
+
+    if (E.peopleCount) {
+      E.peopleCount.value = count > 0 ? String(count) : '';
+    }
+
+    return count;
+  }
+
   function buildPayload() {
     const client = selected(E.client);
     const main = selected(E.mainStaff);
@@ -461,7 +490,7 @@
       durationHours: E.duration.value ? Number(E.duration.value) : '',
       endTime: E.end.value,
 
-      people: '',
+      people: getPeopleCount() || '',
 
       mainStaffId: main.id,
       mainStaffName: main.name,
@@ -514,6 +543,11 @@
   async function submit() {
     let payload;
 
+    if (state.registered) {
+      showToast('この依頼は登録済みです。');
+      return;
+    }
+
     try {
       if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
@@ -536,14 +570,87 @@
           : '登録しました'
       );
 
-      E.confirmActions.classList.add('hidden');
-      E.next.disabled = true;
-      E.save.disabled = true;
+      state.registered = true;
+      setSaving(false);
+      lockAfterSuccess(result);
     } catch (err) {
+      state.registered = false;
       showMessage(err.message || String(err), true);
-    } finally {
       setSaving(false);
     }
+  }
+
+
+  function lockAfterSuccess(result) {
+    E.next.disabled = true;
+    E.save.disabled = true;
+    E.desktopConfirm.disabled = true;
+    E.edit.disabled = true;
+
+    E.confirmActions.classList.add('hidden');
+    E.desktopConfirm.classList.add('hidden');
+
+    E.successRequestId.textContent =
+      result.requestId
+        ? `依頼ID：${result.requestId}`
+        : (result.count > 1 ? `${result.count}日分登録` : '');
+
+    E.successPanel.classList.remove('hidden');
+
+    if (mobileQuery.matches) {
+      E.next.textContent = '登録済み';
+      E.prev.classList.add('hidden');
+    }
+  }
+
+  function resetForNewRequest() {
+    state.registered = false;
+    state.step = 1;
+    state.dateMode = 'single';
+    state.place.destination = { inputName: '', placeId: '' };
+    state.place.meeting = { inputName: '', placeId: '' };
+
+    E.form.reset();
+
+    E.type.value = '追加';
+    E.reporter.value = state.user.name || '職員情報未取得';
+    setToday();
+
+    document.querySelectorAll('[data-date-mode]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.dateMode === 'single');
+    });
+    document.querySelectorAll('[data-date-area]').forEach(area => {
+      area.classList.toggle('hidden', area.dataset.dateArea !== 'single');
+    });
+    document.querySelectorAll('[data-weekday]').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    const rows = [...E.multiList.querySelectorAll('.multi-date-row')];
+    rows.slice(1).forEach(row => row.remove());
+    const firstMulti = E.multiList.querySelector('.multi-date');
+    if (firstMulti) firstMulti.value = '';
+
+    E.destinationId.value = '';
+    E.meetingId.value = '';
+    E.destinationResults.classList.add('hidden');
+    E.meetingResults.classList.add('hidden');
+    setPlaceStatus(E.destinationStatus, '', false);
+    setPlaceStatus(E.meetingStatus, '', false);
+    E.endAutoNote.classList.add('hidden');
+    updatePeopleCount();
+
+    E.successPanel.classList.add('hidden');
+    E.desktopConfirm.classList.remove('hidden');
+    E.desktopConfirm.disabled = false;
+    E.edit.disabled = false;
+    E.save.disabled = false;
+    E.next.disabled = false;
+
+    hideMessage();
+    updateRequestMode();
+    updateView();
+    updateSummary();
   }
 
   function showConfirmDesktop() {
@@ -553,6 +660,7 @@
     document.querySelector('[data-step="4"]')
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+    E.desktopConfirm.classList.add('hidden');
     E.confirmActions.classList.remove('hidden');
   }
 
@@ -586,6 +694,7 @@
       ['依頼種別', E.type.value],
       ['制度', E.system.value],
       ['支援時間数', duration ? `${duration}時間` : ''],
+      ['人数', getPeopleCount() ? `${getPeopleCount()}人` : ''],
       ['予約時間', E.appt.value],
       ['行き先', E.destination.value.trim()],
       ['行き先場所ID', E.destinationId.value.trim()],
@@ -609,9 +718,6 @@
         ).join('')
       : '<div class="confirm-row"><b>その他</b><span>入力なし</span></div>';
 
-    if (state.step === 4 && mobileQuery.matches) {
-      E.confirmActions.classList.remove('hidden');
-    }
   }
 
   function formatDates(dates) {
@@ -647,13 +753,10 @@
     E.prev.classList.toggle('hidden', state.step === 1);
     E.next.textContent = state.step === 4 ? '登録する' : '次へ';
 
-    if (mobile) {
-      E.confirmActions.classList.add('hidden');
-      if (state.step === 4) {
-        updateSummary();
-      }
-    } else {
-      E.confirmActions.classList.add('hidden');
+    E.confirmActions.classList.add('hidden');
+
+    if (mobile && state.step === 4) {
+      updateSummary();
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
