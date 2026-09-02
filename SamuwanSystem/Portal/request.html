@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
-  <link rel="stylesheet" href="./css/request.css?v=20260902-1">
+  <link rel="stylesheet" href="./css/request.css?v=20260903-3">
 </head>
 <body>
 <header class="request-header">
@@ -247,6 +247,14 @@
             </label>
           </div>
 
+          <div class="field-grid two">
+            <label class="field">
+              <span>人数 <small>主担当・担当2から自動計算</small></span>
+              <input id="peopleCount" type="text" value="" readonly aria-readonly="true" placeholder="自動計算">
+            </label>
+            <div></div>
+          </div>
+
           <div id="staffChangeFields" class="field-grid two hidden">
             <label class="field">
               <span>変更前担当 <em>必須</em></span>
@@ -318,19 +326,26 @@
 </footer>
 
 <div class="desktop-footer">
-  <button type="button" class="secondary-button" onclick="location.href='./index.html'">ポータルへ戻る</button>
-  <button type="button" id="desktopConfirmButton" class="primary-button">入力内容を確認</button>
+  <div class="desktop-footer-actions">
+    <button type="button" class="secondary-button" onclick="location.href='./index.html'">ポータルへ戻る</button>
+    <button type="button" id="desktopConfirmButton" class="primary-button">入力内容を確認</button>
+    <div id="confirmActions" class="confirm-actions hidden">
+      <button type="button" id="editButton" class="secondary-button">修正する</button>
+      <button type="button" id="saveRequestButton" class="primary-button">登録する</button>
+    </div>
+  </div>
 </div>
 
-<div id="confirmActions" class="confirm-actions hidden">
-  <button type="button" id="editButton" class="secondary-button">修正する</button>
-  <button type="button" id="saveRequestButton" class="primary-button">登録する</button>
+<div id="successPanel" class="success-panel hidden" role="status">
+  <strong>依頼を登録しました</strong>
+  <span id="successRequestId"></span>
+  <button type="button" id="newRequestButton" class="primary-button">新しい依頼を入力</button>
 </div>
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="./js/common.js?v=20260902-1"></script>
-<script src="./js/request-common.js?v=20260902-1"></script>
-<script src="./js/request.js?v=20260902-1"></script>
+<script src="./js/common.js?v=20260903-3"></script>
+<script src="./js/request-common.js?v=20260903-3"></script>
+<script src="./js/request.js?v=20260903-3"></script>
 </body>
 </html>
