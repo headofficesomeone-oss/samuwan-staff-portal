@@ -3,7 +3,7 @@
  * PC / スマホ共通の依頼ロジック
  *
  * 前提:
- *   common.js の postGas() / getSavedPortalUser() を利用します。
+ *   common.js の apiPost() / getSavedPortalUser() を利用します。
  *
  * 現行Samuwan GAS:
  *   request.masters
@@ -33,11 +33,21 @@ window.RequestCommon = (() => {
   }
 
   async function api(payload) {
-    if (typeof postGas !== 'function') {
-      throw new Error('common.js の postGas() が見つかりません。');
+    if (typeof apiPost !== 'function') {
+      throw new Error('common.js の apiPost() が見つかりません。');
     }
 
-    const result = await postGas(payload);
+    const data = payload || {};
+    const action = String(data.action || '').trim();
+
+    if (!action) {
+      throw new Error('API action が指定されていません。');
+    }
+
+    const body = { ...data };
+    delete body.action;
+
+    const result = await apiPost(action, body);
 
     if (!result) {
       throw new Error('GASから応答がありません。');
