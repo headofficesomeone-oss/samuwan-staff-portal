@@ -8,6 +8,7 @@ const store = {
 
 let currentCandidate = null;
 let currentPlace = null;
+let mergeTargetPlace = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav').forEach(btn => btn.onclick = () => switchView(btn.dataset.view, btn));
@@ -23,8 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('parseEditAddress').onclick = () => parseAddressToFields('e');
   document.getElementById('parseCandidateAddress').onclick = () => parseAddressToFields('f');
 
+  document.getElementById('closeMergeModal').onclick = closeMergeModal;
+  document.getElementById('mergeBtn').onclick = mergeCandidateToExisting;
+  document.getElementById('mergeSearch').oninput = e => renderMergeCandidates(e.target.value);
+
   document.getElementById('confirmModal').onclick = e => { if (e.target.id === 'confirmModal') closeConfirmModal(); };
   document.getElementById('placeEditModal').onclick = e => { if (e.target.id === 'placeEditModal') closePlaceEditModal(); };
+  document.getElementById('mergeModal').onclick = e => { if (e.target.id === 'mergeModal') closeMergeModal(); };
 
   if (API_URL.startsWith('https://')) loadSummary();
 });
@@ -114,7 +120,9 @@ function renderTable(key,keyword) {
     }
     if(key==='candidate'){
       const canConfirm=String(row['確認状態']||'')!=='確認済';
-      cells+=`<td>${canConfirm?`<button class="rowBtn" onclick='openConfirmModal(${JSON.stringify(JSON.stringify(row))})'>確認・編集</button>`:'確認済'}</td>`;
+      cells+=`<td>${canConfirm
+        ? `<button class="rowBtn" onclick='openConfirmModal(${JSON.stringify(JSON.stringify(row))})'>新規場所として確定</button><button class="rowBtn mergeAction" onclick='openMergeModal(${JSON.stringify(JSON.stringify(row))})'>既存場所へ統合</button>`
+        : '確認済'}</td>`;
     }
     return '<tr>'+cells+'</tr>';
   }).join(''):`<tr><td colspan="${Math.max(shownHeaders.length,1)}">該当データがありません。</td></tr>`;
@@ -201,6 +209,177 @@ async function confirmCandidate() {
     setTimeout(closeConfirmModal,900);
   }catch(e){showMessage('modalMessage','エラー: '+e.message,'ng')}
   finally{btn.disabled=false;btn.textContent='正式名称として確定'}
+}
+
+
+async function openMergeModal(rowJson) {
+  currentCandidate = JSON.parse(rowJson);
+  mergeTargetPlace = null;
+
+  document.getElementById('mergeCandidateInfo').innerHTML =
+    `<b>候補ID：</b>${esc(currentCandidate['候補ID'] || '')}<br>` +
+    `<b>仮場所ID：</b>${esc(currentCandidate['場所ID'] || '')}<br>` +
+    `<b>入力名称：</b>${esc(currentCandidate['入力名称'] || '')}`;
+
+  document.getElementById('mergeSearch').value =
+    currentCandidate['入力名称'] || '';
+
+  document.getElementById('selectedMergePlace').textContent =
+    '統合先は未選択です。';
+
+  document.getElementById('saveAliasOnMerge').checked = true;
+  clearMessage('mergeMessage');
+
+  try {
+    if (store.master.rows.length === 0) {
+      const r = await apiGet('places');
+      store.master.headers = r.headers || [];
+      store.master.rows = r.data || [];
+    }
+
+    if (store.alias.rows.length === 0) {
+      const r = await apiGet('aliases');
+      store.alias.headers = r.headers || [];
+      store.alias.rows = r.data || [];
+    }
+
+    renderMergeCandidates(document.getElementById('mergeSearch').value);
+    document.getElementById('mergeModal').classList.add('open');
+
+  } catch (e) {
+    showMessage('mergeMessage', '一覧の読み込みに失敗しました: ' + e.message, 'ng');
+    document.getElementById('mergeModal').classList.add('open');
+  }
+}
+
+function closeMergeModal() {
+  document.getElementById('mergeModal').classList.remove('open');
+  mergeTargetPlace = null;
+  currentCandidate = null;
+}
+
+function renderMergeCandidates(keyword) {
+  const body = document.getElementById('mergeResultBody');
+  const q = normalizeSearchText(keyword);
+
+  if (!q) {
+    body.innerHTML = '<tr><td colspan="5">検索文字を入力してください。</td></tr>';
+    return;
+  }
+
+  const aliasByPlace = {};
+  store.alias.rows.forEach(a => {
+    const pid = String(a['場所ID'] || '');
+    if (!aliasByPlace[pid]) aliasByPlace[pid] = [];
+    aliasByPlace[pid].push(String(a['別名'] || ''));
+  });
+
+  const tempPlaceId = String(currentCandidate?.['場所ID'] || '');
+
+  const list = store.master.rows
+    .filter(row => String(row['場所ID'] || '') !== tempPlaceId)
+    .map(row => {
+      const pid = String(row['場所ID'] || '');
+      const text = [
+        row['場所名'], row['正式名称'], row['基本名称'], row['住所全文'],
+        row['市区町村'], row['町丁目'], ...(aliasByPlace[pid] || [])
+      ].map(normalizeSearchText).join(' ');
+      return { row, hit: text.includes(q) };
+    })
+    .filter(x => x.hit)
+    .slice(0, 30)
+    .map(x => x.row);
+
+  body.innerHTML = list.length
+    ? list.map(row => `
+      <tr>
+        <td><button class="rowBtn" onclick='selectMergeTarget(${JSON.stringify(JSON.stringify(row))})'>選択</button></td>
+        <td>${esc(row['場所ID'] || '')}</td>
+        <td>${esc(row['場所名'] || '')}</td>
+        <td>${esc(row['正式名称'] || '')}</td>
+        <td>${esc(row['住所全文'] || '')}</td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="5">一致する既存場所がありません。</td></tr>';
+}
+
+function selectMergeTarget(rowJson) {
+  mergeTargetPlace = JSON.parse(rowJson);
+  document.getElementById('selectedMergePlace').innerHTML =
+    `統合先：<b>${esc(mergeTargetPlace['場所ID'] || '')}</b>　` +
+    `${esc(mergeTargetPlace['正式名称'] || mergeTargetPlace['場所名'] || '')}`;
+  clearMessage('mergeMessage');
+}
+
+async function mergeCandidateToExisting() {
+  if (!currentCandidate) return;
+
+  if (!mergeTargetPlace) {
+    showMessage('mergeMessage', '統合先の場所を選択してください。', 'ng');
+    return;
+  }
+
+  const candidateId = String(currentCandidate['候補ID'] || '');
+  const tempPlaceId = String(currentCandidate['場所ID'] || '');
+  const targetPlaceId = String(mergeTargetPlace['場所ID'] || '');
+  const inputName = String(currentCandidate['入力名称'] || '');
+
+  const targetName =
+    mergeTargetPlace['正式名称'] ||
+    mergeTargetPlace['場所名'] ||
+    targetPlaceId;
+
+  if (!confirm(
+    `「${inputName}」を\n${targetPlaceId} ${targetName}\nへ統合しますか？`
+  )) return;
+
+  const btn = document.getElementById('mergeBtn');
+  btn.disabled = true;
+  btn.textContent = '統合中...';
+
+  try {
+    const r = await apiPost({
+      action: 'mergeCandidate',
+      candidateId,
+      tempPlaceId,
+      targetPlaceId,
+      inputName,
+      saveAlias: document.getElementById('saveAliasOnMerge').checked,
+      confirmerId: 'admin'
+    });
+
+    showMessage(
+      'mergeMessage',
+      `統合しました：${r.tempPlaceId} → ${r.targetPlaceId}` +
+      (r.aliasCreated ? '（別名も登録しました）' : ''),
+      'ok'
+    );
+
+    store.master.rows = [];
+    store.alias.rows = [];
+    store.candidate.rows = [];
+
+    await loadDataset('candidate', 'candidates');
+    await loadSummary();
+
+    setTimeout(closeMergeModal, 1100);
+
+  } catch (e) {
+    showMessage('mergeMessage', 'エラー: ' + e.message, 'ng');
+
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'この場所へ統合';
+  }
+}
+
+function normalizeSearchText(v) {
+  return String(v || '')
+    .toLowerCase()
+    .replace(/[　\s]/g, '')
+    .replace(/[０-９]/g, c =>
+      String.fromCharCode(c.charCodeAt(0) - 0xFEE0)
+    );
 }
 
 /* 住所全文 → 各欄へセット

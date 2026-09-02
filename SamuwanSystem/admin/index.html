@@ -159,6 +159,57 @@
   </div>
 </div>
 
+
+<!-- 仮登録を既存場所へ統合 -->
+<div id="mergeModal" class="modalBack">
+  <div class="modal">
+    <h2>既存の場所へ統合</h2>
+
+    <div id="mergeCandidateInfo" class="info"></div>
+
+    <div class="notice">
+      仮登録が実は既存の場所だった場合に使用します。
+      入力名称は既存場所の「別名」として残すことができます。
+    </div>
+
+    <div class="field">
+      <label>既存場所を検索</label>
+      <input id="mergeSearch" type="search" placeholder="正式名称・場所名・住所・別名など">
+    </div>
+
+    <div class="mergeResults">
+      <table>
+        <thead>
+          <tr>
+            <th>選択</th>
+            <th>場所ID</th>
+            <th>場所名</th>
+            <th>正式名称</th>
+            <th>住所全文</th>
+          </tr>
+        </thead>
+        <tbody id="mergeResultBody">
+          <tr><td colspan="5">検索文字を入力してください。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="selectedMergePlace" class="selectedPlace">統合先は未選択です。</div>
+
+    <label class="checkRow">
+      <input id="saveAliasOnMerge" type="checkbox" checked>
+      <span>元の入力名称を「場所別名R」へ登録する</span>
+    </label>
+
+    <div id="mergeMessage" class="message"></div>
+
+    <div class="actions">
+      <button id="closeMergeModal" class="secondary">閉じる</button>
+      <button id="mergeBtn" class="primary">この場所へ統合</button>
+    </div>
+  </div>
+</div>
+
 <script src="./admin.js"></script>
 </body>
 </html>

@@ -31,3 +31,10 @@ pre{white-space:pre-wrap;background:#f6f8fb;border:1px solid var(--line);padding
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.message{margin-top:12px;padding:10px;border-radius:8px;display:none}
 .message.ok{display:block;background:#e7f7ed;color:var(--ok)}.message.ng{display:block;background:#fff0f0;color:var(--ng)}
 @media(max-width:900px){.app{grid-template-columns:1fr}aside{display:none}.cards,.grid{grid-template-columns:1fr}.span2{grid-column:auto}.view{padding:14px}.inline{flex-direction:column}}
+
+.mergeAction{background:#fff4dc;color:#8a5a00;margin-left:6px}
+.mergeResults{margin-top:12px;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.mergeResults table{margin:0}
+.selectedPlace{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#f7f9fc;font-weight:700}
+.checkRow{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px}
+.checkRow input{width:auto}
