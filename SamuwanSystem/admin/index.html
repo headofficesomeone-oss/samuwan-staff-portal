@@ -39,6 +39,7 @@ th,td{padding:9px;border-bottom:1px solid var(--line);border-right:1px solid var
 th{position:sticky;top:0;background:#edf3f8;z-index:1}
 pre{white-space:pre-wrap;background:#f6f8fb;border:1px solid var(--line);padding:12px;border-radius:8px;min-height:48px}
 .muted{color:var(--muted)}
+.empty{padding:18px;color:var(--muted)}
 @media(max-width:900px){
   .app{grid-template-columns:1fr}
   aside{display:none}
@@ -85,25 +86,32 @@ pre{white-space:pre-wrap;background:#f6f8fb;border:1px solid var(--line);padding
           <input id="placeSearch" type="search" placeholder="場所名・正式名称・住所などで検索">
         </div>
         <div class="tableWrap">
-          <table>
-            <thead id="placeHead"></thead>
-            <tbody id="placeBody"></tbody>
-          </table>
+          <table><thead id="placeHead"></thead><tbody id="placeBody"></tbody></table>
         </div>
       </div>
     </section>
 
     <section id="view-alias" class="view">
       <div class="panel">
-        <h2>場所別名R</h2>
-        <p class="muted">次段階で実データ一覧と追加・編集を接続します。</p>
+        <div class="toolbar">
+          <h2>場所別名R</h2>
+          <input id="aliasSearch" type="search" placeholder="別名・場所IDなどで検索">
+        </div>
+        <div class="tableWrap">
+          <table><thead id="aliasHead"></thead><tbody id="aliasBody"></tbody></table>
+        </div>
       </div>
     </section>
 
     <section id="view-candidate" class="view">
       <div class="panel">
-        <h2>場所登録候補R</h2>
-        <p class="muted">次段階で仮登録一覧・正式名称確定処理を接続します。</p>
+        <div class="toolbar">
+          <h2>場所登録候補R</h2>
+          <input id="candidateSearch" type="search" placeholder="入力名称・場所ID・確認状態などで検索">
+        </div>
+        <div class="tableWrap">
+          <table><thead id="candidateHead"></thead><tbody id="candidateBody"></tbody></table>
+        </div>
       </div>
     </section>
   </main>
@@ -112,12 +120,15 @@ pre{white-space:pre-wrap;background:#f6f8fb;border:1px solid var(--line);padding
 <script>
 // =====================================================
 // SamuwanAdmin GitHub Pages
-// SamuwanAdmin GASをデプロイ後、下記URLを /exec URLへ置換
+// 既に接続成功した /exec URL をここに設定してください。
 // =====================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbx6HJxTCT1uTzhdlkPBT68owOUl9ImKZo57_4bneZgRbH648VScKNGOglkk78_vURjt/exec';
 
-let placeHeaders = [];
-let placeRows = [];
+const store = {
+  master: { headers: [], rows: [] },
+  alias: { headers: [], rows: [] },
+  candidate: { headers: [], rows: [] }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav').forEach(btn => {
@@ -127,7 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('testBtn').addEventListener('click', testConnection);
 
   document.getElementById('placeSearch').addEventListener('input', e => {
-    renderPlaces(e.target.value);
+    renderTable('master', e.target.value);
+  });
+
+  document.getElementById('aliasSearch').addEventListener('input', e => {
+    renderTable('alias', e.target.value);
+  });
+
+  document.getElementById('candidateSearch').addEventListener('input', e => {
+    renderTable('candidate', e.target.value);
   });
 
   if (API_URL.startsWith('https://')) {
@@ -142,9 +161,9 @@ function switchView(view, button) {
   document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
   document.getElementById(`view-${view}`).classList.add('active');
 
-  if (view === 'master' && placeRows.length === 0) {
-    loadPlaces();
-  }
+  if (view === 'master' && store.master.rows.length === 0) loadDataset('master', 'places');
+  if (view === 'alias' && store.alias.rows.length === 0) loadDataset('alias', 'aliases');
+  if (view === 'candidate' && store.candidate.rows.length === 0) loadDataset('candidate', 'candidates');
 }
 
 async function apiGet(action, params = {}) {
@@ -164,15 +183,11 @@ async function apiGet(action, params = {}) {
     redirect: 'follow'
   });
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
   const json = await response.json();
 
-  if (!json.ok) {
-    throw new Error(json.message || 'APIエラー');
-  }
+  if (!json.ok) throw new Error(json.message || 'APIエラー');
 
   return json;
 }
@@ -195,7 +210,6 @@ async function testConnection() {
     setStatus('接続中...', '');
 
     const result = await apiGet('ping');
-
     applySummary(result);
 
     out.textContent =
@@ -219,48 +233,52 @@ function applySummary(result) {
   document.getElementById('candidateCount').textContent = result.sheets.candidate.rows;
 }
 
-async function loadPlaces() {
-  const body = document.getElementById('placeBody');
-  body.innerHTML = '<tr><td>読み込み中...</td></tr>';
+async function loadDataset(key, action) {
+  const bodyId = key === 'master' ? 'placeBody' : key === 'alias' ? 'aliasBody' : 'candidateBody';
+  document.getElementById(bodyId).innerHTML = '<tr><td>読み込み中...</td></tr>';
 
   try {
-    const result = await apiGet('places');
-
-    placeHeaders = result.headers || [];
-    placeRows = result.data || [];
-
-    renderPlaces('');
+    const result = await apiGet(action);
+    store[key].headers = result.headers || [];
+    store[key].rows = result.data || [];
+    renderTable(key, '');
     setStatus('接続済み', 'ok');
-
   } catch (err) {
-    body.innerHTML = `<tr><td>エラー: ${escapeHtml(err.message)}</td></tr>`;
+    document.getElementById(bodyId).innerHTML =
+      `<tr><td>エラー: ${escapeHtml(err.message)}</td></tr>`;
     setStatus('接続エラー', 'ng');
   }
 }
 
-function renderPlaces(keyword) {
+function renderTable(key, keyword) {
   const q = String(keyword || '').trim().toLowerCase();
+  const headers = store[key].headers;
+  const rows = store[key].rows;
 
   const list = !q
-    ? placeRows
-    : placeRows.filter(row =>
+    ? rows
+    : rows.filter(row =>
         Object.values(row).some(value =>
           String(value || '').toLowerCase().includes(q)
         )
       );
 
-  document.getElementById('placeHead').innerHTML =
-    '<tr>' +
-    placeHeaders.map(h => `<th>${escapeHtml(h)}</th>`).join('') +
-    '</tr>';
+  const ids = key === 'master'
+    ? ['placeHead', 'placeBody']
+    : key === 'alias'
+      ? ['aliasHead', 'aliasBody']
+      : ['candidateHead', 'candidateBody'];
 
-  document.getElementById('placeBody').innerHTML = list.length
+  document.getElementById(ids[0]).innerHTML =
+    '<tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
+
+  document.getElementById(ids[1]).innerHTML = list.length
     ? list.map(row =>
         '<tr>' +
-        placeHeaders.map(h => `<td>${escapeHtml(row[h] ?? '')}</td>`).join('') +
+        headers.map(h => `<td>${escapeHtml(row[h] ?? '')}</td>`).join('') +
         '</tr>'
       ).join('')
-    : `<tr><td colspan="${Math.max(placeHeaders.length, 1)}">該当データがありません。</td></tr>`;
+    : `<tr><td colspan="${Math.max(headers.length, 1)}">該当データがありません。</td></tr>`;
 }
 
 function setStatus(text, cls) {
