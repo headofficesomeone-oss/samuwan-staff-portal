@@ -54,7 +54,10 @@
       <div class="panel">
         <div class="toolbar">
           <h2>場所別名R</h2>
-          <input id="aliasSearch" type="search" placeholder="別名・場所IDなどで検索">
+          <div class="toolbarRight">
+            <input id="aliasSearch" type="search" placeholder="別名・場所IDなどで検索">
+            <button id="addAliasBtn" class="primary">別名を追加</button>
+          </div>
         </div>
         <div class="tableWrap">
           <table>
@@ -206,6 +209,66 @@
     <div class="actions">
       <button id="closeMergeModal" class="secondary">閉じる</button>
       <button id="mergeBtn" class="primary">この場所へ統合</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 別名追加・編集 -->
+<div id="aliasEditModal" class="modalBack">
+  <div class="modal">
+    <h2 id="aliasModalTitle">場所別名を追加</h2>
+
+    <div class="grid">
+      <div class="field">
+        <label>別名ID</label>
+        <input id="aAliasId" readonly>
+      </div>
+
+      <div class="field">
+        <label>場所ID *</label>
+        <input id="aPlaceId" placeholder="例：p0054">
+      </div>
+
+      <div class="field span2">
+        <label>別名 *</label>
+        <input id="aAlias" placeholder="例：埼玉医大川越">
+      </div>
+
+      <div class="field">
+        <label>別名種別</label>
+        <input id="aAliasType" value="略称">
+      </div>
+
+      <div class="field">
+        <label>有効</label>
+        <select id="aEnabled">
+          <option value="TRUE">TRUE</option>
+          <option value="FALSE">FALSE</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>登録元</label>
+        <input id="aSource" value="PC管理">
+      </div>
+
+      <div class="field">
+        <label>登録者ID</label>
+        <input id="aUserId" value="admin">
+      </div>
+
+      <div class="field span2">
+        <label>備考</label>
+        <textarea id="aNote"></textarea>
+      </div>
+    </div>
+
+    <div id="aliasMessage" class="message"></div>
+
+    <div class="actions">
+      <button id="closeAliasModal" class="secondary">閉じる</button>
+      <button id="saveAliasBtn" class="primary">保存</button>
     </div>
   </div>
 </div>

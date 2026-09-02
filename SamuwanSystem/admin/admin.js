@@ -9,6 +9,7 @@ const store = {
 let currentCandidate = null;
 let currentPlace = null;
 let mergeTargetPlace = null;
+let currentAlias = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav').forEach(btn => btn.onclick = () => switchView(btn.dataset.view, btn));
@@ -28,9 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('mergeBtn').onclick = mergeCandidateToExisting;
   document.getElementById('mergeSearch').oninput = e => renderMergeCandidates(e.target.value);
 
+  document.getElementById('addAliasBtn').onclick = openAddAliasModal;
+  document.getElementById('closeAliasModal').onclick = closeAliasModal;
+  document.getElementById('saveAliasBtn').onclick = saveAlias;
+
   document.getElementById('confirmModal').onclick = e => { if (e.target.id === 'confirmModal') closeConfirmModal(); };
   document.getElementById('placeEditModal').onclick = e => { if (e.target.id === 'placeEditModal') closePlaceEditModal(); };
   document.getElementById('mergeModal').onclick = e => { if (e.target.id === 'mergeModal') closeMergeModal(); };
+  document.getElementById('aliasEditModal').onclick = e => { if (e.target.id === 'aliasEditModal') closeAliasModal(); };
 
   if (API_URL.startsWith('https://')) loadSummary();
 });
@@ -106,24 +112,56 @@ async function loadDataset(key,action) {
 
 function renderTable(key,keyword) {
   const q=String(keyword||'').trim().toLowerCase();
-  const headers=store[key].headers, rows=store[key].rows;
+  const rows=store[key].rows;
   const list=!q?rows:rows.filter(row=>Object.values(row).some(v=>String(v||'').toLowerCase().includes(q)));
-  const ids=key==='master'?['placeHead','placeBody']:key==='alias'?['aliasHead','aliasBody']:['candidateHead','candidateBody'];
-  const shownHeaders=[...headers];
-  if(key==='master'||key==='candidate') shownHeaders.push('操作');
 
-  document.getElementById(ids[0]).innerHTML='<tr>'+shownHeaders.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
-  document.getElementById(ids[1]).innerHTML=list.length?list.map(row=>{
+  if(key==='master'){
+    const headers=['場所ID','場所名','種別','市区町村','住所全文','登録状態','操作'];
+    document.getElementById('placeHead').innerHTML='<tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
+    document.getElementById('placeBody').innerHTML=list.length?list.map(row=>`
+      <tr class="${String(row['有効']||'').toUpperCase()==='FALSE'?'aliasDisabled':''}">
+        <td>${esc(row['場所ID']||'')}</td>
+        <td>${esc(row['場所名']||'')}</td>
+        <td>${esc(row['種別']||'')}</td>
+        <td>${esc(row['市区町村']||'')}</td>
+        <td>${esc(row['住所全文']||'')}</td>
+        <td>${esc(row['登録状態']||'')}</td>
+        <td><button class="rowBtn" onclick='openPlaceEditModal(${JSON.stringify(JSON.stringify(row))})'>編集</button></td>
+      </tr>
+    `).join(''):'<tr><td colspan="7">該当データがありません。</td></tr>';
+    return;
+  }
+
+  if(key==='alias'){
+    const headers=['別名ID','場所ID','別名','別名種別','有効','登録元','登録日時','操作'];
+    document.getElementById('aliasHead').innerHTML='<tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
+    document.getElementById('aliasBody').innerHTML=list.length?list.map(row=>`
+      <tr class="${String(row['有効']||'').toUpperCase()==='FALSE'?'aliasDisabled':''}">
+        <td>${esc(row['別名ID']||'')}</td>
+        <td>${esc(row['場所ID']||'')}</td>
+        <td>${esc(row['別名']||'')}</td>
+        <td>${esc(row['別名種別']||'')}</td>
+        <td>${esc(row['有効']||'')}</td>
+        <td>${esc(row['登録元']||'')}</td>
+        <td>${esc(row['登録日時']||'')}</td>
+        <td>
+          <button class="rowBtn" onclick='openAliasEditModal(${JSON.stringify(JSON.stringify(row))})'>編集</button>
+          <button class="rowBtn dangerBtn" onclick='toggleAliasEnabled(${JSON.stringify(JSON.stringify(row))})'>${String(row['有効']||'').toUpperCase()==='FALSE'?'有効化':'無効化'}</button>
+        </td>
+      </tr>
+    `).join(''):'<tr><td colspan="8">該当データがありません。</td></tr>';
+    return;
+  }
+
+  const headers=store.candidate.headers;
+  const shownHeaders=[...headers,'操作'];
+  document.getElementById('candidateHead').innerHTML='<tr>'+shownHeaders.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
+  document.getElementById('candidateBody').innerHTML=list.length?list.map(row=>{
     let cells=headers.map(h=>`<td>${esc(row[h]??'')}</td>`).join('');
-    if(key==='master'){
-      cells+=`<td><button class="rowBtn" onclick='openPlaceEditModal(${JSON.stringify(JSON.stringify(row))})'>編集</button></td>`;
-    }
-    if(key==='candidate'){
-      const canConfirm=String(row['確認状態']||'')!=='確認済';
-      cells+=`<td>${canConfirm
-        ? `<button class="rowBtn" onclick='openConfirmModal(${JSON.stringify(JSON.stringify(row))})'>新規場所として確定</button><button class="rowBtn mergeAction" onclick='openMergeModal(${JSON.stringify(JSON.stringify(row))})'>既存場所へ統合</button>`
-        : '確認済'}</td>`;
-    }
+    const canConfirm=String(row['確認状態']||'')!=='確認済';
+    cells+=`<td>${canConfirm
+      ? `<button class="rowBtn" onclick='openConfirmModal(${JSON.stringify(JSON.stringify(row))})'>新規場所として確定</button><button class="rowBtn mergeAction" onclick='openMergeModal(${JSON.stringify(JSON.stringify(row))})'>既存場所へ統合</button>`
+      : '確認済'}</td>`;
     return '<tr>'+cells+'</tr>';
   }).join(''):`<tr><td colspan="${Math.max(shownHeaders.length,1)}">該当データがありません。</td></tr>`;
 }
@@ -211,6 +249,99 @@ async function confirmCandidate() {
   finally{btn.disabled=false;btn.textContent='正式名称として確定'}
 }
 
+
+
+function openAddAliasModal() {
+  currentAlias = null;
+  document.getElementById('aliasModalTitle').textContent = '場所別名を追加';
+  setVal('aAliasId','自動採番');
+  setVal('aPlaceId','');
+  setVal('aAlias','');
+  setVal('aAliasType','略称');
+  setVal('aEnabled','TRUE');
+  setVal('aSource','PC管理');
+  setVal('aUserId','admin');
+  setVal('aNote','');
+  clearMessage('aliasMessage');
+  document.getElementById('aliasEditModal').classList.add('open');
+}
+
+function openAliasEditModal(rowJson) {
+  currentAlias = JSON.parse(rowJson);
+  document.getElementById('aliasModalTitle').textContent = '場所別名を編集';
+  setVal('aAliasId',currentAlias['別名ID']);
+  setVal('aPlaceId',currentAlias['場所ID']);
+  setVal('aAlias',currentAlias['別名']);
+  setVal('aAliasType',currentAlias['別名種別']);
+  setVal('aEnabled',String(currentAlias['有効']||'TRUE').toUpperCase()==='FALSE'?'FALSE':'TRUE');
+  setVal('aSource',currentAlias['登録元']||'PC管理');
+  setVal('aUserId',currentAlias['登録者ID']||'admin');
+  setVal('aNote',currentAlias['備考']||'');
+  clearMessage('aliasMessage');
+  document.getElementById('aliasEditModal').classList.add('open');
+}
+
+function closeAliasModal() {
+  document.getElementById('aliasEditModal').classList.remove('open');
+  currentAlias = null;
+}
+
+async function saveAlias() {
+  const placeId=getVal('aPlaceId');
+  const alias=getVal('aAlias');
+  if(!placeId){showMessage('aliasMessage','場所IDを入力してください。','ng');return}
+  if(!alias){showMessage('aliasMessage','別名を入力してください。','ng');return}
+
+  const payload={
+    action: currentAlias ? 'updateAlias' : 'createAlias',
+    aliasId: currentAlias ? String(currentAlias['別名ID']||'') : '',
+    placeId,
+    alias,
+    aliasType:getVal('aAliasType'),
+    enabled:getVal('aEnabled')!=='FALSE',
+    source:getVal('aSource')||'PC管理',
+    userId:getVal('aUserId')||'admin',
+    note:getVal('aNote')
+  };
+
+  const btn=document.getElementById('saveAliasBtn');
+  btn.disabled=true;btn.textContent='保存中...';
+
+  try{
+    const r=await apiPost(payload);
+    showMessage('aliasMessage',currentAlias?'更新しました。':'追加しました。','ok');
+    store.alias.rows=[];
+    await loadDataset('alias','aliases');
+    await loadSummary();
+    setTimeout(closeAliasModal,800);
+  }catch(e){
+    showMessage('aliasMessage','エラー: '+e.message,'ng');
+  }finally{
+    btn.disabled=false;btn.textContent='保存';
+  }
+}
+
+async function toggleAliasEnabled(rowJson) {
+  const row=JSON.parse(rowJson);
+  const aliasId=String(row['別名ID']||'');
+  const current=String(row['有効']||'').toUpperCase()!=='FALSE';
+  const next=!current;
+  if(!confirm(`別名「${row['別名']||''}」を${next?'有効':'無効'}にしますか？`))return;
+
+  try{
+    await apiPost({
+      action:'toggleAlias',
+      aliasId,
+      enabled:next,
+      userId:'admin'
+    });
+    store.alias.rows=[];
+    await loadDataset('alias','aliases');
+    await loadSummary();
+  }catch(e){
+    alert('エラー: '+e.message);
+  }
+}
 
 async function openMergeModal(rowJson) {
   currentCandidate = JSON.parse(rowJson);
