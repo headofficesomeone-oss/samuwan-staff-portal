@@ -438,8 +438,41 @@
 
       state.searchTimers[key] = setTimeout(async () => {
         try {
-          const places = await RC.searchPlaces(input.value.trim(), 8);
-          renderPlaceResults(key, input, hidden, results, status, places);
+          const keyword = input.value.trim();
+          const places = await RC.searchPlaces(keyword, 8);
+
+          const exact = places.filter(place => {
+            const names = [
+              place.displayName,
+              place.placeName,
+              place.matchedAlias
+            ]
+              .map(v => String(v || '').trim())
+              .filter(Boolean);
+
+            return names.some(name => name === keyword);
+          });
+
+          if (exact.length === 1) {
+            applyPlaceSelection(
+              key,
+              input,
+              hidden,
+              results,
+              status,
+              exact[0]
+            );
+            return;
+          }
+
+          renderPlaceResults(
+            key,
+            input,
+            hidden,
+            results,
+            status,
+            places
+          );
         } catch (err) {
           console.error(err);
           results.classList.add('hidden');
@@ -448,6 +481,64 @@
 
       updateSummary();
     });
+
+    input.addEventListener('blur', async () => {
+      const value = input.value.trim();
+
+      if (!value || hidden.value.trim()) return;
+
+      await new Promise(resolve => setTimeout(resolve, 180));
+
+      if (hidden.value.trim() || !input.value.trim()) return;
+
+      try {
+        const resolved = await RC.resolvePlace(input.value.trim());
+
+        if (resolved?.resolved && resolved?.placeId) {
+          applyPlaceSelection(
+            key,
+            input,
+            hidden,
+            results,
+            status,
+            resolved.place || {
+              placeId: resolved.placeId,
+              displayName: resolved.displayName
+            }
+          );
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  function applyPlaceSelection(key, input, hidden, results, status, place) {
+    const name = String(
+      place?.displayName ||
+      place?.placeName ||
+      input.value ||
+      ''
+    ).trim();
+
+    const id = String(place?.placeId || '').trim();
+
+    input.value = name;
+    hidden.value = id;
+
+    state.place[key] = {
+      inputName: name,
+      placeId: id
+    };
+
+    setPlaceStatus(
+      status,
+      id ? `場所ID：${id}` : '場所ID：未選択',
+      !!id
+    );
+
+    results.classList.add('hidden');
+    updateSummary();
   }
 
   function renderPlaceResults(key, input, hidden, results, status, places) {
@@ -483,19 +574,14 @@
     results.querySelectorAll('[data-place-index]').forEach(el => {
       el.addEventListener('click', () => {
         const place = places[Number(el.dataset.placeIndex)];
-        const name = String(
-          place.displayName ||
-          place.placeName ||
-          input.value
-        ).trim();
-        const id = String(place.placeId || '').trim();
-
-        input.value = name;
-        hidden.value = id;
-        state.place[key] = { inputName: name, placeId: id };
-        setPlaceStatus(status, id ? `場所ID：${id}` : '未選択', !!id);
-        results.classList.add('hidden');
-        updateSummary();
+        applyPlaceSelection(
+          key,
+          input,
+          hidden,
+          results,
+          status,
+          place
+        );
       });
     });
   }
@@ -594,6 +680,20 @@
     payload.destination = destination.displayName || payload.destination;
     payload.destinationPlaceId = destination.placeId || '';
 
+    if (payload.destinationPlaceId) {
+      E.destination.value = payload.destination;
+      E.destinationId.value = payload.destinationPlaceId;
+      state.place.destination = {
+        inputName: payload.destination,
+        placeId: payload.destinationPlaceId
+      };
+      setPlaceStatus(
+        E.destinationStatus,
+        `場所ID：${payload.destinationPlaceId}`,
+        true
+      );
+    }
+
     const meeting = await RC.ensurePlace({
       inputName: payload.meetingPlace,
       placeId: payload.meetingPlaceId
@@ -601,6 +701,20 @@
 
     payload.meetingPlace = meeting.displayName || payload.meetingPlace;
     payload.meetingPlaceId = meeting.placeId || '';
+
+    if (payload.meetingPlaceId) {
+      E.meeting.value = payload.meetingPlace;
+      E.meetingId.value = payload.meetingPlaceId;
+      state.place.meeting = {
+        inputName: payload.meetingPlace,
+        placeId: payload.meetingPlaceId
+      };
+      setPlaceStatus(
+        E.meetingStatus,
+        `場所ID：${payload.meetingPlaceId}`,
+        true
+      );
+    }
 
     return payload;
   }
