@@ -14,7 +14,8 @@
       destination: { inputName: '', placeId: '' },
       meeting: { inputName: '', placeId: '' }
     },
-    searchTimers: {}
+    searchTimers: {},
+    registered: false
   };
 
   const E = {
@@ -38,6 +39,7 @@
     end: $('endTime'),
     endAutoNote: $('endAutoNote'),
     appt: $('appointmentTime'),
+    peopleCount: $('peopleCount'),
     destination: $('destination'),
     destinationId: $('destinationPlaceId'),
     destinationResults: $('destinationResults'),
@@ -95,6 +97,7 @@
     }
 
     setToday();
+    updateServiceOptions();
     updateRequestMode();
     updateView();
 
@@ -139,19 +142,29 @@
       el.addEventListener('change', calculateEnd);
     });
 
-    E.end.addEventListener('input', () => {
-      E.endAutoNote.classList.add('hidden');
+    E.end.addEventListener('input', calculateDurationFromEnd);
+    E.end.addEventListener('change', calculateDurationFromEnd);
+
+    E.system.addEventListener('change', () => {
+      updateServiceOptions();
       updateSummary();
     });
 
     [
-      E.client, E.system, E.service, E.singleDate,
+      E.client, E.service, E.singleDate,
       E.rangeStart, E.rangeEnd, E.appt, E.moveType,
       E.mainStaff, E.staff2, E.staff3, E.oldStaff,
       E.newStaff, E.support, E.change, E.reason, E.note
     ].forEach(el => {
       el?.addEventListener('input', updateSummary);
       el?.addEventListener('change', updateSummary);
+    });
+
+    [E.mainStaff, E.staff2].forEach(el => {
+      el?.addEventListener('change', () => {
+        updatePeopleCount();
+        updateSummary();
+      });
     });
 
     wirePlaceSearch(
@@ -242,6 +255,8 @@
 
     [E.mainStaff, E.staff2, E.staff3, E.oldStaff, E.newStaff]
       .forEach(select => select.innerHTML = staffHtml);
+
+    updatePeopleCount();
   }
 
   function updateRequestMode() {
@@ -286,36 +301,34 @@
   }
 
   function updateServiceOptions() {
-    const system = E.system.value;
+    const system = String(E.system?.value || '').trim();
 
-    let options = [];
-
-    if (system === '障害福祉') {
-      options = [
+    const serviceMap = {
+      '障害福祉': [
         '身体介護',
         '家事援助',
         '重度訪問介護',
         '同行援護',
         '移動支援',
         '通院介助'
-      ];
-    } else if (system === '介護保険') {
-      options = [
+      ],
+      '介護保険': [
         '身体介護',
         '生活援助',
         '身体生活',
         '総合事業'
-      ];
-    }
+      ]
+    };
 
-    const current = E.service.value;
+    const options = serviceMap[system] || [];
+    const current = String(E.service?.value || '').trim();
 
     E.service.innerHTML =
       '<option value="">' +
       (system ? '選択してください' : '制度を先に選択してください') +
       '</option>' +
       options.map(name =>
-        `<option value="${name}">${name}</option>`
+        `<option value="${escAttr(name)}">${esc(name)}</option>`
       ).join('');
 
     if (options.includes(current)) {
@@ -666,6 +679,7 @@
 
     E.type.value = '追加';
     E.reporter.value = state.user.name || '職員情報未取得';
+    updateServiceOptions();
     updateServiceOptions();
     setToday();
 
