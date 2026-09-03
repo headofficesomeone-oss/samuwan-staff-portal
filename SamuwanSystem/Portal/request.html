@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
-  <link rel="stylesheet" href="./css/request.css?v=20260903-3">
+  <link rel="stylesheet" href="./css/request.css?v=20260903-4">
 </head>
 <body>
 <header class="request-header">
@@ -78,16 +78,9 @@
 
             <label class="field">
               <span>サービス <em>必須</em></span>
-              <input id="service" list="serviceCandidates" placeholder="例：居宅介護、同行援護">
-              <datalist id="serviceCandidates">
-                <option value="居宅介護">
-                <option value="重度訪問介護">
-                <option value="同行援護">
-                <option value="移動支援">
-                <option value="訪問介護">
-                <option value="通院介助">
-                <option value="担当者会議">
-              </datalist>
+              <select id="service">
+                <option value="">制度を先に選択してください</option>
+              </select>
             </label>
           </div>
 
@@ -220,7 +213,6 @@
               <span>移動区分</span>
               <select id="moveType">
                 <option value="">指定なし</option>
-                <option value="徒歩">徒歩</option>
                 <option value="公共交通">公共交通</option>
                 <option value="有償運送">有償運送</option>
                 <option value="家族送迎">家族送迎</option>
@@ -344,8 +336,8 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="./js/common.js?v=20260903-3"></script>
-<script src="./js/request-common.js?v=20260903-3"></script>
-<script src="./js/request.js?v=20260903-3"></script>
+<script src="./js/common.js?v=20260903-4"></script>
+<script src="./js/request-common.js?v=20260903-4"></script>
+<script src="./js/request.js?v=20260903-4"></script>
 </body>
 </html>
