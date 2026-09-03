@@ -103,6 +103,29 @@ window.RequestCommon = (() => {
     return `${eh}:${em}`;
   }
 
+  function calculateDurationHours(startTime, endTime) {
+    const start = String(startTime || '').trim();
+    const end = String(endTime || '').trim();
+
+    if (!/^\d{2}:\d{2}$/.test(start)) return '';
+    if (!/^\d{2}:\d{2}$/.test(end)) return '';
+
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+
+    let minutes =
+      (eh * 60 + em) -
+      (sh * 60 + sm);
+
+    if (minutes < 0) {
+      minutes += 24 * 60;
+    }
+
+    if (minutes === 0) return 0;
+
+    return Math.round((minutes / 60) * 100) / 100;
+  }
+
   function uniqueDates(dates) {
     return [...new Set(
       (dates || [])
@@ -333,6 +356,7 @@ window.RequestCommon = (() => {
     loadMasters,
     selectedMaster,
     calculateEndTime,
+    calculateDurationHours,
     datesFromRange,
     uniqueDates,
     validateDates,

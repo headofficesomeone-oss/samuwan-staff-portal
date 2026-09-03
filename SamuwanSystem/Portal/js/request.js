@@ -285,6 +285,58 @@
     E.multiList.appendChild(row);
   }
 
+  function updateServiceOptions() {
+    const system = E.system.value;
+
+    let options = [];
+
+    if (system === '障害福祉') {
+      options = [
+        '身体介護',
+        '家事援助',
+        '重度訪問介護',
+        '同行援護',
+        '移動支援',
+        '通院介助'
+      ];
+    } else if (system === '介護保険') {
+      options = [
+        '身体介護',
+        '生活援助',
+        '身体生活',
+        '総合事業'
+      ];
+    }
+
+    const current = E.service.value;
+
+    E.service.innerHTML =
+      '<option value="">' +
+      (system ? '選択してください' : '制度を先に選択してください') +
+      '</option>' +
+      options.map(name =>
+        `<option value="${name}">${name}</option>`
+      ).join('');
+
+    if (options.includes(current)) {
+      E.service.value = current;
+    }
+  }
+
+  function calculateDurationFromEnd() {
+    const duration = RC.calculateDurationHours(
+      E.start.value,
+      E.end.value
+    );
+
+    if (duration !== '') {
+      E.duration.value = String(duration);
+      E.endAutoNote.classList.add('hidden');
+    }
+
+    updateSummary();
+  }
+
   function calculateEnd() {
     const end = RC.calculateEndTime(E.start.value, E.duration.value);
 
@@ -614,6 +666,7 @@
 
     E.type.value = '追加';
     E.reporter.value = state.user.name || '職員情報未取得';
+    updateServiceOptions();
     setToday();
 
     document.querySelectorAll('[data-date-mode]').forEach(btn => {
