@@ -2,58 +2,123 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>マイページ | Samuwan Staff Portal</title>
-  <link rel="stylesheet" href="./css/common.css?v=20260824-1534-phase7">
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link rel="stylesheet" href="./css/mypage.css?v=20260904-1">
 </head>
 <body>
-  <header class="app-header">
-    <div>
-      <div class="app-title">マイページ</div>
-      <div id="staffName" class="staff-name"></div>
+
+<header class="mypage-header">
+  <div>
+    <h1>マイページ</h1>
+    <div id="mypageStaffName" class="mypage-staff-name">職員情報を確認しています...</div>
+  </div>
+</header>
+
+<main class="mypage-main">
+
+  <section class="mypage-card">
+    <div class="mypage-section-head">
+      <div>
+        <h2>自分の情報・申請</h2>
+        <p>項目ごとの現在状況を確認します。</p>
+      </div>
     </div>
-  </header>
 
-  <main class="app-main bottom-space">
-    <section class="card">
-      <h2>登録情報</h2>
+    <div class="mypage-service-list">
 
-      <div class="info-row">
-        <span>職員名</span>
-        <strong id="myEmployeeName"></strong>
-      </div>
-
-      <div class="info-row">
-        <span>従業員ID</span>
-        <strong id="myEmployeeId"></strong>
-      </div>
-
-      <div class="info-row">
-        <span>LINE連携</span>
-        <strong>登録済み</strong>
-      </div>
-    </section>
-
-    <section class="card danger-card">
-      <h2>LINE登録</h2>
-      <p class="help">
-        LINE登録を解除すると、次回利用時に仮登録IDによる再登録が必要になります。
-      </p>
-
-      <button id="unregisterButton" class="danger-button" type="button">
-        LINE登録を解除する
+      <button type="button" class="mypage-service-row" disabled>
+        <span class="mypage-service-main">
+          <strong>給与明細</strong>
+          <small>最新の給与明細を確認</small>
+        </span>
+        <span class="mypage-service-status muted">準備中</span>
+        <span class="mypage-arrow">›</span>
       </button>
-    </section>
-  </main>
 
-  <nav class="bottom-nav">
-    <button type="button" id="homeButton">ホーム</button>
-    <button type="button" class="active">マイページ</button>
-  </nav>
+      <button type="button" id="mypageLeaveButton" class="mypage-service-row">
+        <span class="mypage-service-main">
+          <strong>休暇・届出</strong>
+          <small>休暇申請・各種届出</small>
+        </span>
+        <span class="mypage-service-status">ホームで利用</span>
+        <span class="mypage-arrow">›</span>
+      </button>
 
-  <script src="./js/common.js?v=20260824-1534-phase7"></script>
-  <script src="./js/auth.js?v=20260824-1534-phase7"></script>
-  <script src="./js/mypage.js?v=20260824-1534-phase7"></script>
+      <button type="button" class="mypage-service-row" disabled>
+        <span class="mypage-service-main">
+          <strong>労働実績</strong>
+          <small>勤務時間・支援実績を確認</small>
+        </span>
+        <span class="mypage-service-status muted">準備中</span>
+        <span class="mypage-arrow">›</span>
+      </button>
+
+      <button type="button" class="mypage-service-row" disabled>
+        <span class="mypage-service-main">
+          <strong>研修報告</strong>
+          <small>受講状況・研修報告を確認</small>
+        </span>
+        <span class="mypage-service-status muted">準備中</span>
+        <span class="mypage-arrow">›</span>
+      </button>
+
+      <button type="button" class="mypage-service-row" disabled>
+        <span class="mypage-service-main">
+          <strong>相談・連絡</strong>
+          <small>相談・連絡事項を確認</small>
+        </span>
+        <span class="mypage-service-status muted">準備中</span>
+        <span class="mypage-arrow">›</span>
+      </button>
+
+    </div>
+  </section>
+
+  <section class="mypage-card">
+    <div class="mypage-section-head">
+      <div>
+        <h2>登録情報</h2>
+        <p>職員ポータルで利用している本人情報です。</p>
+      </div>
+    </div>
+
+    <dl class="account-list">
+      <div>
+        <dt>職員名</dt>
+        <dd id="accountEmployeeName">—</dd>
+      </div>
+      <div>
+        <dt>従業員ID</dt>
+        <dd id="accountEmployeeId">—</dd>
+      </div>
+      <div>
+        <dt>LINE連携</dt>
+        <dd>登録済み</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="mypage-card account-settings-card">
+    <div class="mypage-section-head">
+      <div>
+        <h2>アカウント設定</h2>
+        <p>LINE登録など、職員ポータルの登録に関する設定です。</p>
+      </div>
+    </div>
+
+    <div class="account-note">
+      LINE登録を解除した場合は、次回利用時に仮登録IDによる再登録が必要になります。
+    </div>
+  </section>
+
+</main>
+
+<nav class="mypage-bottom-nav">
+  <a href="./index.html">ホーム</a>
+  <a href="./mypage.html" class="active">マイページ</a>
+</nav>
+
+<script src="./js/mypage.js?v=20260904-1"></script>
 </body>
 </html>

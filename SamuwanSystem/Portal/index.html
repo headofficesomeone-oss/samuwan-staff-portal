@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Samuwan Staff Portal</title>
   <link rel="stylesheet" href="./css/common.css?v=20260824-1534-phase7">
-  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-1">
+  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-2">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 /* ===== Samuwan 共通画面移動（今回追加分） ===== */
@@ -189,52 +189,25 @@
           <span>自分の情報・申請状況</span>
         </div>
 
-        <div class="portal-mypage-list">
-          <button class="portal-mypage-row" type="button" data-mypage-key="payroll" disabled>
-            <span class="portal-mypage-main">
-              <strong>給与明細</strong>
-              <small>最新の給与明細を確認</small>
-            </span>
-            <span class="portal-mypage-status">準備中</span>
-            <span class="portal-mypage-arrow">›</span>
-          </button>
-
-          <button class="menu-button portal-mypage-row" type="button" data-page="leave">
-            <span class="portal-mypage-main">
-              <strong>休暇・届出</strong>
-              <small>休暇申請・各種届出</small>
-            </span>
-            <span class="portal-mypage-status" id="leaveStatusSummary">確認する</span>
-            <span class="portal-mypage-arrow">›</span>
-          </button>
-
-          <button class="portal-mypage-row" type="button" data-mypage-key="work-results" disabled>
-            <span class="portal-mypage-main">
-              <strong>労働実績</strong>
-              <small>勤務時間・支援実績</small>
-            </span>
-            <span class="portal-mypage-status">準備中</span>
-            <span class="portal-mypage-arrow">›</span>
-          </button>
-
-          <button class="portal-mypage-row" type="button" data-mypage-key="training" disabled>
-            <span class="portal-mypage-main">
-              <strong>研修報告</strong>
-              <small>受講状況・研修報告</small>
-            </span>
-            <span class="portal-mypage-status">準備中</span>
-            <span class="portal-mypage-arrow">›</span>
-          </button>
-
-          <button class="portal-mypage-row" type="button" data-mypage-key="contact" disabled>
-            <span class="portal-mypage-main">
-              <strong>相談・連絡</strong>
-              <small>相談・連絡事項</small>
-            </span>
-            <span class="portal-mypage-status">準備中</span>
-            <span class="portal-mypage-arrow">›</span>
-          </button>
+        <div class="portal-mypage-overview">
+          <div class="portal-mypage-overview-row">
+            <span>給与明細</span>
+            <strong>準備中</strong>
+          </div>
+          <div class="portal-mypage-overview-row">
+            <span>休暇・届出</span>
+            <strong>確認できます</strong>
+          </div>
+          <div class="portal-mypage-overview-row">
+            <span>労働実績</span>
+            <strong>準備中</strong>
+          </div>
         </div>
+
+        <a class="portal-mypage-open" href="./mypage.html">
+          マイページを開く
+          <span>›</span>
+        </a>
       </section>
 
       <section id="message" class="message" aria-live="polite"></section>
