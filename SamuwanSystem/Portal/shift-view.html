@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260901-01">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260901-03">
 </head>
 <body>
 
@@ -75,6 +75,14 @@
           <button id="timeViewButton" type="button" class="shift-view-btn active">時間順</button>
           <button id="staffViewButton" type="button" class="shift-view-btn">従業員別</button>
         </div>
+        <button
+          id="addConfirmedShiftButton"
+          type="button"
+          class="register-btn shift-add-btn"
+          hidden
+        >
+          ＋追加
+        </button>
         <span id="dayCount" class="count">0件</span>
       </div>
     </div>
@@ -402,7 +410,86 @@
   </form>
 </dialog>
 
+
+<!-- 確定後シフト追加 -->
+<dialog id="shiftAddDialog" class="request-dialog">
+  <form id="shiftAddForm" class="request-form">
+    <div class="form-head">
+      <strong>シフト追加</strong>
+      <button type="button" id="closeShiftAddDialog" class="close-btn">×</button>
+    </div>
+
+    <div class="form-body">
+      <div id="shiftAddDate" class="dialog-summary"></div>
+
+      <label class="field">
+        <span>利用者</span>
+        <select id="shiftAddClient" required>
+          <option value="">選択してください</option>
+        </select>
+      </label>
+
+      <div class="shift-add-two-col">
+        <label class="field">
+          <span>制度</span>
+          <select id="shiftAddSystem">
+            <option value="">選択してください</option>
+            <option value="障害福祉">障害福祉</option>
+            <option value="介護保険">介護保険</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>サービス</span>
+          <input id="shiftAddService" type="text">
+        </label>
+      </div>
+
+      <div class="shift-add-two-col">
+        <label class="field">
+          <span>開始時刻</span>
+          <input id="shiftAddStart" type="time" required>
+        </label>
+        <label class="field">
+          <span>終了時刻</span>
+          <input id="shiftAddEnd" type="time">
+        </label>
+      </div>
+
+      <div class="shift-add-two-col">
+        <label class="field">
+          <span>主担当</span>
+          <select id="shiftAddMain"><option value="">未設定</option></select>
+        </label>
+        <label class="field">
+          <span>担当2</span>
+          <select id="shiftAddStaff2"><option value="">未設定</option></select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span>担当3（見習）</span>
+        <select id="shiftAddStaff3"><option value="">未設定</option></select>
+      </label>
+
+      <div id="shiftAddConflictArea" class="staff-conflict-area" hidden>
+        <div id="shiftAddConflictTitle" class="staff-conflict-title"></div>
+        <div id="shiftAddConflictList" class="staff-conflict-list"></div>
+      </div>
+
+      <label class="field"><span>行先</span><input id="shiftAddDestination" type="text"></label>
+      <label class="field"><span>支援内容</span><textarea id="shiftAddSupport" rows="2"></textarea></label>
+      <label class="field"><span>指示・備考</span><textarea id="shiftAddNote" rows="2"></textarea></label>
+      <label class="field"><span>追加理由</span><textarea id="shiftAddReason" rows="2"></textarea></label>
+
+      <div class="form-actions">
+        <button type="button" id="cancelShiftAdd" class="secondary-btn">閉じる</button>
+        <button type="submit" id="submitShiftAdd" class="primary-btn">追加する</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
 <script src="./js/request-view-config.js?v=20260831-01"></script>
-<script src="./js/shift-view.js?v=20260901-01"></script>
+<script src="./js/shift-view.js?v=20260901-03"></script>
 </body>
 </html>
