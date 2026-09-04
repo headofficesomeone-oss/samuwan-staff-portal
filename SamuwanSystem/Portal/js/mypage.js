@@ -29,6 +29,89 @@
     }
   }
 
+
+  const WORK_SNAPSHOT_KEY =
+    'samuwanPortalWorkSnapshotV1';
+
+  function todayKey() {
+    const d = new Date();
+
+    return [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, '0'),
+      String(d.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
+  function readWorkSnapshot() {
+    try {
+      const raw =
+        localStorage.getItem(
+          WORK_SNAPSHOT_KEY
+        );
+
+      if (!raw) return {};
+
+      return JSON.parse(raw) || {};
+
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function renderWorkSummary() {
+    const snapshot =
+      readWorkSnapshot();
+
+    const today =
+      document.getElementById(
+        'mypageTodayWork'
+      );
+
+    const previous =
+      document.getElementById(
+        'mypagePreviousWork'
+      );
+
+    const sameDay =
+      snapshot.date === todayKey();
+
+    const workState =
+      sameDay
+        ? String(
+            snapshot.workState ||
+            '未始業'
+          ).trim()
+        : '未始業';
+
+    const commute =
+      sameDay
+        ? String(
+            snapshot.commuteLabel ||
+            ''
+          ).trim()
+        : '';
+
+    if (today) {
+      today.textContent =
+        '勤務状態：' +
+        workState +
+        ' ｜ 勤務開始場所：' +
+        (
+          commute ||
+          '未設定'
+        );
+    }
+
+    if (previous) {
+      previous.textContent =
+        String(
+          snapshot.previousWorkText ||
+          '—'
+        ).trim();
+    }
+  }
+
   function renderUser() {
     const user = getUser();
 
@@ -63,6 +146,7 @@
     'DOMContentLoaded',
     () => {
       renderUser();
+      renderWorkSummary();
 
       document
         .getElementById('mypageLeaveButton')
