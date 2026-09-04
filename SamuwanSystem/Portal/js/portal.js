@@ -266,6 +266,19 @@ async function loadCommuteOptions() {
   select.disabled = true;
   select.innerHTML = '<option value="">読み込み中...</option>';
 
+  const workButton =
+    document.getElementById("workToggleButton");
+
+  if (
+    workButton &&
+    (
+      !currentWorkStatus?.phase ||
+      currentWorkStatus.phase === "BEFORE"
+    )
+  ) {
+    workButton.disabled = true;
+  }
+
   try {
     const result = await apiPost("commute.options", {
       employeeId: currentUser.employeeId
@@ -285,17 +298,154 @@ async function loadCommuteOptions() {
     setText("commuteMessage", err.message);
   } finally {
     select.disabled = false;
+
+    const workButton =
+      document.getElementById("workToggleButton");
+
+    if (
+      workButton &&
+      currentWorkStatus?.phase !== "BEFORE"
+    ) {
+      workButton.disabled = false;
+    }
   }
 }
 
-async function calculateSelectedCommute(){
-  const select=document.getElementById('commuteDestination'); currentCommute=null; const value=String(select?.value||'').trim();
-  if(!value){setText('commuteResult','勤務開始場所を選択してください。');return;}
-  const [type,id]=value.split('|'); setText('commuteResult','通勤距離を計算しています...'); setText('commuteMessage','');
-  try{const r=await apiPost('commute.calculate',{employeeId:currentUser.employeeId,destinationType:type,destinationId:id});currentCommute=r.commute;setText('commuteResult',`${currentCommute.destinationName}まで ${currentCommute.distanceKm}km / 車で約${currentCommute.durationMinutes}分`);}catch(err){setText('commuteResult','通勤距離を取得できませんでした。');setText('commuteMessage',err.message);}
+async function calculateSelectedCommute() {
+  const select =
+    document.getElementById("commuteDestination");
+
+  const button =
+    document.getElementById("workToggleButton");
+
+  currentCommute = null;
+
+  const value =
+    String(
+      select?.value || ""
+    ).trim();
+
+  if (!value) {
+    setText(
+      "commuteResult",
+      "勤務開始場所を選択してください。"
+    );
+    return;
+  }
+
+  const [type, id] =
+    value.split("|");
+
+  /*
+   * 通勤距離計算中に「始業」を押せないようにする。
+   * これで currentCommute がまだ null の状態で
+   * 始業処理へ進むのを防ぐ。
+   */
+  if (button) {
+    button.disabled = true;
+    button.dataset.commuteChecking = "1";
+  }
+
+  setText(
+    "commuteResult",
+    "通勤距離を計算しています..."
+  );
+
+  setText(
+    "commuteMessage",
+    ""
+  );
+
+  try {
+    const r =
+      await apiPost(
+        "commute.calculate",
+        {
+          employeeId:
+            currentUser.employeeId,
+          destinationType:
+            type,
+          destinationId:
+            id
+        }
+      );
+
+    currentCommute =
+      r.commute;
+
+    if (
+      !currentCommute ||
+      !currentCommute.destinationId ||
+      !currentCommute.destinationName
+    ) {
+      throw new Error(
+        "通勤情報を確認できませんでした。"
+      );
+    }
+
+    setText(
+      "commuteResult",
+      `${currentCommute.destinationName}まで ${currentCommute.distanceKm}km / 車で約${currentCommute.durationMinutes}分`
+    );
+
+  } catch (err) {
+
+    currentCommute =
+      null;
+
+    setText(
+      "commuteResult",
+      "通勤距離を取得できませんでした。"
+    );
+
+    setText(
+      "commuteMessage",
+      err.message
+    );
+
+  } finally {
+
+    if (button) {
+      button.dataset.commuteChecking = "0";
+
+      /*
+       * 初回始業前なら、計算成功時だけ押せる。
+       * 再開/終業は通勤計算と無関係。
+       */
+      const mode =
+        currentWorkStatus?.buttonMode ||
+        (
+          currentWorkStatus?.status === "ON"
+            ? "end"
+            : currentWorkStatus?.phase === "ENDED"
+              ? "resume"
+              : "start"
+        );
+
+      if (mode === "start") {
+        button.disabled =
+          !currentCommute;
+      } else {
+        button.disabled =
+          false;
+      }
+    }
+  }
 }
 async function toggleWorkStatus() {
   if (!currentUser || !currentWorkStatus) return;
+
+  const workButton =
+    document.getElementById("workToggleButton");
+
+  if (
+    workButton?.dataset.commuteChecking === "1"
+  ) {
+    alert(
+      "通勤距離を確認しています。計算が終わるまでお待ちください。"
+    );
+    return;
+  }
 
   const mode =
     currentWorkStatus.buttonMode ||
