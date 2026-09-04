@@ -235,3 +235,89 @@
   font-size:20px;
   color:#9aa5ad;
 }
+
+
+/* ==================================================
+   Portal 2026-09-04 業務操作のみ表示
+================================================== */
+
+.portal-business-section{
+  padding:12px;
+}
+
+.portal-business-section .portal-section-head{
+  align-items:center;
+  margin-bottom:8px;
+}
+
+.portal-business-section .portal-section-head h2{
+  font-size:15px;
+}
+
+.portal-business-notice{
+  color:#8a6b2d !important;
+  font-size:10px !important;
+  font-weight:700;
+  text-align:right;
+}
+
+.portal-business-grid{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:7px !important;
+}
+
+.portal-business-button{
+  min-height:50px !important;
+  padding:6px 5px !important;
+  border-radius:9px !important;
+}
+
+.portal-business-button strong{
+  font-size:12px !important;
+  line-height:1.2;
+}
+
+.portal-business-button small{
+  font-size:9px !important;
+  line-height:1.2;
+}
+
+/* 既存ロジックで無効化されても、配置は変えずその場に残す */
+.portal-business-button.hidden,
+.portal-business-button[hidden]{
+  display:flex !important;
+}
+
+@media(max-width:520px){
+  .portal-business-section{
+    padding:9px;
+  }
+
+  .portal-business-section .portal-section-head{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:8px;
+  }
+
+  .portal-business-notice{
+    font-size:9px !important;
+  }
+
+  .portal-business-grid{
+    gap:5px !important;
+  }
+
+  .portal-business-button{
+    min-height:46px !important;
+    padding:5px 3px !important;
+  }
+
+  .portal-business-button strong{
+    font-size:11px !important;
+  }
+
+  .portal-business-button small{
+    font-size:8px !important;
+  }
+}
