@@ -82,6 +82,16 @@ function bindEvents() {
     button.addEventListener("click", async () => {
       const page = button.dataset.page;
 
+      const businessPages = new Set(["action", "office", "meeting"]);
+
+      if (
+        businessPages.has(page) &&
+        (!currentWorkStatus || currentWorkStatus.status !== "ON")
+      ) {
+        alert("業務操作を利用するには、先に「始業」または「再開」を行ってください。");
+        return;
+      }
+
       if (button.disabled) return;
 
       const routes = {
@@ -156,20 +166,33 @@ async function loadPortalInitial() {
 }
 
 function renderWorkStatus(workStatus) {
+  const phase = String(workStatus.phase || "").trim();
   const isWorking = workStatus.status === "ON";
 
-  setText("workStateLabel", isWorking ? "勤務中" : "未始業");
+  const label =
+    workStatus.label ||
+    (isWorking ? "勤務中" : phase === "ENDED" ? "退勤" : "未始業");
+
+  setText("workStateLabel", label);
 
   const button = document.getElementById("workToggleButton");
   if (button) {
-    button.textContent = isWorking ? "終業" : "始業";
-    button.dataset.mode = isWorking ? "end" : "start";
+    const buttonLabel =
+      workStatus.buttonLabel ||
+      (isWorking ? "終業" : phase === "ENDED" ? "再開" : "始業");
+
+    const buttonMode =
+      workStatus.buttonMode ||
+      (isWorking ? "end" : phase === "ENDED" ? "resume" : "start");
+
+    button.textContent = buttonLabel;
+    button.dataset.mode = buttonMode;
   }
 
   if (isWorking && workStatus.startTime) {
     setText("workTimeDetail", `始業 ${workStatus.startTime}`);
-  } else if (!isWorking && workStatus.endTime) {
-    setText("workTimeDetail", `前回終業 ${workStatus.endTime}`);
+  } else if (phase === "ENDED" && workStatus.endTime) {
+    setText("workTimeDetail", `退勤 ${workStatus.endTime}`);
   } else {
     setText("workTimeDetail", "");
   }
@@ -183,21 +206,26 @@ function renderActionSummary(actionStatus) {
 function applyWorkPermissions(workStatus) {
   const isWorking = workStatus.status === "ON";
 
-  // 閲覧・申請系は未始業でも使用可
+  // 閲覧・申請系は常時利用可
   setMenuEnabled("request", true);
   setMenuEnabled("leave", true);
   setMenuEnabled("mypage", true);
 
-  // 勤務実績になる操作は始業後のみ
-  setMenuEnabled("action", isWorking);
-  setMenuEnabled("office", isWorking);
-  setMenuEnabled("meeting", isWorking);
+  // 業務操作は常時表示・クリック可。
+  // 未始業/退勤時は bindEvents 側でメッセージを出して遷移を止める。
+  setMenuEnabled("action", true);
+  setMenuEnabled("office", true);
+  setMenuEnabled("meeting", true);
 
   const notice = document.getElementById("workPermissionNotice");
   if (notice) {
-    notice.textContent = isWorking
-      ? "勤務中です。業務記録を利用できます。"
-      : "未始業です。行動記録・事務作業・会議記録は始業後に利用できます。";
+    if (isWorking) {
+      notice.textContent = "勤務中です。業務記録を利用できます。";
+    } else if (workStatus.phase === "ENDED") {
+      notice.textContent = "退勤済みです。業務を再開する場合は、右上の「再開」を押してください。";
+    } else {
+      notice.textContent = "未始業です。業務操作を利用する場合は、先に「始業」を行ってください。";
+    }
   }
 }
 
@@ -210,19 +238,56 @@ function setMenuEnabled(page, enabled) {
 }
 
 async function loadCommuteOptions() {
-  const select=document.getElementById('commuteDestination'); if(!select)return;
-  if(currentWorkStatus&&currentWorkStatus.status==='ON'){
-    select.disabled=true; select.innerHTML=`<option>${currentWorkStatus.destinationName||'勤務中'}</option>`;
-    setText('commuteResult',`${currentWorkStatus.destinationName||''} / ${currentWorkStatus.distanceKm||0}km / 約${currentWorkStatus.durationMinutes||0}分`); return;
+  const select = document.getElementById("commuteDestination");
+  if (!select) return;
+
+  const phase = String(currentWorkStatus?.phase || "").trim();
+
+  // 勤務中は既に確定済みの勤務開始場所を使う
+  if (currentWorkStatus?.status === "ON") {
+    select.disabled = true;
+    select.innerHTML = `<option>${currentWorkStatus.destinationName || "勤務中"}</option>`;
+    setText(
+      "commuteResult",
+      `${currentWorkStatus.destinationName || ""} / ${currentWorkStatus.distanceKm || 0}km / 約${currentWorkStatus.durationMinutes || 0}分`
+    );
+    return;
   }
-  select.disabled=true; select.innerHTML='<option value="">読み込み中...</option>';
-  try{
-    const result=await apiPost('commute.options',{employeeId:currentUser.employeeId});
-    select.innerHTML='<option value="">勤務開始場所を選択してください</option>';
-    (result.options||[]).forEach(o=>{const el=document.createElement('option');el.value=o.type+'|'+o.id;el.textContent=o.name;select.appendChild(el);});
-    setText('commuteResult','勤務開始場所を選択してください。');
-  }catch(err){setText('commuteMessage',err.message);}finally{select.disabled=false;}
+
+  // 同じ勤務日の退勤後は再開扱い。勤務開始場所は再選択させない。
+  if (phase === "ENDED") {
+    select.disabled = true;
+    select.innerHTML = `<option>${currentWorkStatus.destinationName || "本日の勤務開始場所"}</option>`;
+    setText("commuteResult", "");
+    return;
+  }
+
+  currentCommute = null;
+  select.disabled = true;
+  select.innerHTML = '<option value="">読み込み中...</option>';
+
+  try {
+    const result = await apiPost("commute.options", {
+      employeeId: currentUser.employeeId
+    });
+
+    select.innerHTML = '<option value="">勤務開始場所を選択してください</option>';
+
+    (result.options || []).forEach(o => {
+      const el = document.createElement("option");
+      el.value = o.type + "|" + o.id;
+      el.textContent = o.name;
+      select.appendChild(el);
+    });
+
+    setText("commuteResult", "勤務開始場所を選択してください。");
+  } catch (err) {
+    setText("commuteMessage", err.message);
+  } finally {
+    select.disabled = false;
+  }
 }
+
 async function calculateSelectedCommute(){
   const select=document.getElementById('commuteDestination'); currentCommute=null; const value=String(select?.value||'').trim();
   if(!value){setText('commuteResult','勤務開始場所を選択してください。');return;}
@@ -231,23 +296,65 @@ async function calculateSelectedCommute(){
 }
 async function toggleWorkStatus() {
   if (!currentUser || !currentWorkStatus) return;
-  const isWorking=currentWorkStatus.status==='ON';
-  if(!isWorking&&!currentCommute){alert('勤務開始場所を選択して、通勤距離を確認してから始業してください。');return;}
-  const action=isWorking?'work.end':'work.start'; const button=document.getElementById('workToggleButton'); if(button)button.disabled=true;
-  try{
-    const payload={employeeId:currentUser.employeeId}; if(!isWorking)payload.commute=currentCommute;
-    const result=await apiPost(action,payload); currentWorkStatus=result.workStatus; saveWorkStatus(currentWorkStatus); renderWorkStatus(currentWorkStatus); applyWorkPermissions(currentWorkStatus); await loadCommuteOptions();
-  }catch(err){alert(err.message);}finally{if(button)button.disabled=false;}
+
+  const mode =
+    currentWorkStatus.buttonMode ||
+    (currentWorkStatus.status === "ON"
+      ? "end"
+      : currentWorkStatus.phase === "ENDED"
+        ? "resume"
+        : "start");
+
+  if (mode === "start" && !currentCommute) {
+    alert("勤務開始場所を選択して、通勤距離を確認してから始業してください。");
+    return;
+  }
+
+  const action =
+    mode === "end"
+      ? "work.end"
+      : "work.start";
+
+  const button = document.getElementById("workToggleButton");
+  if (button) button.disabled = true;
+
+  try {
+    const payload = {
+      employeeId: currentUser.employeeId
+    };
+
+    // 初回始業だけ通勤情報を送る。再開は同日の情報を引き継ぐ。
+    if (mode === "start") {
+      payload.commute = currentCommute;
+    }
+
+    const result = await apiPost(action, payload);
+
+    currentWorkStatus = result.workStatus;
+    saveWorkStatus(currentWorkStatus);
+
+    renderWorkStatus(currentWorkStatus);
+    applyWorkPermissions(currentWorkStatus);
+
+    /*
+     * 以前はここで loadCommuteOptions() を再実行していたため、
+     * 始業・終業のたびに追加通信が発生していました。
+     * 状態変更のレスポンスだけで画面更新し、追加通信はしません。
+     */
+    if (currentWorkStatus.status === "ON") {
+      currentCommute = null;
+    }
+
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 async function openActionPage() {
-  // 行動記録画面へ移動する前にメイン側で最新状態を取得完了。
-  try {
-    await loadPortalInitial();
-  } catch (_) {}
-
   if (!currentWorkStatus || currentWorkStatus.status !== "ON") {
-    alert("先に始業してください。");
+    alert("先に「始業」または「再開」を行ってください。");
     return;
   }
 
