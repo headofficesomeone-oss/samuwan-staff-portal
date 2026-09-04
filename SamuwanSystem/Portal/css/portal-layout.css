@@ -339,3 +339,78 @@
 html[data-commute-saved="1"] #commuteCard{
   display:none !important;
 }
+
+
+/* ==================================================
+   2026-09-04 v2 業務操作 3列固定
+   common.css の primary 全幅指定より優先
+================================================== */
+.portal-business-grid{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:6px !important;
+}
+
+.portal-business-grid > .menu-button,
+.portal-business-grid > .portal-business-button,
+.portal-business-grid > .menu-button.primary,
+.portal-business-grid > .portal-business-button.primary{
+  grid-column:auto !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  min-height:46px !important;
+  margin:0 !important;
+  padding:5px 4px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:2px !important;
+}
+
+.portal-business-grid > .menu-button strong,
+.portal-business-grid > .portal-business-button strong{
+  font-size:12px !important;
+  line-height:1.15 !important;
+}
+
+.portal-business-grid > .menu-button small,
+.portal-business-grid > .portal-business-button small{
+  font-size:9px !important;
+  line-height:1.15 !important;
+}
+
+@media(max-width:520px){
+  .portal-business-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:4px !important;
+  }
+
+  .portal-business-grid > .menu-button,
+  .portal-business-grid > .portal-business-button,
+  .portal-business-grid > .menu-button.primary,
+  .portal-business-grid > .portal-business-button.primary{
+    min-height:43px !important;
+    padding:4px 2px !important;
+  }
+
+  .portal-business-grid > .menu-button strong,
+  .portal-business-grid > .portal-business-button strong{
+    font-size:11px !important;
+  }
+
+  .portal-business-grid > .menu-button small,
+  .portal-business-grid > .portal-business-button small{
+    font-size:8px !important;
+  }
+}
+
+/*
+ * 保存済み勤務開始場所をバックグラウンドで再確認中の間だけ、
+ * 未始業の始業ボタンを一時的に押せなくします。
+ */
+html[data-commute-initializing="1"] #workToggleButton{
+  pointer-events:none !important;
+  opacity:.55 !important;
+}
