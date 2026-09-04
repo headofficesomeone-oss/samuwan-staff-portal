@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Samuwan Staff Portal</title>
   <link rel="stylesheet" href="./css/common.css?v=20260824-1534-phase7">
-  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-2">
+  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-3">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 /* ===== Samuwan 共通画面移動（今回追加分） ===== */
@@ -138,7 +138,7 @@
       <section class="portal-section portal-business-section">
         <div class="portal-section-head">
           <h2>業務操作</h2>
-          <span>日常的に使う操作</span>
+          <span class="portal-business-notice">未始業の場合は、先に「始業」を行ってください。</span>
         </div>
 
         <div class="portal-business-grid">
@@ -157,57 +157,6 @@
             <small>会議・打合せ</small>
           </button>
         </div>
-      </section>
-
-      <section class="portal-section portal-schedule-section">
-        <div class="portal-section-head">
-          <h2>予定・シフト</h2>
-          <span>依頼とシフトの確認</span>
-        </div>
-
-        <div class="portal-schedule-grid">
-          <a class="portal-schedule-button" href="./request.html">
-            <strong>新規依頼</strong>
-            <small>新しい支援依頼を登録</small>
-          </a>
-
-          <a class="portal-schedule-button" href="./request-view.html">
-            <strong>依頼情報</strong>
-            <small>登録済み依頼を確認</small>
-          </a>
-
-          <a class="portal-schedule-button" href="./shift-view.html">
-            <strong>シフト一覧</strong>
-            <small>確定・予定シフトを確認</small>
-          </a>
-        </div>
-      </section>
-
-      <section class="portal-section portal-mypage-section">
-        <div class="portal-section-head">
-          <h2>マイページ</h2>
-          <span>自分の情報・申請状況</span>
-        </div>
-
-        <div class="portal-mypage-overview">
-          <div class="portal-mypage-overview-row">
-            <span>給与明細</span>
-            <strong>準備中</strong>
-          </div>
-          <div class="portal-mypage-overview-row">
-            <span>休暇・届出</span>
-            <strong>確認できます</strong>
-          </div>
-          <div class="portal-mypage-overview-row">
-            <span>労働実績</span>
-            <strong>準備中</strong>
-          </div>
-        </div>
-
-        <a class="portal-mypage-open" href="./mypage.html">
-          マイページを開く
-          <span>›</span>
-        </a>
       </section>
 
       <section id="message" class="message" aria-live="polite"></section>
