@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
-  <link rel="stylesheet" href="./css/request.css?v=20260903-7">
+  <link rel="stylesheet" href="./css/request.css?v=20260904-1">
 </head>
 <body>
 <header class="request-header">
@@ -175,6 +175,30 @@
           </label>
         </section>
 
+
+        <section id="targetSearchSection" class="request-card target-search-section hidden">
+          <div class="section-title">
+            <span class="step-number">✓</span>
+            <div>
+              <h2>対象シフトを確認</h2>
+              <p>キャンセル・変更・担当変更では、シフトIDを手入力せず利用者・サービス・日付・開始時刻から検索します。</p>
+            </div>
+          </div>
+
+          <div id="targetSearchHint" class="target-search-hint">
+            利用者・サービス・依頼日・開始時刻を入力してから検索してください。
+          </div>
+
+          <div class="target-search-actions">
+            <button type="button" id="searchTargetShiftButton" class="secondary-button">
+              対象シフトを検索
+            </button>
+          </div>
+
+          <div id="targetSearchResults" class="target-search-results hidden"></div>
+          <div id="targetSelectedCard" class="target-selected-card hidden"></div>
+        </section>
+
         <section class="request-card step-screen" data-step="3">
           <div class="section-title">
             <span class="step-number">3</span>
@@ -296,6 +320,11 @@
 
           <h3 class="detail-heading">その他の依頼内容</h3>
           <div id="confirmDetail" class="confirm-detail"></div>
+
+          <div id="inlineConfirmActions" class="inline-confirm-actions">
+            <button type="button" id="editButton" class="secondary-button">修正する</button>
+            <button type="button" id="saveRequestButton" class="primary-button">登録する</button>
+          </div>
         </section>
       </div>
 
@@ -305,7 +334,7 @@
           <strong id="pcSummaryClient">利用者未選択</strong>
           <p id="pcSummaryService">サービス未選択</p>
           <p id="pcSummaryTime">日時未選択</p>
-          <button type="button" id="pcPreviewButton" class="secondary-button">確認画面を見る</button>
+          <button type="button" id="pcPreviewButton" class="secondary-button">入力内容を確認</button>
         </div>
       </aside>
     </div>
@@ -321,10 +350,6 @@
   <div class="desktop-footer-actions">
     <button type="button" class="secondary-button" onclick="location.href='./index.html'">ポータルへ戻る</button>
     <button type="button" id="desktopConfirmButton" class="primary-button">入力内容を確認</button>
-    <div id="confirmActions" class="confirm-actions hidden">
-      <button type="button" id="editButton" class="secondary-button">修正する</button>
-      <button type="button" id="saveRequestButton" class="primary-button">登録する</button>
-    </div>
   </div>
 </div>
 
@@ -350,8 +375,8 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="./js/common.js?v=20260903-7"></script>
-<script src="./js/request-common.js?v=20260903-7"></script>
-<script src="./js/request.js?v=20260903-7"></script>
+<script src="./js/common.js?v=20260904-1"></script>
+<script src="./js/request-common.js?v=20260904-1"></script>
+<script src="./js/request.js?v=20260904-1"></script>
 </body>
 </html>
