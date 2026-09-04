@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Samuwan Staff Portal</title>
   <link rel="stylesheet" href="./css/common.css?v=20260824-1534-phase7">
-  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-5">
+  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-6">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 /* ===== Samuwan 共通画面移動（今回追加分） ===== */
@@ -146,15 +146,6 @@
         <div id="commuteMessage" class="message" aria-live="polite"></div>
       </section>
 
-      <section class="status-card">
-        <div class="status-heading">
-          <h2>現在の行動状態</h2>
-          <button id="refreshButton" class="small-button" type="button">更新</button>
-        </div>
-        <div id="currentStatus" class="current-status">確認中...</div>
-        <div id="currentDetail" class="current-detail"></div>
-      </section>
-
       <section class="portal-section portal-business-section">
         <div class="portal-section-head">
           <h2>業務操作</h2>
@@ -179,6 +170,17 @@
         </div>
       </section>
 
+      <section class="status-card">
+        <div class="status-heading">
+          <h2>現在の行動状態</h2>
+          <button id="refreshButton" class="small-button" type="button">更新</button>
+        </div>
+        <div id="currentStatus" class="current-status">確認中...</div>
+        <div id="currentDetail" class="current-detail"></div>
+      </section>
+
+
+
       <section id="message" class="message" aria-live="polite"></section>
     </section>
   </main>
@@ -191,6 +193,6 @@
   <script src="./js/common.js?v=20260824-1534-phase7"></script>
   <script src="./js/auth.js?v=20260824-1534-phase7"></script>
   <script src="./js/portal.js?v=20260824-1534-phase7"></script>
-  <script src="./js/portal-work-snapshot.js?v=20260904-1"></script>
+  <script src="./js/portal-work-snapshot.js?v=20260904-2"></script>
 </body>
 </html>
