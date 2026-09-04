@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Samuwan Staff Portal</title>
   <link rel="stylesheet" href="./css/common.css?v=20260824-1534-phase7">
-  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-4">
+  <link rel="stylesheet" href="./css/portal-layout.css?v=20260904-5">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 /* ===== Samuwan 共通画面移動（今回追加分） ===== */
@@ -49,6 +49,26 @@
   }
 }
 </style>
+
+<script>
+(function(){
+  try{
+    var d=new Date();
+    var key=[
+      d.getFullYear(),
+      String(d.getMonth()+1).padStart(2,'0'),
+      String(d.getDate()).padStart(2,'0')
+    ].join('-');
+    var raw=localStorage.getItem('samuwanPortalWorkSnapshotV1');
+    if(!raw)return;
+    var s=JSON.parse(raw);
+    if(s && s.date===key && s.commuteLabel){
+      document.documentElement.setAttribute('data-commute-saved','1');
+    }
+  }catch(e){}
+})();
+</script>
+
 </head>
 <body>
   <header class="app-header">
@@ -170,7 +190,7 @@
 
   <script src="./js/common.js?v=20260824-1534-phase7"></script>
   <script src="./js/auth.js?v=20260824-1534-phase7"></script>
-  <script src="./js/portal-commute-cache.js?v=20260904-1"></script>
   <script src="./js/portal.js?v=20260824-1534-phase7"></script>
+  <script src="./js/portal-work-snapshot.js?v=20260904-1"></script>
 </body>
 </html>
