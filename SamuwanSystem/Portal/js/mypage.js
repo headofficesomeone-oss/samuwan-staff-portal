@@ -76,14 +76,6 @@
     const sameDay =
       snapshot.date === todayKey();
 
-    const workState =
-      sameDay
-        ? String(
-            snapshot.workState ||
-            '未始業'
-          ).trim()
-        : '未始業';
-
     const commute =
       sameDay
         ? String(
@@ -94,9 +86,7 @@
 
     if (today) {
       today.textContent =
-        '勤務状態：' +
-        workState +
-        ' ｜ 勤務開始場所：' +
+        '勤務開始場所：' +
         (
           commute ||
           '未設定'
