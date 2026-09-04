@@ -1,48 +1,81 @@
-document.addEventListener("DOMContentLoaded", initializeMyPage);
+(() => {
+  'use strict';
 
-async function initializeMyPage() {
-  const user = getSavedPortalUser();
+  function getUser() {
+    try {
+      const raw =
+        localStorage.getItem('currentUser') ||
+        localStorage.getItem('portalUser') ||
+        '';
 
-  if (!user) {
-    location.href = "./index.html";
-    return;
+      if (!raw) return {};
+
+      const user = JSON.parse(raw);
+
+      return {
+        id: String(
+          user?.employeeId ||
+          user?.id ||
+          ''
+        ).trim(),
+        name: String(
+          user?.employeeName ||
+          user?.name ||
+          ''
+        ).trim()
+      };
+    } catch (_) {
+      return {};
+    }
   }
 
-  setText("staffName", `職員：${user.employeeName}`);
-  setText("myEmployeeName", user.employeeName);
-  setText("myEmployeeId", user.employeeId);
+  function renderUser() {
+    const user = getUser();
 
-  document.getElementById("homeButton")?.addEventListener("click", () => {
-    location.href = "./index.html";
-  });
+    const staff =
+      document.getElementById('mypageStaffName');
 
-  document.getElementById("unregisterButton")?.addEventListener("click", async () => {
-    const ok = confirm(
-      "LINE登録を解除しますか？\n\n" +
-      "解除すると、次回利用時に仮登録IDによる再登録が必要です。"
-    );
+    const name =
+      document.getElementById('accountEmployeeName');
 
-    if (!ok) return;
+    const id =
+      document.getElementById('accountEmployeeId');
 
-    try {
-      try {
-        const lineProfile = await initLiffForPortal();
-      } catch (_) {}
-
-      await apiPost("unregisterLineId", {
-        employeeId: user.employeeId,
-        lineId: (typeof lineProfile !== "undefined" && lineProfile) ? lineProfile.lineId : ""
-      });
-
-      clearPortalUser();
-      clearWorkStatusCache();
-      clearActionStatusCache();
-
-      alert("LINE登録を解除しました。");
-      location.href = "./index.html";
-
-    } catch (err) {
-      alert("登録解除に失敗しました。\n" + err.message);
+    if (staff) {
+      staff.textContent =
+        user.name
+          ? `職員：${user.name}`
+          : '職員情報';
     }
-  });
-}
+
+    if (name) {
+      name.textContent =
+        user.name || '—';
+    }
+
+    if (id) {
+      id.textContent =
+        user.id || '—';
+    }
+  }
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      renderUser();
+
+      document
+        .getElementById('mypageLeaveButton')
+        ?.addEventListener(
+          'click',
+          () => {
+            /*
+             * 休暇・届出は現在ホーム内の既存機能なので、
+             * 勝手に別処理を作らずホームへ戻します。
+             */
+            location.href = './index.html';
+          }
+        );
+    }
+  );
+})();
