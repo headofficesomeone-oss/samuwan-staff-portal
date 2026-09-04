@@ -414,3 +414,30 @@ html[data-commute-initializing="1"] #workToggleButton{
   pointer-events:none !important;
   opacity:.55 !important;
 }
+
+
+/* ==================================================
+   2026-09-04 v3
+   業務操作は勤務状態に関係なく常時表示
+================================================== */
+.portal-business-grid > [data-page="action"],
+.portal-business-grid > [data-page="office"],
+.portal-business-grid > [data-page="meeting"]{
+  display:flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+}
+
+.portal-business-grid > [data-page="action"].hidden,
+.portal-business-grid > [data-page="office"].hidden,
+.portal-business-grid > [data-page="meeting"].hidden{
+  display:flex !important;
+}
+
+/* 未始業時も「機能がある」ことが分かるよう少しだけ薄くする */
+html[data-business-work-ready="0"] .portal-business-grid > [data-page="action"],
+html[data-business-work-ready="0"] .portal-business-grid > [data-page="office"],
+html[data-business-work-ready="0"] .portal-business-grid > [data-page="meeting"]{
+  opacity:.70 !important;
+}
