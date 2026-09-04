@@ -868,20 +868,36 @@ textarea{
   overflow-wrap:anywhere;
 }
 
-.portal-back-btn{
-  height:42px;
-  border:1px solid var(--line);
-  border-radius:9px;
-  padding:0 10px;
-  background:#fff;
-  color:#46515d;
-  font-size:11px;
-  font-weight:800;
+
+/* ==================================================
+   選択中曜日 + 件数
+   曜日ナビと同じヘッダーグループ内に表示
+================================================== */
+
+.selected-day-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:0 8px 8px;
 }
-@media(max-width:480px){
-  .portal-back-btn{
-    height:38px;
-    padding:0 7px;
-    font-size:10px;
-  }
+
+.selected-day-title{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",Meiryo,sans-serif;
+  font-size:16px;
+  font-weight:700;
+  line-height:1.25;
+  letter-spacing:0;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* 一覧上部の余白を少し詰める */
+.content{
+  padding-top:6px;
+}
+
+/* 旧レイアウト用 */
+.day-head{
+  display:none;
 }

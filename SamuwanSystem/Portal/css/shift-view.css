@@ -1276,3 +1276,25 @@ textarea{
 }
 
 .shift-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.shift-edit-grid .field{min-width:0}
+
+
+/* 確定後シフト追加 */
+.shift-add-btn{
+  padding:5px 9px;
+  font-size:11px;
+  white-space:nowrap;
+}
+.shift-add-two-col{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.shift-add-two-col .field{min-width:0}
+.shift-add-conflict-group{display:grid;gap:4px}
+.shift-add-conflict-group + .shift-add-conflict-group{margin-top:8px}
+.shift-add-conflict-name{
+  padding:1px 2px;
+  font-size:10px;
+  font-weight:900;
+  color:#925800;
+}
