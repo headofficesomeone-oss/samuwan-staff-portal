@@ -400,6 +400,92 @@
     }
   }
 
+
+  function getWorkStateText_() {
+    return String(
+      document.getElementById('workStateLabel')?.textContent || ''
+    ).replace(/\s+/g, '').trim();
+  }
+
+  function isBeforeWork_() {
+    const text = getWorkStateText_();
+
+    return (
+      !text ||
+      text.includes('未始業') ||
+      text.includes('確認中')
+    );
+  }
+
+  function normalizeCommuteResultText_(text) {
+    return String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function saveCommuteResultText_() {
+    const result = document.getElementById('commuteResult');
+    if (!result) return;
+
+    const text = normalizeCommuteResultText_(result.textContent);
+
+    if (
+      !text ||
+      text.includes('勤務開始場所を選択してください') ||
+      text.includes('読み込み') ||
+      text.includes('取得中') ||
+      text.includes('計算中') ||
+      text.includes('確認中')
+    ) {
+      return;
+    }
+
+    saveSnapshot({
+      commuteResultText: text
+    });
+
+    renderWorkCommuteSummary_();
+  }
+
+  function renderWorkCommuteSummary_() {
+    const area = document.getElementById('workCommuteSummary');
+    if (!area) return;
+
+    const snapshot = readSnapshot();
+
+    /*
+     * 始業前だけ表示。
+     * 始業後・終業後はポータルでは表示しません。
+     */
+    if (!isBeforeWork_()) {
+      area.classList.add('hidden');
+      area.textContent = '';
+      return;
+    }
+
+    const place = String(snapshot.commuteLabel || '').trim();
+    const resultText = String(snapshot.commuteResultText || '').trim();
+
+    if (!place && !resultText) {
+      area.classList.add('hidden');
+      area.textContent = '';
+      return;
+    }
+
+    const parts = [];
+
+    if (place) {
+      parts.push('勤務開始場所：' + place);
+    }
+
+    if (resultText) {
+      parts.push(resultText);
+    }
+
+    area.textContent = parts.join('　｜　');
+    area.classList.remove('hidden');
+  }
+
   function bind() {
     const select =
       document.getElementById(
@@ -472,6 +558,8 @@
           }
 
           savePortalWorkTexts();
+          saveCommuteResultText_();
+          renderWorkCommuteSummary_();
         }
       );
 
@@ -502,6 +590,8 @@
 
     replaySavedCommuteIfPossible();
     savePortalWorkTexts();
+    saveCommuteResultText_();
+    renderWorkCommuteSummary_();
   }
 
   document.addEventListener(
@@ -526,6 +616,7 @@
       }
 
       savePortalWorkTexts();
+      renderWorkCommuteSummary_();
     }
   );
 })();
