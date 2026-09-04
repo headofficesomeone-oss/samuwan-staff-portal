@@ -6,6 +6,48 @@
   <title>Samuwan Staff Portal</title>
   <link rel="stylesheet" href="./css/common.css?v=20260824-1534-phase7">
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+/* ===== Samuwan 共通画面移動（今回追加分） ===== */
+.samuwan-page-nav{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  padding:8px 10px;
+  background:#fff;
+  border-bottom:1px solid #dfe5ea;
+}
+.samuwan-page-nav-link{
+  min-width:0;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  border:1px solid #dfe5ea;
+  border-radius:9px;
+  background:#f7f9fa;
+  color:#46515d;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.samuwan-page-nav-link.active{
+  background:#eaf2fb;
+  border-color:#9fc1e6;
+  color:#2463a8;
+}
+@media(max-width:480px){
+  .samuwan-page-nav{
+    gap:4px;
+    padding:6px;
+  }
+  .samuwan-page-nav-link{
+    min-height:36px;
+    font-size:10px;
+    padding:0 2px;
+  }
+}
+</style>
 </head>
 <body>
   <header class="app-header">
@@ -61,6 +103,12 @@
     </section>
 
     <section id="portalView" class="hidden">
+<nav class="samuwan-page-nav" aria-label="画面移動">
+  <a class="active samuwan-page-nav-link" href="./index.html">ポータル</a>
+  <a class="samuwan-page-nav-link" href="./request.html">新規依頼</a>
+  <a class="samuwan-page-nav-link" href="./request-view.html">依頼情報</a>
+  <a class="samuwan-page-nav-link" href="./shift-view.html">シフト一覧</a>
+</nav>
       <section class="status-card work-card">
         <div class="status-heading">
           <h2>勤務状態</h2>
@@ -89,13 +137,6 @@
       <section class="menu-grid">
         <button class="menu-button primary" data-page="action">行動記録</button>
         <button class="menu-button" data-page="request">支援依頼</button>
-
-				<button type="button" class="menu-card" onclick="location.href='./request-view.html'">
-				  <div class="menu-icon">📋</div>
-				  <div class="menu-title">依頼情報</div>
-				  <div class="menu-text">登録済みの依頼を確認します</div>
-				</button>
-
         <button class="menu-button" data-page="office">事務作業</button>
         <button class="menu-button" data-page="meeting">会議記録</button>
         <button class="menu-button" data-page="leave">休暇・届出</button>

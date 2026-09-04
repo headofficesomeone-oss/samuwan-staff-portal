@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260901-03">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260904-nav1">
 </head>
 <body>
 
@@ -38,6 +38,13 @@
 
     </div>
 
+
+<nav class="samuwan-page-nav" aria-label="画面移動">
+  <a class="samuwan-page-nav-link" href="./index.html">ポータル</a>
+  <a class="samuwan-page-nav-link" href="./request.html">新規依頼</a>
+  <a class="samuwan-page-nav-link" href="./request-view.html">依頼情報</a>
+  <a class="active samuwan-page-nav-link" href="./shift-view.html">シフト一覧</a>
+</nav>
 
     <div class="shift-week-info">
       <span id="weekState" class="shift-week-state">状態確認中</span>
@@ -466,10 +473,27 @@
         </label>
       </div>
 
-      <label class="field">
-        <span>担当3（見習）</span>
-        <select id="shiftAddStaff3"><option value="">未設定</option></select>
-      </label>
+      <div class="shift-add-two-col">
+        <label class="field">
+          <span>担当3（見習）</span>
+          <select id="shiftAddStaff3"><option value="">未設定</option></select>
+        </label>
+        <label class="field">
+          <span>人数 <small>主担当・担当2から自動</small></span>
+          <input id="shiftAddPeople" type="text" readonly placeholder="自動計算">
+        </label>
+      </div>
+
+      <div class="shift-add-two-col">
+        <label class="field">
+          <span>行きドライバー</span>
+          <select id="shiftAddOutDriver"><option value="">未設定</option></select>
+        </label>
+        <label class="field">
+          <span>帰りドライバー</span>
+          <select id="shiftAddBackDriver"><option value="">未設定</option></select>
+        </label>
+      </div>
 
       <div id="shiftAddConflictArea" class="staff-conflict-area" hidden>
         <div id="shiftAddConflictTitle" class="staff-conflict-title"></div>
@@ -477,6 +501,29 @@
       </div>
 
       <label class="field"><span>行先</span><input id="shiftAddDestination" type="text"></label>
+
+      <div class="shift-add-two-col">
+        <label class="field">
+          <span>予約時間</span>
+          <input id="shiftAddAppointmentTime" type="time">
+        </label>
+        <label class="field">
+          <span>待合せ場所</span>
+          <input id="shiftAddMeetingPlace" type="text">
+        </label>
+      </div>
+
+      <label class="field">
+        <span>移動区分</span>
+        <select id="shiftAddMoveType">
+          <option value="">未設定</option>
+          <option value="有償運送">有償運送</option>
+          <option value="公共交通">公共交通</option>
+          <option value="家族送迎">家族送迎</option>
+          <option value="その他">その他</option>
+        </select>
+      </label>
+
       <label class="field"><span>支援内容</span><textarea id="shiftAddSupport" rows="2"></textarea></label>
       <label class="field"><span>指示・備考</span><textarea id="shiftAddNote" rows="2"></textarea></label>
       <label class="field"><span>追加理由</span><textarea id="shiftAddReason" rows="2"></textarea></label>
@@ -490,6 +537,6 @@
 </dialog>
 
 <script src="./js/request-view-config.js?v=20260831-01"></script>
-<script src="./js/shift-view.js?v=20260901-03"></script>
+<script src="./js/shift-view.js?v=20260904-unified1"></script>
 </body>
 </html>
