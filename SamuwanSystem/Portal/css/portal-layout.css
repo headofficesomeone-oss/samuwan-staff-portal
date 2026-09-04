@@ -142,42 +142,6 @@
   text-align:right;
 }
 
-/* ==================================================
-   初期状態ガード
-================================================== */
-
-body.portal-state-lock #workToggleButton,
-body.portal-state-lock #refreshButton,
-body.portal-state-lock #todayShiftSelect,
-body.portal-state-lock #instructionButton,
-body.portal-state-lock #moveButton,
-body.portal-state-lock #enterButton,
-body.portal-state-lock #finishButton,
-body.portal-state-lock #continueButton,
-body.portal-state-lock #preCancelButton,
-body.portal-state-lock #cancelButton,
-body.portal-state-lock #actionRecordButton,
-body.portal-state-lock #homeReturnButton,
-body.portal-state-lock #temporaryChangeButton{
-  pointer-events:none !important;
-  opacity:.45 !important;
-}
-
-#portalStateGuardNotice{
-  margin:8px 0 0;
-  padding:8px 10px;
-  border-radius:9px;
-  background:#fff7df;
-  color:#795f20;
-  font-size:11px;
-  font-weight:700;
-  text-align:center;
-}
-
-#portalStateGuardNotice.hidden{
-  display:none;
-}
-
 @media(max-width:520px){
   .portal-section{
     margin-top:10px;
