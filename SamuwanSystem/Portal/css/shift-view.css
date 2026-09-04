@@ -1298,3 +1298,56 @@ textarea{
   font-weight:900;
   color:#925800;
 }
+
+
+/* ===== Samuwan 共通画面移動（今回追加分） ===== */
+.samuwan-page-nav{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  padding:8px 10px;
+  background:#fff;
+  border-bottom:1px solid #dfe5ea;
+}
+.samuwan-page-nav-link{
+  min-width:0;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  border:1px solid #dfe5ea;
+  border-radius:9px;
+  background:#f7f9fa;
+  color:#46515d;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.samuwan-page-nav-link.active{
+  background:#eaf2fb;
+  border-color:#9fc1e6;
+  color:#2463a8;
+}
+@media(max-width:480px){
+  .samuwan-page-nav{
+    gap:4px;
+    padding:6px;
+  }
+  .samuwan-page-nav-link{
+    min-height:36px;
+    font-size:10px;
+    padding:0 2px;
+  }
+}
+
+#shiftAddPeople[readonly]{
+  background:#f4f7f5;
+  font-weight:700;
+  color:#24352b;
+}
+.field small{
+  font-size:10px;
+  font-weight:600;
+  color:#73808c;
+}
