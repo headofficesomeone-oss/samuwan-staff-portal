@@ -10,7 +10,8 @@
     weekData: null,
     cache: {},
     masters: {
-      staffs: []
+      staffs: [],
+      clients: []
     },
     selectedShift: null,
     detailShift: null,
@@ -93,7 +94,30 @@
     shiftEditReason: $('shiftEditReason'),
     shiftEditConflictArea: $('shiftEditConflictArea'),
     shiftEditConflictTitle: $('shiftEditConflictTitle'),
-    shiftEditConflictList: $('shiftEditConflictList')
+    shiftEditConflictList: $('shiftEditConflictList'),
+
+    addConfirmedShiftButton: $('addConfirmedShiftButton'),
+    shiftAddDialog: $('shiftAddDialog'),
+    shiftAddForm: $('shiftAddForm'),
+    closeShiftAddDialog: $('closeShiftAddDialog'),
+    cancelShiftAdd: $('cancelShiftAdd'),
+    submitShiftAdd: $('submitShiftAdd'),
+    shiftAddDate: $('shiftAddDate'),
+    shiftAddClient: $('shiftAddClient'),
+    shiftAddSystem: $('shiftAddSystem'),
+    shiftAddService: $('shiftAddService'),
+    shiftAddStart: $('shiftAddStart'),
+    shiftAddEnd: $('shiftAddEnd'),
+    shiftAddMain: $('shiftAddMain'),
+    shiftAddStaff2: $('shiftAddStaff2'),
+    shiftAddStaff3: $('shiftAddStaff3'),
+    shiftAddConflictArea: $('shiftAddConflictArea'),
+    shiftAddConflictTitle: $('shiftAddConflictTitle'),
+    shiftAddConflictList: $('shiftAddConflictList'),
+    shiftAddDestination: $('shiftAddDestination'),
+    shiftAddSupport: $('shiftAddSupport'),
+    shiftAddNote: $('shiftAddNote'),
+    shiftAddReason: $('shiftAddReason')
   };
 
   function monday(date) {
@@ -205,7 +229,13 @@
       result.employees ||
       [];
 
+    S.masters.clients =
+      result.clients ||
+      result.users ||
+      [];
+
     renderStaffOptions();
+    renderShiftAddMasterOptions_();
   }
 
 
@@ -263,6 +293,40 @@
         })
         .join('');
 
+  }
+
+
+
+  function clientId_(client) {
+    return String(client?.clientId || client?.userId || client?.id || '').trim();
+  }
+
+  function clientName_(client) {
+    return String(client?.clientName || client?.userName || client?.name || '').trim();
+  }
+
+  function renderShiftAddMasterOptions_() {
+    if (!E.shiftAddClient) return;
+
+    E.shiftAddClient.innerHTML =
+      '<option value="">選択してください</option>' +
+      S.masters.clients.map(client => {
+        const id = clientId_(client);
+        const name = clientName_(client);
+        return `<option value="${esc(id)}" data-name="${esc(name)}">${esc(name)}</option>`;
+      }).join('');
+
+    const staffHtml =
+      '<option value="">未設定</option>' +
+      S.masters.staffs.map(staff => {
+        const id = staffId(staff);
+        const name = staffName(staff);
+        return `<option value="${esc(id)}" data-name="${esc(name)}">${esc(name)}</option>`;
+      }).join('');
+
+    E.shiftAddMain.innerHTML = staffHtml;
+    E.shiftAddStaff2.innerHTML = staffHtml;
+    E.shiftAddStaff3.innerHTML = staffHtml;
   }
 
 
@@ -366,6 +430,12 @@
     const dateKey = ymd(date);
 
     E.dayTitle.textContent = DOW[S.selectedDay] + '曜日';
+
+    E.addConfirmedShiftButton.hidden =
+      !(
+        S.weekData?.status === '確定' &&
+        dateKey >= ymd(new Date())
+      );
 
     const items = (S.weekData?.items || [])
       .filter(x => x.date === dateKey)
@@ -1739,6 +1809,188 @@
 
 
 
+
+  function selectedShiftDate_() {
+    return ymd(addDays(weekStart(),S.selectedDay));
+  }
+
+  function selectedOptionName_(select) {
+    const option = select?.selectedOptions?.[0];
+    return String(option?.dataset?.name || option?.textContent || '').trim();
+  }
+
+  function openConfirmedShiftAdd_() {
+    if (S.weekData?.status !== '確定') {
+      alert('確定済みの週でのみ直接追加できます。');
+      return;
+    }
+
+    const date = selectedShiftDate_();
+    if (date < ymd(new Date())) {
+      alert('確定済みの過去日には追加できません。');
+      return;
+    }
+
+    E.shiftAddForm.reset();
+    renderShiftAddMasterOptions_();
+    E.shiftAddDate.textContent = `${date}（${DOW[S.selectedDay]}）`;
+    E.shiftAddConflictArea.hidden = true;
+    E.shiftAddConflictList.innerHTML = '';
+    E.shiftAddDialog.showModal();
+  }
+
+  function shiftAddSelectedStaff_() {
+    const defs = [
+      {select:E.shiftAddMain,label:'主担当'},
+      {select:E.shiftAddStaff2,label:'担当2'},
+      {select:E.shiftAddStaff3,label:'担当3（見習）'}
+    ];
+    const seen = new Set();
+
+    return defs.map(def => ({
+      id:String(def.select.value || '').trim(),
+      name:def.select.value ? selectedOptionName_(def.select) : '',
+      label:def.label
+    })).filter(staff => {
+      const key = staff.id || staff.name;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function updateShiftAddConflict_() {
+    const start = String(E.shiftAddStart.value || '').trim();
+    const end = String(E.shiftAddEnd.value || '').trim();
+    const date = selectedShiftDate_();
+    const staffs = shiftAddSelectedStaff_();
+
+    if (!start || !staffs.length) {
+      E.shiftAddConflictArea.hidden = true;
+      E.shiftAddConflictList.innerHTML = '';
+      return;
+    }
+
+    const target = {startTime:start,endTime:end};
+    const groups = [];
+
+    staffs.forEach(staff => {
+      const rows = (S.weekData?.items || [])
+        .filter(other => {
+          if (other.date !== date) return false;
+          if (['キャンセル','無効','変更前'].includes(other.state)) return false;
+
+          const ids = [other.mainStaffId,other.staff2Id,other.staff3Id]
+            .map(v => String(v || '').trim());
+          const names = [other.mainStaffName,other.staff2Name,other.staff3Name]
+            .map(v => String(v || '').trim());
+
+          return (staff.id && ids.includes(staff.id)) ||
+                 (staff.name && names.includes(staff.name));
+        })
+        .map(other => ({other,kind:conflictKind_(target,other)}))
+        .filter(row => row.kind);
+
+      if (rows.length) groups.push({staff,rows});
+    });
+
+    if (!groups.length) {
+      E.shiftAddConflictArea.hidden = true;
+      E.shiftAddConflictList.innerHTML = '';
+      return;
+    }
+
+    const exact = groups.reduce((n,g) => n + g.rows.filter(r => r.kind === 'overlap').length,0);
+    const possible = groups.reduce((n,g) => n + g.rows.filter(r => r.kind === 'possible').length,0);
+
+    E.shiftAddConflictArea.hidden = false;
+    E.shiftAddConflictTitle.textContent = exact
+      ? `⚠ ${exact}件 時間が重複しています`
+      : `△ ${possible}件 重複の可能性があります`;
+
+    E.shiftAddConflictList.innerHTML = groups.map(group => `
+      <div class="shift-add-conflict-group">
+        <div class="shift-add-conflict-name">
+          ${group.rows.some(r => r.kind === 'overlap') ? '⚠ ' : '△ '}${esc(group.staff.name || group.staff.label)}
+        </div>
+        ${group.rows.map(({other,kind}) => `
+          <div class="staff-conflict-row${kind === 'overlap' ? ' overlap' : ' possible'}">
+            <span>${kind === 'overlap' ? '<span class="staff-conflict-warning">⚠</span>' : '<span class="staff-conflict-possible">△</span>'}${esc(other.clientName||'')}</span>
+            <span class="staff-conflict-time">${esc(other.startTime||'')}${effectiveEndTime_(other) ? '～'+esc(effectiveEndTime_(other)) : '～未設定'}</span>
+            <span>${esc(other.service||'')}</span>
+            <span>${esc(other.supportContent||'')}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  async function submitConfirmedShiftAdd_(event) {
+    event.preventDefault();
+
+    const date = selectedShiftDate_();
+    const clientId = String(E.shiftAddClient.value || '').trim();
+    const clientName = selectedOptionName_(E.shiftAddClient);
+    const startTime = String(E.shiftAddStart.value || '').trim();
+    const endTime = String(E.shiftAddEnd.value || '').trim();
+
+    if (!clientId || !clientName) throw new Error('利用者を選択してください。');
+    if (!startTime) throw new Error('開始時刻を入力してください。');
+    if (endTime && startTime >= endTime) throw new Error('終了時刻は開始時刻より後にしてください。');
+
+    const staffValue = select => ({
+      id:String(select.value || '').trim(),
+      name:select.value ? selectedOptionName_(select) : ''
+    });
+
+    const main = staffValue(E.shiftAddMain);
+    const staff2 = staffValue(E.shiftAddStaff2);
+    const staff3 = staffValue(E.shiftAddStaff3);
+    const reporter = currentUser() || {};
+
+    E.submitShiftAdd.disabled = true;
+    E.submitShiftAdd.textContent = '追加中…';
+
+    try {
+      const result = await api({
+        action:'shift.confirmed.add',
+        date,
+        dow:DOW[S.selectedDay] || '',
+        clientId,
+        clientName,
+        system:E.shiftAddSystem.value,
+        service:E.shiftAddService.value.trim(),
+        startTime,
+        endTime,
+        mainStaffId:main.id,
+        mainStaffName:main.name,
+        staff2Id:staff2.id,
+        staff2Name:staff2.name,
+        staff3Id:staff3.id,
+        staff3Name:staff3.name,
+        destination:E.shiftAddDestination.value.trim(),
+        supportContent:E.shiftAddSupport.value.trim(),
+        note:E.shiftAddNote.value.trim(),
+        reason:E.shiftAddReason.value.trim(),
+        reporterId:reporter.id || 'TEST',
+        reporterName:reporter.name || 'TEST'
+      });
+
+      if (!result?.ok) {
+        throw new Error(result?.message || result?.error || 'シフト追加に失敗しました。');
+      }
+
+      E.shiftAddDialog.close();
+      S.cache = {};
+      await loadWeek();
+      alert(`シフトを追加しました。\n${result.shiftId || ''}`);
+    } finally {
+      E.submitShiftAdd.disabled = false;
+      E.submitShiftAdd.textContent = '追加する';
+    }
+  }
+
+
   function openShiftEdit_(item) {
     S.selectedShift = item;
     E.shiftEditSummary.textContent = shiftSummary(item);
@@ -2221,17 +2473,47 @@
   E.closeShiftEditDialog.addEventListener('click',() => E.shiftEditDialog.close());
   E.cancelShiftEdit.addEventListener('click',() => E.shiftEditDialog.close());
 
+
+  E.addConfirmedShiftButton.addEventListener('click',openConfirmedShiftAdd_);
+
+  [E.shiftAddStart,E.shiftAddEnd,E.shiftAddMain,E.shiftAddStaff2,E.shiftAddStaff3]
+    .forEach(element => element.addEventListener('change',updateShiftAddConflict_));
+
+  E.shiftAddForm.addEventListener('submit',event => {
+    submitConfirmedShiftAdd_(event).catch(err => alert(err?.message || err));
+  });
+
+  E.closeShiftAddDialog.addEventListener('click',() => E.shiftAddDialog.close());
+  E.cancelShiftAdd.addEventListener('click',() => E.shiftAddDialog.close());
+
+
   E.prevWeek.addEventListener('click',() => {
     if (S.weekOffset <= -1) return;
+
     S.weekOffset -= 1;
-    S.selectedDay = 0;
+
+    // 現在週へ戻った場合は「今日」を表示する。
+    // 前週の場合だけ月曜日を表示。
+    S.selectedDay =
+      S.weekOffset === 0
+        ? todayDayIndex()
+        : 0;
+
     loadWeek();
   });
 
   E.nextWeek.addEventListener('click',() => {
     if (S.weekOffset >= 1) return;
+
     S.weekOffset += 1;
-    S.selectedDay = 0;
+
+    // 現在週へ戻った場合は「今日」を表示する。
+    // 翌週の場合だけ月曜日を表示。
+    S.selectedDay =
+      S.weekOffset === 0
+        ? todayDayIndex()
+        : 0;
+
     loadWeek();
   });
 
