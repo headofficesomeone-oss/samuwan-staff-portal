@@ -76,7 +76,10 @@
     save: $('saveRequestButton'),
     successPanel: $('successPanel'),
     successRequestId: $('successRequestId'),
+    successSummaryBody: $('successSummaryBody'),
     newRequest: $('newRequestButton'),
+    viewRegistered: $('viewRegisteredButton'),
+    successPortal: $('successPortalButton'),
     toast: $('toast')
   };
 
@@ -216,6 +219,12 @@
 
     E.save.addEventListener('click', submit);
     E.newRequest?.addEventListener('click', resetForNewRequest);
+    E.viewRegistered?.addEventListener('click', () => {
+      window.location.href = './request-view.html';
+    });
+    E.successPortal?.addEventListener('click', () => {
+      window.location.href = './index.html';
+    });
 
     document.querySelectorAll('[data-step-jump]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -751,7 +760,7 @@
 
       state.registered = true;
       setSaving(false);
-      lockAfterSuccess(result);
+      lockAfterSuccess(result, payload);
     } catch (err) {
       state.registered = false;
       showMessage(err.message || String(err), true);
@@ -760,7 +769,7 @@
   }
 
 
-  function lockAfterSuccess(result) {
+  function lockAfterSuccess(result, payload) {
     E.next.disabled = true;
     E.save.disabled = true;
     E.desktopConfirm.disabled = true;
@@ -774,12 +783,53 @@
         ? `依頼ID：${result.requestId}`
         : (result.count > 1 ? `${result.count}日分登録` : '');
 
+    renderSuccessSummary(payload, result);
     E.successPanel.classList.remove('hidden');
 
     if (mobileQuery.matches) {
       E.next.textContent = '登録済み';
       E.prev.classList.add('hidden');
     }
+  }
+
+  function renderSuccessSummary(payload, result) {
+    if (!E.successSummaryBody) return;
+
+    const dates = RC.uniqueDates(payload?.targetDates || []);
+    const dateText = formatDates(dates);
+    const timeText =
+      payload?.startTime
+        ? `${payload.startTime}${payload.endTime ? `～${payload.endTime}` : ''}`
+        : '';
+
+    const rows = [
+      ['利用者', payload?.clientName],
+      ['制度', payload?.system],
+      ['サービス', payload?.service],
+      ['日時', [dateText, timeText].filter(Boolean).join('　')],
+      ['支援時間数',
+        payload?.durationHours !== '' && payload?.durationHours != null
+          ? `${payload.durationHours}時間`
+          : ''
+      ],
+      ['人数', payload?.people ? `${payload.people}人` : ''],
+      ['行き先', payload?.destination],
+      ['行き先場所ID', payload?.destinationPlaceId],
+      ['待合せ場所', payload?.meetingPlace],
+      ['待合せ場所ID', payload?.meetingPlaceId],
+      ['移動区分', payload?.moveType],
+      ['主担当', payload?.mainStaffName],
+      ['担当2', payload?.staff2Name],
+      ['担当3', payload?.staff3Name],
+      ['支援内容', payload?.supportContent],
+      ['特記事項', payload?.note]
+    ].filter(([, value]) => String(value ?? '').trim());
+
+    E.successSummaryBody.innerHTML = rows.length
+      ? rows.map(([label, value]) =>
+          `<div class="success-summary-row"><b>${esc(label)}</b><span>${esc(value)}</span></div>`
+        ).join('')
+      : '<div class="success-summary-row"><b>内容</b><span>登録済み</span></div>';
   }
 
   function resetForNewRequest() {
@@ -822,6 +872,7 @@
     updatePeopleCount();
 
     E.successPanel.classList.add('hidden');
+    if (E.successSummaryBody) E.successSummaryBody.innerHTML = '';
     E.desktopConfirm.classList.remove('hidden');
     E.desktopConfirm.disabled = false;
     E.edit.disabled = false;
