@@ -15,8 +15,7 @@
       meeting: { inputName: '', placeId: '' }
     },
     searchTimers: {},
-    registered: false,
-    selectedTarget: null
+    registered: false
   };
 
   const E = {
@@ -25,14 +24,8 @@
     reporter: $('reporterName'),
     headerReporter: $('headerReporter'),
     type: $('requestType'),
+    targetField: $('targetShiftField'),
     targetShift: $('targetShiftId'),
-    targetShiftState: $('targetShiftState'),
-    targetShiftStateText: $('targetShiftStateText'),
-    targetSearchSection: $('targetSearchSection'),
-    targetSearchHint: $('targetSearchHint'),
-    searchTargetShift: $('searchTargetShiftButton'),
-    targetSearchResults: $('targetSearchResults'),
-    targetSelectedCard: $('targetSelectedCard'),
     client: $('clientName'),
     system: $('system'),
     service: $('service'),
@@ -59,6 +52,8 @@
     mainStaff: $('mainStaffName'),
     staff2: $('staff2Name'),
     staff3: $('staff3Name'),
+    outDriver: $('outDriverName'),
+    backDriver: $('backDriverName'),
     staffChangeFields: $('staffChangeFields'),
     oldStaff: $('oldStaffName'),
     newStaff: $('newStaffName'),
@@ -78,7 +73,7 @@
     next: $('nextStepButton'),
     desktopConfirm: $('desktopConfirmButton'),
     pcPreview: $('pcPreviewButton'),
-    inlineConfirmActions: $('inlineConfirmActions'),
+    confirmActions: $('confirmActions'),
     edit: $('editButton'),
     save: $('saveRequestButton'),
     successPanel: $('successPanel'),
@@ -122,12 +117,7 @@
   }
 
   function bindEvents() {
-    E.type.addEventListener('change', () => {
-      clearSelectedTarget();
-      updateRequestMode();
-    });
-
-    E.searchTargetShift?.addEventListener('click', searchTargetShift);
+    E.type.addEventListener('change', updateRequestMode);
 
     document.querySelectorAll('[data-date-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -182,14 +172,6 @@
       });
     });
 
-    [E.client, E.service, E.singleDate, E.start].forEach(el => {
-      el?.addEventListener('change', () => {
-        if (E.type.value !== '追加') {
-          clearSelectedTarget();
-        }
-      });
-    });
-
     wirePlaceSearch(
       'destination',
       E.destination,
@@ -227,6 +209,8 @@
     E.pcPreview.addEventListener('click', showConfirmDesktop);
 
     E.edit.addEventListener('click', () => {
+      E.confirmActions.classList.add('hidden');
+      E.desktopConfirm.classList.remove('hidden');
       if (mobileQuery.matches) {
         state.step = 1;
         updateView();
@@ -280,7 +264,8 @@
         `<option value="${escAttr(item.id)}" data-name="${escAttr(item.name)}">${esc(item.name)}</option>`
       ).join('');
 
-    [E.mainStaff, E.staff2, E.staff3, E.oldStaff, E.newStaff]
+    [E.mainStaff, E.staff2, E.staff3, E.oldStaff, E.newStaff,
+      E.outDriver, E.backDriver]
       .forEach(select => select.innerHTML = staffHtml);
 
     updatePeopleCount();
@@ -288,17 +273,9 @@
 
   function updateRequestMode() {
     const type = E.type.value;
-    const needsTarget = type !== '追加';
-
-    E.targetSearchSection?.classList.toggle('hidden', !needsTarget);
-    E.targetShiftState?.classList.toggle('hidden', !needsTarget);
+    E.targetField.classList.toggle('hidden', type === '追加');
     E.staffChangeFields.classList.toggle('hidden', type !== '担当変更');
     E.changeField.classList.toggle('hidden', type !== '変更');
-
-    if (!needsTarget) {
-      clearSelectedTarget();
-    }
-
     updateSummary();
   }
 
@@ -432,7 +409,7 @@
         if (!E.service.value.trim()) throw new Error('サービスを入力してください。');
 
         if (E.type.value !== '追加' && !E.targetShift.value.trim()) {
-          throw new Error('対象シフトを検索して「このシフトでOK」を押してください。');
+          throw new Error('対象シフトIDを入力してください。');
         }
       }
 
@@ -626,176 +603,6 @@
     element.classList.toggle('selected', !!selectedState);
   }
 
-  async function searchTargetShift() {
-    try {
-      const client = selected(E.client);
-      const dates = getTargetDates();
-      const targetDate = dates.length ? dates[0] : '';
-
-      if (!client.name) {
-        throw new Error('利用者を選択してください。');
-      }
-      if (!E.service.value.trim()) {
-        throw new Error('サービスを選択してください。');
-      }
-      if (!targetDate) {
-        throw new Error('依頼日を入力してください。');
-      }
-      if (!E.start.value) {
-        throw new Error('開始時刻を入力してください。');
-      }
-
-      E.searchTargetShift.disabled = true;
-      E.searchTargetShift.textContent = '検索中...';
-      E.targetSearchResults.classList.remove('hidden');
-      E.targetSearchResults.innerHTML =
-        '<div class="target-search-loading">対象シフトを検索しています...</div>';
-
-      const targets = await RC.searchShiftTargets({
-        clientId: client.id,
-        clientName: client.name,
-        service: E.service.value.trim(),
-        targetDate,
-        startTime: E.start.value
-      });
-
-      renderTargetResults(targets);
-    } catch (err) {
-      E.targetSearchResults.classList.remove('hidden');
-      E.targetSearchResults.innerHTML =
-        `<div class="target-search-empty">${esc(err.message || String(err))}</div>`;
-    } finally {
-      E.searchTargetShift.disabled = false;
-      E.searchTargetShift.textContent = '対象シフトを検索';
-    }
-  }
-
-  function renderTargetResults(targets) {
-    clearSelectedTarget(false);
-
-    if (!targets.length) {
-      E.targetSearchResults.classList.remove('hidden');
-      E.targetSearchResults.innerHTML =
-        '<div class="target-search-empty">一致するシフトが見つかりませんでした。サービス・日付・開始時刻を確認してください。</div>';
-      return;
-    }
-
-    E.targetSearchResults.classList.remove('hidden');
-    E.targetSearchResults.innerHTML = targets.map((item, index) => `
-      <div class="target-result-card">
-        <div class="target-result-main">
-          <strong>${esc(item.clientName || item.user || '')}</strong>
-          <span>${esc(item.service || '')}</span>
-          <span>${esc(item.targetDate || item.date || '')}　${esc(item.startTime || '')}${item.endTime ? '～' + esc(item.endTime) : ''}</span>
-          <small>シフトID：${esc(item.shiftId || '')}</small>
-        </div>
-        <button type="button" class="primary-button target-ok-button" data-target-index="${index}">
-          このシフトでOK
-        </button>
-      </div>
-    `).join('');
-
-    E.targetSearchResults.querySelectorAll('[data-target-index]').forEach(button => {
-      button.addEventListener('click', () => {
-        selectTarget(targets[Number(button.dataset.targetIndex)]);
-      });
-    });
-  }
-
-  function selectTarget(item) {
-    state.selectedTarget = item || null;
-    E.targetShift.value = String(item?.shiftId || '').trim();
-
-    E.targetShiftStateText.textContent =
-      E.targetShift.value
-        ? `${item.clientName || item.user || ''}／${item.service || ''}／${item.startTime || ''}／${E.targetShift.value}`
-        : '未選択';
-
-    E.targetSelectedCard.classList.remove('hidden');
-    E.targetSelectedCard.innerHTML = `
-      <div>
-        <span class="target-selected-label">選択したシフト</span>
-        <strong>${esc(item.clientName || item.user || '')}</strong>
-        <p>${esc(item.service || '')}　${esc(item.targetDate || item.date || '')}　${esc(item.startTime || '')}${item.endTime ? '～' + esc(item.endTime) : ''}</p>
-        <small>シフトID：${esc(item.shiftId || '')}</small>
-      </div>
-      <button type="button" id="targetNotOkButton" class="secondary-button">違うシフトを探す</button>
-    `;
-
-    E.targetSearchResults.classList.add('hidden');
-
-    $('targetNotOkButton')?.addEventListener('click', clearTargetDetailsAndContinue);
-    updateSummary();
-  }
-
-  function clearSelectedTarget(clearResults = true) {
-    state.selectedTarget = null;
-    if (E.targetShift) E.targetShift.value = '';
-    if (E.targetShiftStateText) E.targetShiftStateText.textContent = '未選択';
-    if (E.targetSelectedCard) {
-      E.targetSelectedCard.classList.add('hidden');
-      E.targetSelectedCard.innerHTML = '';
-    }
-    if (clearResults && E.targetSearchResults) {
-      E.targetSearchResults.classList.add('hidden');
-      E.targetSearchResults.innerHTML = '';
-    }
-  }
-
-  function clearTargetDetailsAndContinue() {
-    // 利用者と依頼種別は残して、対象シフトを特定するための情報だけ初期化します。
-    const requestType = E.type.value;
-    const clientValue = E.client.value;
-
-    E.system.value = '';
-    updateServiceOptions();
-    E.service.value = '';
-
-    state.dateMode = 'single';
-    document.querySelectorAll('[data-date-mode]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.dateMode === 'single');
-    });
-    document.querySelectorAll('[data-date-area]').forEach(area => {
-      area.classList.toggle('hidden', area.dataset.dateArea !== 'single');
-    });
-
-    E.singleDate.value = '';
-    E.rangeStart.value = '';
-    E.rangeEnd.value = '';
-    E.multiList.querySelectorAll('.multi-date').forEach(input => input.value = '');
-    document.querySelectorAll('[data-weekday]').forEach(btn => btn.classList.remove('active'));
-
-    E.start.value = '';
-    E.duration.value = '';
-    E.end.value = '';
-    E.appt.value = '';
-
-    E.destination.value = '';
-    E.destinationId.value = '';
-    E.meeting.value = '';
-    E.meetingId.value = '';
-    E.moveType.value = '';
-    E.mainStaff.value = '';
-    E.staff2.value = '';
-    E.staff3.value = '';
-    E.oldStaff.value = '';
-    E.newStaff.value = '';
-    E.support.value = '';
-    E.change.value = '';
-    E.reason.value = '';
-    E.note.value = '';
-
-    E.type.value = requestType;
-    E.client.value = clientValue;
-
-    clearSelectedTarget();
-    updatePeopleCount();
-    updateRequestMode();
-    updateSummary();
-
-    E.service.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
   function getPeopleCount() {
     let count = 0;
 
@@ -825,6 +632,8 @@
     const main = selected(E.mainStaff);
     const staff2 = selected(E.staff2);
     const staff3 = selected(E.staff3);
+    const outDriver = selected(E.outDriver);
+    const backDriver = selected(E.backDriver);
     const oldStaff = selected(E.oldStaff);
     const newStaff = selected(E.newStaff);
 
@@ -854,6 +663,11 @@
       staff2Name: staff2.name,
       staff3Id: staff3.id,
       staff3Name: staff3.name,
+
+      outDriverId: outDriver.id,
+      outDriverName: outDriver.name,
+      backDriverId: backDriver.id,
+      backDriverName: backDriver.name,
 
       oldStaffId: oldStaff.id,
       oldStaffName: oldStaff.name,
@@ -971,6 +785,7 @@
     E.desktopConfirm.disabled = true;
     E.edit.disabled = true;
 
+    E.confirmActions.classList.add('hidden');
     E.desktopConfirm.classList.add('hidden');
 
     E.successRequestId.textContent =
@@ -1016,6 +831,8 @@
       ['主担当', payload?.mainStaffName],
       ['担当2', payload?.staff2Name],
       ['担当3', payload?.staff3Name],
+      ['行きドライバー', payload?.outDriverName],
+      ['帰りドライバー', payload?.backDriverName],
       ['支援内容', payload?.supportContent],
       ['特記事項', payload?.note]
     ].filter(([, value]) => String(value ?? '').trim());
@@ -1033,7 +850,6 @@
     state.dateMode = 'single';
     state.place.destination = { inputName: '', placeId: '' };
     state.place.meeting = { inputName: '', placeId: '' };
-    state.selectedTarget = null;
 
     E.form.reset();
 
@@ -1067,7 +883,6 @@
     E.endAutoNote.classList.add('hidden');
     updatePeopleCount();
 
-    clearSelectedTarget();
     E.successPanel.classList.add('hidden');
     if (E.successSummaryBody) E.successSummaryBody.innerHTML = '';
     E.desktopConfirm.classList.remove('hidden');
@@ -1086,10 +901,11 @@
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     updateSummary();
+    document.querySelector('[data-step="4"]')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    const confirmScreen = document.querySelector('[data-step="4"]');
-    confirmScreen?.classList.add('active');
-    confirmScreen?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    E.desktopConfirm.classList.add('hidden');
+    E.confirmActions.classList.remove('hidden');
   }
 
   function updateSummary() {
@@ -1120,7 +936,6 @@
 
     const detail = [
       ['依頼種別', E.type.value],
-      ['対象シフトID', E.targetShift.value],
       ['制度', E.system.value],
       ['支援時間数', duration ? `${duration}時間` : ''],
       ['人数', getPeopleCount() ? `${getPeopleCount()}人` : ''],
@@ -1133,6 +948,8 @@
       ['主担当', selected(E.mainStaff).name],
       ['担当2', selected(E.staff2).name],
       ['担当3', selected(E.staff3).name],
+      ['行きドライバー', selected(E.outDriver).name],
+      ['帰りドライバー', selected(E.backDriver).name],
       ['変更前担当', selected(E.oldStaff).name],
       ['変更後担当', selected(E.newStaff).name],
       ['支援内容', E.support.value.trim()],
@@ -1182,6 +999,7 @@
     E.prev.classList.toggle('hidden', state.step === 1);
     E.next.textContent = state.step === 4 ? '登録する' : '次へ';
 
+    E.confirmActions.classList.add('hidden');
 
     if (mobile && state.step === 4) {
       updateSummary();

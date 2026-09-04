@@ -378,56 +378,14 @@
 
     // ------------------------------------------
     // ＋登録
+    // 新しい依頼入力画面へ移動
+    // 旧ダイアログ本体は既存処理の互換用に残す
     // ------------------------------------------
 
     E.open.addEventListener(
       'click',
       () => {
-
-        // 過去日は登録禁止
-        const selectedDate =
-          addDaysString(
-            S.currentWeekStart,
-            S.day
-          );
-
-
-        if (
-          isPastDate(
-            selectedDate
-          )
-        ) {
-
-          alert(
-            '昨日以前の日付には依頼を登録できません。'
-          );
-
-          return;
-
-        }
-
-
-        resetForm();
-
-
-        // 選択中の日付を
-        // 最初の対象日に設定
-        const firstDate =
-          E.dateList.querySelector(
-            '.request-date'
-          );
-
-
-        if (firstDate) {
-
-          firstDate.value =
-            selectedDate;
-
-        }
-
-
-        E.dialog.showModal();
-
+        location.href = './request.html';
       }
     );
 

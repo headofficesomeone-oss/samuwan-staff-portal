@@ -328,27 +328,6 @@ window.RequestCommon = (() => {
     }
   }
 
-  async function searchShiftTargets(criteria) {
-    const result = await api({
-      action: 'request.shift.search',
-      clientId: String(criteria?.clientId || '').trim(),
-      clientName: String(criteria?.clientName || '').trim(),
-      service: String(criteria?.service || '').trim(),
-      targetDate: String(criteria?.targetDate || '').trim(),
-      startTime: String(criteria?.startTime || '').trim()
-    });
-
-    if (!result.ok) {
-      throw new Error(
-        result.message ||
-        result.error ||
-        '対象シフトを検索できませんでした。'
-      );
-    }
-
-    return Array.isArray(result.targets) ? result.targets : [];
-  }
-
   async function saveRequest(payload) {
     validateBase(payload);
     payload.targetDates = validateDates(payload.targetDates);
@@ -385,7 +364,6 @@ window.RequestCommon = (() => {
     resolvePlace,
     createTempPlace,
     ensurePlace,
-    searchShiftTargets,
     saveRequest
   };
 })();

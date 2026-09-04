@@ -111,10 +111,16 @@
     shiftAddMain: $('shiftAddMain'),
     shiftAddStaff2: $('shiftAddStaff2'),
     shiftAddStaff3: $('shiftAddStaff3'),
+    shiftAddPeople: $('shiftAddPeople'),
+    shiftAddOutDriver: $('shiftAddOutDriver'),
+    shiftAddBackDriver: $('shiftAddBackDriver'),
     shiftAddConflictArea: $('shiftAddConflictArea'),
     shiftAddConflictTitle: $('shiftAddConflictTitle'),
     shiftAddConflictList: $('shiftAddConflictList'),
     shiftAddDestination: $('shiftAddDestination'),
+    shiftAddAppointmentTime: $('shiftAddAppointmentTime'),
+    shiftAddMeetingPlace: $('shiftAddMeetingPlace'),
+    shiftAddMoveType: $('shiftAddMoveType'),
     shiftAddSupport: $('shiftAddSupport'),
     shiftAddNote: $('shiftAddNote'),
     shiftAddReason: $('shiftAddReason')
@@ -1833,6 +1839,7 @@
 
     E.shiftAddForm.reset();
     renderShiftAddMasterOptions_();
+    updateShiftAddPeople_();
     E.shiftAddDate.textContent = `${date}（${DOW[S.selectedDay]}）`;
     E.shiftAddConflictArea.hidden = true;
     E.shiftAddConflictList.innerHTML = '';
@@ -1925,6 +1932,14 @@
     `).join('');
   }
 
+  function updateShiftAddPeople_() {
+    if (!E.shiftAddPeople) return;
+    const count =
+      (E.shiftAddMain?.value ? 1 : 0) +
+      (E.shiftAddStaff2?.value ? 1 : 0);
+    E.shiftAddPeople.value = count ? String(count) : '';
+  }
+
   async function submitConfirmedShiftAdd_(event) {
     event.preventDefault();
 
@@ -1946,6 +1961,11 @@
     const main = staffValue(E.shiftAddMain);
     const staff2 = staffValue(E.shiftAddStaff2);
     const staff3 = staffValue(E.shiftAddStaff3);
+    const outDriver = staffValue(E.shiftAddOutDriver);
+    const backDriver = staffValue(E.shiftAddBackDriver);
+    const people =
+      (main.id ? 1 : 0) +
+      (staff2.id ? 1 : 0);
     const reporter = currentUser() || {};
 
     E.submitShiftAdd.disabled = true;
@@ -1968,7 +1988,16 @@
         staff2Name:staff2.name,
         staff3Id:staff3.id,
         staff3Name:staff3.name,
+        people:people || '',
+        outDriverId:outDriver.id,
+        outDriverName:outDriver.name,
+        backDriverId:backDriver.id,
+        backDriverName:backDriver.name,
         destination:E.shiftAddDestination.value.trim(),
+        appointmentTime:E.shiftAddAppointmentTime.value,
+        meetingPlace:E.shiftAddMeetingPlace.value.trim(),
+        moveType:E.shiftAddMoveType.value,
+        transportMethod:E.shiftAddMoveType.value,
         supportContent:E.shiftAddSupport.value.trim(),
         note:E.shiftAddNote.value.trim(),
         reason:E.shiftAddReason.value.trim(),
