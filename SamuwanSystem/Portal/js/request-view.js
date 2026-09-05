@@ -378,14 +378,56 @@
 
     // ------------------------------------------
     // ＋登録
-    // 新しい依頼入力画面へ移動
-    // 旧ダイアログ本体は既存処理の互換用に残す
     // ------------------------------------------
 
     E.open.addEventListener(
       'click',
       () => {
-        location.href = './request.html';
+
+        // 過去日は登録禁止
+        const selectedDate =
+          addDaysString(
+            S.currentWeekStart,
+            S.day
+          );
+
+
+        if (
+          isPastDate(
+            selectedDate
+          )
+        ) {
+
+          alert(
+            '昨日以前の日付には依頼を登録できません。'
+          );
+
+          return;
+
+        }
+
+
+        resetForm();
+
+
+        // 選択中の日付を
+        // 最初の対象日に設定
+        const firstDate =
+          E.dateList.querySelector(
+            '.request-date'
+          );
+
+
+        if (firstDate) {
+
+          firstDate.value =
+            selectedDate;
+
+        }
+
+
+        E.dialog.showModal();
+
       }
     );
 
@@ -599,9 +641,10 @@
 
     try {
 
-      await loadMasters();
-
-      await loadRange();
+      await Promise.all([
+        loadMasters(),
+        loadRange()
+      ]);
 
     }
     catch (err) {
@@ -684,7 +727,44 @@
     }
 
 
-    return response.json();
+    const result =
+      await response.json();
+
+    const action =
+      String(
+        payload?.action || ''
+      ).trim();
+
+    if (
+      result?.ok &&
+      (
+        action.includes('.save') ||
+        action.includes('.apply') ||
+        action.includes('.multi') ||
+        action.includes('.confirm')
+      )
+    ) {
+      if (
+        action.startsWith('request.')
+      ) {
+        window.SamuwanLocalData
+          ?.removePrefix(
+            'request-range:'
+          );
+      }
+
+      if (
+        action.startsWith('shift.') ||
+        action.startsWith('week.')
+      ) {
+        window.SamuwanLocalData
+          ?.removePrefix(
+            'shift-week:'
+          );
+      }
+    }
+
+    return result;
 
   }
 
@@ -695,40 +775,55 @@
 
   async function loadMasters() {
 
+    const cache =
+      window.SamuwanLocalData
+        ?.get('masters');
+
+    if (cache?.ok) {
+      S.masters.clients =
+        cache.clients || [];
+
+      S.masters.staffs =
+        cache.staffs || [];
+
+      setClientOptions();
+      setStaffOptions();
+    }
+
     const result =
       await api({
         action:
           'request.masters'
       });
 
-
-    if (
-      !result?.ok
-    ) {
+    if (!result?.ok) {
+      if (cache?.ok) {
+        return;
+      }
 
       throw new Error(
         result?.message ||
         result?.error ||
         'マスタ取得エラー'
       );
-
     }
 
+    window.SamuwanLocalData
+      ?.setIfChanged(
+        'masters',
+        result
+      );
 
     S.masters.clients =
       result.clients || [];
 
-
     S.masters.staffs =
       result.staffs || [];
 
-
     setClientOptions();
-
     setStaffOptions();
 
   }
-
 
   function setClientOptions() {
 
@@ -844,32 +939,22 @@
 
   async function loadRange() {
 
-    message(
-      '依頼情報を取得しています...'
-    );
-
-
     const todayWeek =
       monday(
         new Date()
       );
 
-
-    // 前週から
     S.rangeStart =
       addDaysString(
         todayWeek,
         -7
       );
 
-
-    // 3か月先の日が属する週の日曜日まで
     const threeMonthsLater =
       addMonthsString(
         todayWeek,
         3
       );
-
 
     S.rangeEnd =
       addDaysString(
@@ -881,10 +966,56 @@
         6
       );
 
+    const cacheKey =
+      window.SamuwanLocalData
+        ?.requestRangeKey(
+          S.rangeStart,
+          S.rangeEnd
+        ) ||
+      (
+        'request-range:' +
+        S.rangeStart +
+        ':' +
+        S.rangeEnd
+      );
+
+    const cached =
+      window.SamuwanLocalData
+        ?.get(
+          cacheKey
+        );
+
+    if (cached?.ok) {
+      S.data =
+        cached;
+
+      S.minWeekStart =
+        monday(
+          parseDateString(
+            S.rangeStart
+          )
+        );
+
+      S.maxWeekStart =
+        monday(
+          parseDateString(
+            S.rangeEnd
+          )
+        );
+
+      /*
+       * 保存済み一覧を即表示。
+       * 「取得しています...」を出さない。
+       */
+      render();
+    } else {
+      message(
+        '依頼情報を取得しています...'
+      );
+    }
 
     const result =
       await api({
-
         action:
           'request.range',
 
@@ -893,35 +1024,34 @@
 
         endDate:
           S.rangeEnd
-
       });
 
-
-    if (
-      !result?.ok
-    ) {
+    if (!result?.ok) {
+      if (cached?.ok) {
+        return;
+      }
 
       throw new Error(
         result?.message ||
         result?.error ||
         'GASエラー'
       );
-
     }
 
+    const cacheResult =
+      window.SamuwanLocalData
+        ?.setIfChanged(
+          cacheKey,
+          result
+        );
 
     S.data =
       result;
 
-
-    // 操作ボタン判定に失敗しても、依頼一覧自体は表示する
     try {
-
       await loadActionability_();
-
     }
     catch (actionErr) {
-
       console.warn(
         '一覧操作判定を取得できませんでした。',
         actionErr
@@ -929,9 +1059,7 @@
 
       S.actionMap =
         {};
-
     }
-
 
     S.minWeekStart =
       monday(
@@ -940,7 +1068,6 @@
         )
       );
 
-
     S.maxWeekStart =
       monday(
         parseDateString(
@@ -948,11 +1075,13 @@
         )
       );
 
-
+    /*
+     * 変更があった時だけ実データの差し替えが発生。
+     * 操作可否は毎回最新化するためrenderは行う。
+     */
     render();
 
   }
-
 
   // ==================================================
   // 一覧カード操作可否

@@ -111,16 +111,10 @@
     shiftAddMain: $('shiftAddMain'),
     shiftAddStaff2: $('shiftAddStaff2'),
     shiftAddStaff3: $('shiftAddStaff3'),
-    shiftAddPeople: $('shiftAddPeople'),
-    shiftAddOutDriver: $('shiftAddOutDriver'),
-    shiftAddBackDriver: $('shiftAddBackDriver'),
     shiftAddConflictArea: $('shiftAddConflictArea'),
     shiftAddConflictTitle: $('shiftAddConflictTitle'),
     shiftAddConflictList: $('shiftAddConflictList'),
     shiftAddDestination: $('shiftAddDestination'),
-    shiftAddAppointmentTime: $('shiftAddAppointmentTime'),
-    shiftAddMeetingPlace: $('shiftAddMeetingPlace'),
-    shiftAddMoveType: $('shiftAddMoveType'),
     shiftAddSupport: $('shiftAddSupport'),
     shiftAddNote: $('shiftAddNote'),
     shiftAddReason: $('shiftAddReason')
@@ -180,7 +174,44 @@
     });
 
     if (!response.ok) throw new Error('HTTP ' + response.status);
-    return response.json();
+    const result =
+      await response.json();
+
+    const action =
+      String(
+        payload?.action || ''
+      ).trim();
+
+    if (
+      result?.ok &&
+      (
+        action.includes('.add') ||
+        action.includes('.apply') ||
+        action.includes('.confirm') ||
+        action.includes('.build')
+      )
+    ) {
+      if (
+        action.startsWith('shift.') ||
+        action.startsWith('week.')
+      ) {
+        window.SamuwanLocalData
+          ?.removePrefix(
+            'shift-week:'
+          );
+      }
+
+      if (
+        action.startsWith('request.')
+      ) {
+        window.SamuwanLocalData
+          ?.removePrefix(
+            'request-range:'
+          );
+      }
+    }
+
+    return result;
   }
 
   function weekStart() {
@@ -218,17 +249,47 @@
 
 
   async function loadMasters() {
-    const result = await api({
-      action:'request.masters'
-    });
+    const cache =
+      window.SamuwanLocalData
+        ?.get('masters');
+
+    if (cache?.ok) {
+      S.masters.staffs =
+        cache.staffs ||
+        cache.employees ||
+        [];
+
+      S.masters.clients =
+        cache.clients ||
+        cache.users ||
+        [];
+
+      renderStaffOptions();
+      renderShiftAddMasterOptions_();
+    }
+
+    const result =
+      await api({
+        action:'request.masters'
+      });
 
     if (!result?.ok) {
+      if (cache?.ok) {
+        return;
+      }
+
       throw new Error(
         result?.message ||
         result?.error ||
         '従業員マスタ取得エラー'
       );
     }
+
+    window.SamuwanLocalData
+      ?.setIfChanged(
+        'masters',
+        result
+      );
 
     S.masters.staffs =
       result.staffs ||
@@ -243,7 +304,6 @@
     renderStaffOptions();
     renderShiftAddMasterOptions_();
   }
-
 
   function staffId(staff) {
     return String(
@@ -352,34 +412,112 @@
 
 
   async function loadWeek() {
-    const start = weekStart();
-    const key = ymd(start);
+    const start =
+      weekStart();
 
-    E.message.textContent = 'シフトを取得しています...';
-    E.list.innerHTML = '';
+    const key =
+      ymd(start);
+
+    const persistentKey =
+      window.SamuwanLocalData
+        ?.shiftWeekKey(key) ||
+      ('shift-week:' + key);
+
+    let cached =
+      S.cache[key] ||
+      window.SamuwanLocalData
+        ?.get(
+          persistentKey
+        );
+
+    if (cached?.ok) {
+      S.cache[key] =
+        cached;
+
+      S.weekData =
+        cached;
+
+      /*
+       * ローカルデータを即表示。
+       * 「シフトを取得しています...」は出さない。
+       */
+      render();
+    } else {
+      E.message.textContent =
+        'シフトを取得しています...';
+
+      E.list.innerHTML =
+        '';
+    }
 
     try {
-      let result = S.cache[key];
-
-      if (!result) {
-        result = await api({
-          action:'shift.week.list',
-          weekStart:key
+      const result =
+        await api({
+          action:
+            'shift.week.list',
+          weekStart:
+            key
         });
 
-        if (!result?.ok) {
-          throw new Error(result?.message || result?.error || 'シフト取得エラー');
+      if (!result?.ok) {
+        if (cached?.ok) {
+          return;
         }
-        S.cache[key] = result;
+
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          'シフト取得エラー'
+        );
       }
 
-      S.weekData = result;
-      render();
+      const saved =
+        window.SamuwanLocalData
+          ?.setIfChanged(
+            persistentKey,
+            result
+          );
+
+      S.cache[key] =
+        result;
+
+      S.weekData =
+        result;
+
+      /*
+       * 最新値が変更されていた場合、
+       * または初回取得時だけ一覧を更新。
+       */
+      if (
+        !cached?.ok ||
+        saved?.changed
+      ) {
+        render();
+      }
+
     }
     catch(err) {
-      E.message.textContent = '取得できませんでした：' + (err?.message || err);
-      E.weekState.textContent = 'エラー';
-      E.weekSource.textContent = '';
+      if (cached?.ok) {
+        console.warn(
+          'シフト最新確認に失敗しました。',
+          err
+        );
+
+        return;
+      }
+
+      E.message.textContent =
+        '取得できませんでした：' +
+        (
+          err?.message ||
+          err
+        );
+
+      E.weekState.textContent =
+        'エラー';
+
+      E.weekSource.textContent =
+        '';
     }
   }
 
@@ -1839,7 +1977,6 @@
 
     E.shiftAddForm.reset();
     renderShiftAddMasterOptions_();
-    updateShiftAddPeople_();
     E.shiftAddDate.textContent = `${date}（${DOW[S.selectedDay]}）`;
     E.shiftAddConflictArea.hidden = true;
     E.shiftAddConflictList.innerHTML = '';
@@ -1932,14 +2069,6 @@
     `).join('');
   }
 
-  function updateShiftAddPeople_() {
-    if (!E.shiftAddPeople) return;
-    const count =
-      (E.shiftAddMain?.value ? 1 : 0) +
-      (E.shiftAddStaff2?.value ? 1 : 0);
-    E.shiftAddPeople.value = count ? String(count) : '';
-  }
-
   async function submitConfirmedShiftAdd_(event) {
     event.preventDefault();
 
@@ -1961,11 +2090,6 @@
     const main = staffValue(E.shiftAddMain);
     const staff2 = staffValue(E.shiftAddStaff2);
     const staff3 = staffValue(E.shiftAddStaff3);
-    const outDriver = staffValue(E.shiftAddOutDriver);
-    const backDriver = staffValue(E.shiftAddBackDriver);
-    const people =
-      (main.id ? 1 : 0) +
-      (staff2.id ? 1 : 0);
     const reporter = currentUser() || {};
 
     E.submitShiftAdd.disabled = true;
@@ -1988,16 +2112,7 @@
         staff2Name:staff2.name,
         staff3Id:staff3.id,
         staff3Name:staff3.name,
-        people:people || '',
-        outDriverId:outDriver.id,
-        outDriverName:outDriver.name,
-        backDriverId:backDriver.id,
-        backDriverName:backDriver.name,
         destination:E.shiftAddDestination.value.trim(),
-        appointmentTime:E.shiftAddAppointmentTime.value,
-        meetingPlace:E.shiftAddMeetingPlace.value.trim(),
-        moveType:E.shiftAddMoveType.value,
-        transportMethod:E.shiftAddMoveType.value,
         supportContent:E.shiftAddSupport.value.trim(),
         note:E.shiftAddNote.value.trim(),
         reason:E.shiftAddReason.value.trim(),
