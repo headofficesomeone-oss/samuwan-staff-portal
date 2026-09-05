@@ -124,11 +124,124 @@ function showOnly(id) {
   show(document.getElementById("bottomNav"), id === "portalView");
 }
 
+function getPortalWorkDayKey_() {
+  const d = new Date();
+
+  // 1日の区切りは午前5時
+  if (d.getHours() < 5) {
+    d.setDate(
+      d.getDate() - 1
+    );
+  }
+
+  return [
+    d.getFullYear(),
+    String(
+      d.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      d.getDate()
+    ).padStart(2, "0")
+  ].join("-");
+}
+
+function getValidWorkStatusCache_() {
+  const cached =
+    getWorkStatusCache();
+
+  if (!cached) {
+    return null;
+  }
+
+  const today =
+    getPortalWorkDayKey_();
+
+  const cachedWorkDate =
+    String(
+      cached.workDate || ""
+    ).trim();
+
+  /*
+   * 新しいWork.gsではworkDateが返る。
+   * 午前5時をまたいだ古いキャッシュは使わない。
+   */
+  if (
+    cachedWorkDate &&
+    cachedWorkDate !== today
+  ) {
+    clearWorkStatusCache();
+    return null;
+  }
+
+  /*
+   * 旧キャッシュでworkDateが無いものは、
+   * 誤表示防止のため利用しない。
+   */
+  if (!cachedWorkDate) {
+    return null;
+  }
+
+  return cached;
+}
+
+function renderCachedPortalState_() {
+  const cachedWork =
+    getValidWorkStatusCache_();
+
+  const cachedAction =
+    getActionStatusCache();
+
+  if (cachedWork) {
+    currentWorkStatus =
+      cachedWork;
+
+    renderWorkStatus(
+      currentWorkStatus
+    );
+
+    applyWorkPermissions(
+      currentWorkStatus
+    );
+  } else {
+    setText(
+      "workStateLabel",
+      "確認中..."
+    );
+
+    const button =
+      document.getElementById(
+        "workToggleButton"
+      );
+
+    if (button) {
+      button.textContent =
+        "確認中";
+      button.disabled =
+        true;
+    }
+  }
+
+  if (cachedAction) {
+    renderActionSummary(
+      cachedAction
+    );
+  }
+}
+
 function showPortalAreaDirect() {
   if (!currentUser) return;
 
   showOnly("portalView");
-  setText("staffName", `職員：${currentUser.employeeName}`);
+  setText(
+    "staffName",
+    `職員：${currentUser.employeeName}`
+  );
+
+  /*
+   * まず保存済みの勤務状態を即表示。
+   * その後、裏でGASの最新状態を確認する。
+   */
+  renderCachedPortalState_();
 
   loadPortalInitial();
 }
@@ -136,8 +249,21 @@ function showPortalAreaDirect() {
 async function loadPortalInitial() {
   if (!currentUser) return;
 
-  setText("currentStatus", "確認中...");
-  setText("currentDetail", "");
+  /*
+   * キャッシュが無い場合だけ「確認中...」を表示。
+   * 有効なキャッシュがある場合は、その表示を維持したまま
+   * バックグラウンドで最新状態を取得する。
+   */
+  if (!getActionStatusCache()) {
+    setText(
+      "currentStatus",
+      "確認中..."
+    );
+    setText(
+      "currentDetail",
+      ""
+    );
+  }
 
   try {
     const result = await apiPost("portal.initial", {
@@ -157,6 +283,20 @@ async function loadPortalInitial() {
     renderWorkStatus(currentWorkStatus);
     renderActionSummary(actionStatus);
     applyWorkPermissions(currentWorkStatus);
+
+    const workButton =
+      document.getElementById(
+        "workToggleButton"
+      );
+
+    if (workButton) {
+      /*
+       * 通勤計算中の制御はloadCommuteOptions /
+       * calculateSelectedCommute側で改めて設定する。
+       */
+      workButton.disabled = false;
+    }
+
     await loadCommuteOptions();
 
   } catch (err) {
