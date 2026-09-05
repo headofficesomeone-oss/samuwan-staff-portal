@@ -268,6 +268,30 @@
       renderShiftAddMasterOptions_();
     }
 
+    let versions = null;
+
+    try {
+      versions =
+        await window.SamuwanLocalData
+          ?.getServerVersions();
+    }
+    catch (_) {}
+
+    const cachedVersion =
+      window.SamuwanLocalData
+        ?.getVersion(
+          'masters'
+        ) || '';
+
+    if (
+      cache?.ok &&
+      versions &&
+      cachedVersion ===
+        versions.masterVersion
+    ) {
+      return;
+    }
+
     const result =
       await api({
         action:'request.masters'
@@ -288,7 +312,8 @@
     window.SamuwanLocalData
       ?.setIfChanged(
         'masters',
-        result
+        result,
+        versions?.masterVersion || ''
       );
 
     S.masters.staffs =
@@ -423,7 +448,7 @@
         ?.shiftWeekKey(key) ||
       ('shift-week:' + key);
 
-    let cached =
+    const cached =
       S.cache[key] ||
       window.SamuwanLocalData
         ?.get(
@@ -437,10 +462,6 @@
       S.weekData =
         cached;
 
-      /*
-       * ローカルデータを即表示。
-       * 「シフトを取得しています...」は出さない。
-       */
       render();
     } else {
       E.message.textContent =
@@ -451,6 +472,34 @@
     }
 
     try {
+      let versions = null;
+
+      try {
+        versions =
+          await window.SamuwanLocalData
+            ?.getServerVersions();
+      }
+      catch (_) {}
+
+      const cachedVersion =
+        window.SamuwanLocalData
+          ?.getVersion(
+            persistentKey
+          ) || '';
+
+      /*
+       * 更新番号が同じなら、
+       * shift.week.list 本体は取得しない。
+       */
+      if (
+        cached?.ok &&
+        versions &&
+        cachedVersion ===
+          versions.shiftVersion
+      ) {
+        return;
+      }
+
       const result =
         await api({
           action:
@@ -471,12 +520,12 @@
         );
       }
 
-      const saved =
-        window.SamuwanLocalData
-          ?.setIfChanged(
-            persistentKey,
-            result
-          );
+      window.SamuwanLocalData
+        ?.setIfChanged(
+          persistentKey,
+          result,
+          versions?.shiftVersion || ''
+        );
 
       S.cache[key] =
         result;
@@ -484,16 +533,7 @@
       S.weekData =
         result;
 
-      /*
-       * 最新値が変更されていた場合、
-       * または初回取得時だけ一覧を更新。
-       */
-      if (
-        !cached?.ok ||
-        saved?.changed
-      ) {
-        render();
-      }
+      render();
 
     }
     catch(err) {

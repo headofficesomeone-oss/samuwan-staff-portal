@@ -790,6 +790,30 @@
       setStaffOptions();
     }
 
+    let versions = null;
+
+    try {
+      versions =
+        await window.SamuwanLocalData
+          ?.getServerVersions();
+    }
+    catch (_) {}
+
+    const cachedVersion =
+      window.SamuwanLocalData
+        ?.getVersion(
+          'masters'
+        ) || '';
+
+    if (
+      cache?.ok &&
+      versions &&
+      cachedVersion ===
+        versions.masterVersion
+    ) {
+      return;
+    }
+
     const result =
       await api({
         action:
@@ -811,7 +835,8 @@
     window.SamuwanLocalData
       ?.setIfChanged(
         'masters',
-        result
+        result,
+        versions?.masterVersion || ''
       );
 
     S.masters.clients =
@@ -1003,15 +1028,45 @@
           )
         );
 
-      /*
-       * 保存済み一覧を即表示。
-       * 「取得しています...」を出さない。
-       */
       render();
     } else {
       message(
         '依頼情報を取得しています...'
       );
+    }
+
+    let versions = null;
+
+    try {
+      versions =
+        await window.SamuwanLocalData
+          ?.getServerVersions();
+    }
+    catch (_) {}
+
+    const cachedVersion =
+      window.SamuwanLocalData
+        ?.getVersion(
+          cacheKey
+        ) || '';
+
+    /*
+     * 更新番号が同じなら、
+     * request.range 本体は取得しない。
+     */
+    if (
+      cached?.ok &&
+      versions &&
+      cachedVersion ===
+        versions.requestVersion
+    ) {
+      try {
+        await loadActionability_();
+      }
+      catch (_) {}
+
+      render();
+      return;
     }
 
     const result =
@@ -1038,12 +1093,12 @@
       );
     }
 
-    const cacheResult =
-      window.SamuwanLocalData
-        ?.setIfChanged(
-          cacheKey,
-          result
-        );
+    window.SamuwanLocalData
+      ?.setIfChanged(
+        cacheKey,
+        result,
+        versions?.requestVersion || ''
+      );
 
     S.data =
       result;
@@ -1075,10 +1130,6 @@
         )
       );
 
-    /*
-     * 変更があった時だけ実データの差し替えが発生。
-     * 操作可否は毎回最新化するためrenderは行う。
-     */
     render();
 
   }

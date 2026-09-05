@@ -1,7 +1,8 @@
 window.SamuwanLocalData = (() => {
   'use strict';
 
-  const PREFIX = 'samuwan_local_data_v1:';
+  const PREFIX = 'samuwan_local_data_v2:';
+  const LEGACY_PREFIX = 'samuwan_local_data_v1:';
 
   function storageKey(key) {
     return PREFIX + String(key || '');
@@ -29,6 +30,12 @@ window.SamuwanLocalData = (() => {
     return getEntry(key)?.data ?? null;
   }
 
+  function getVersion(key) {
+    return String(
+      getEntry(key)?.version || ''
+    );
+  }
+
   function fingerprint(data) {
     try {
       return JSON.stringify(data);
@@ -38,14 +45,20 @@ window.SamuwanLocalData = (() => {
     }
   }
 
-  function setIfChanged(key, data) {
+  function setIfChanged(
+    key,
+    data,
+    version = ''
+  ) {
     try {
       const oldEntry = getEntry(key);
       const nextFingerprint = fingerprint(data);
+      const nextVersion = String(version || '');
 
       if (
         oldEntry &&
-        oldEntry.fingerprint === nextFingerprint
+        oldEntry.fingerprint === nextFingerprint &&
+        String(oldEntry.version || '') === nextVersion
       ) {
         return {
           changed: false,
@@ -55,6 +68,7 @@ window.SamuwanLocalData = (() => {
 
       const entry = {
         savedAt: Date.now(),
+        version: nextVersion,
         fingerprint: nextFingerprint,
         data
       };
@@ -77,6 +91,28 @@ window.SamuwanLocalData = (() => {
     }
   }
 
+  function setVersion(
+    key,
+    version
+  ) {
+    try {
+      const entry = getEntry(key);
+
+      if (!entry) {
+        return;
+      }
+
+      entry.version =
+        String(version || '');
+
+      localStorage.setItem(
+        storageKey(key),
+        JSON.stringify(entry)
+      );
+    }
+    catch (_) {}
+  }
+
   function remove(key) {
     try {
       localStorage.removeItem(storageKey(key));
@@ -95,6 +131,28 @@ window.SamuwanLocalData = (() => {
         if (
           key &&
           key.startsWith(fullPrefix)
+        ) {
+          removeKeys.push(key);
+        }
+      }
+
+      removeKeys.forEach(
+        key => localStorage.removeItem(key)
+      );
+    }
+    catch (_) {}
+  }
+
+  function clearLegacyV1() {
+    try {
+      const removeKeys = [];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+
+        if (
+          key &&
+          key.startsWith(LEGACY_PREFIX)
         ) {
           removeKeys.push(key);
         }
@@ -251,6 +309,53 @@ window.SamuwanLocalData = (() => {
     return '';
   }
 
+  async function getServerVersions(
+    url = resolveGasUrl()
+  ) {
+    if (
+      !url ||
+      !url.endsWith('/exec')
+    ) {
+      throw new Error(
+        'GAS_URLを確認できません。'
+      );
+    }
+
+    const result =
+      await post(
+        url,
+        {
+          action:
+            'data.version'
+        }
+      );
+
+    if (!result?.ok) {
+      throw new Error(
+        result?.message ||
+        result?.error ||
+        '更新番号を取得できませんでした。'
+      );
+    }
+
+    return {
+      requestVersion:
+        String(
+          result.requestVersion || '0'
+        ),
+
+      shiftVersion:
+        String(
+          result.shiftVersion || '0'
+        ),
+
+      masterVersion:
+        String(
+          result.masterVersion || '0'
+        )
+    };
+  }
+
   async function prefetchPortalInitial() {
     const url =
       resolveGasUrl();
@@ -259,6 +364,22 @@ window.SamuwanLocalData = (() => {
       !url ||
       !url.endsWith('/exec')
     ) {
+      return;
+    }
+
+    let versions;
+
+    try {
+      versions =
+        await getServerVersions(
+          url
+        );
+    }
+    catch (_) {
+      /*
+       * バージョンAPIが未反映でも
+       * 既存キャッシュを壊さない。
+       */
       return;
     }
 
@@ -278,11 +399,14 @@ window.SamuwanLocalData = (() => {
 
     const jobs = [];
 
-    /*
-     * キャッシュが無いデータだけ初回取得。
-     * ポータルを開くたびに全件取得しない。
-     */
-    if (!get('masters')) {
+    const masterKey =
+      'masters';
+
+    if (
+      !get(masterKey) ||
+      getVersion(masterKey) !==
+        versions.masterVersion
+    ) {
       jobs.push(
         post(
           url,
@@ -294,8 +418,9 @@ window.SamuwanLocalData = (() => {
           .then(result => {
             if (result?.ok) {
               setIfChanged(
-                'masters',
-                result
+                masterKey,
+                result,
+                versions.masterVersion
               );
             }
           })
@@ -308,7 +433,11 @@ window.SamuwanLocalData = (() => {
         bounds.end
       );
 
-    if (!get(rangeKey)) {
+    if (
+      !get(rangeKey) ||
+      getVersion(rangeKey) !==
+        versions.requestVersion
+    ) {
       jobs.push(
         post(
           url,
@@ -325,7 +454,8 @@ window.SamuwanLocalData = (() => {
             if (result?.ok) {
               setIfChanged(
                 rangeKey,
-                result
+                result,
+                versions.requestVersion
               );
             }
           })
@@ -339,7 +469,11 @@ window.SamuwanLocalData = (() => {
             weekStart
           );
 
-        if (get(key)) {
+        if (
+          get(key) &&
+          getVersion(key) ===
+            versions.shiftVersion
+        ) {
           return;
         }
 
@@ -356,7 +490,8 @@ window.SamuwanLocalData = (() => {
               if (result?.ok) {
                 setIfChanged(
                   key,
-                  result
+                  result,
+                  versions.shiftVersion
                 );
               }
             })
@@ -373,15 +508,20 @@ window.SamuwanLocalData = (() => {
     );
   }
 
+  clearLegacyV1();
+
   return {
     getEntry,
     get,
+    getVersion,
     setIfChanged,
+    setVersion,
     remove,
     removePrefix,
     requestRangeBounds,
     requestRangeKey,
     shiftWeekKey,
+    getServerVersions,
     prefetchPortalInitial
   };
 })();
