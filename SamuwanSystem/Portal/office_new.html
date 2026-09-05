@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト表</title>
+  <link rel="stylesheet" href="./office.css?v=20260808-1">
+
+<style>
+/* ===== Samuwan 共通上部ナビ：全5画面のうち現在画面を除く4項目 ===== */
+.samuwan-page-nav{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  padding:8px 10px;
+  background:#fff;
+  border-bottom:1px solid #dfe5ea;
+}
+.samuwan-page-nav-link{
+  min-width:0;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  border:1px solid #dfe5ea;
+  border-radius:9px;
+  background:#f7f9fa;
+  color:#46515d;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+@media(max-width:480px){
+  .samuwan-page-nav{
+    gap:4px;
+    padding:6px;
+  }
+  .samuwan-page-nav-link{
+    min-height:36px;
+    font-size:10px;
+    padding:0 2px;
+  }
+}
+</style>
+
+</head>
+<body>
+
+<nav class="samuwan-page-nav" aria-label="画面移動">
+  <a class="samuwan-page-nav-link" href="./index.html">ポータル</a>
+  <a class="samuwan-page-nav-link" href="./request.html">新規依頼</a>
+  <a class="samuwan-page-nav-link" href="./request-view.html">依頼情報</a>
+  <a class="samuwan-page-nav-link" href="./shift-view.html">シフト一覧</a>
+</nav>
+  <main class="shift-page">
+    <header class="shift-header">
+      <div>
+        <h1>シフト表</h1>
+        <p id="officeUserName">職員情報を確認しています</p>
+      </div>
+      <button id="openOfficeModalButton" class="office-launch-button hidden" type="button" onclick="openOfficeModal()">
+        🏢 開閉
+      </button>
+    </header>
+
+    <div id="officeAuthError" class="office-message office-error hidden">
+      <strong>職員情報を確認できません</strong>
+      <p>先に職員ポータルを開いて、本人登録を行ってください。</p>
+      <a class="office-portal-link" href="./index.html">職員ポータルを開く</a>
+    </div>
+
+    <section id="shiftArea" class="shift-card hidden">
+      <nav class="shift-tabs" aria-label="シフト週切替">
+        <button id="shiftTabPrev" class="shift-tab" type="button" onclick="selectShiftTab('prev')">前週</button>
+        <button id="shiftTabCurrent" class="shift-tab" type="button" onclick="selectShiftTab('current')">今週</button>
+        <button id="shiftTabNext" class="shift-tab" type="button" onclick="selectShiftTab('next')">来週</button>
+      </nav>
+
+      <div class="shift-meta">
+        <strong id="shiftTitle">シフトを読み込んでいます</strong>
+        <span id="shiftUpdated"></span>
+      </div>
+
+      <div id="shiftLoading" class="shift-loading">
+        <div class="office-spinner"></div>
+        <span>シフトを読み込んでいます</span>
+      </div>
+
+      <div id="shiftEmpty" class="shift-empty hidden">この週のシフトPDFはありません。</div>
+
+      <button id="shiftPdfTapArea" class="shift-pdf-wrap hidden" type="button" onclick="openShiftFullscreen()" aria-label="シフトPDFを全画面表示">
+        <iframe id="shiftPdfFrame" title="シフトPDF" loading="lazy"></iframe>
+        <span class="shift-full-hint">タップで全画面表示</span>
+      </button>
+    </section>
+  </main>
+
+  <div id="officeModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="officeModalTitle">
+    <div class="office-modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 id="officeModalTitle">事務所開閉</h2>
+          <p>実際にシャッターを操作してから登録してください。</p>
+        </div>
+        <button class="modal-close" type="button" onclick="closeOfficeModal()" aria-label="閉じる">×</button>
+      </div>
+
+      <div id="officeActionArea" class="office-action-area">
+        <button id="simpleOfficeOpenButton" class="office-main-button open-button" type="button" onclick="sendSimpleOfficeAction('シャッターを開けました')">
+          <span class="button-icon">🔓</span>
+          <span class="button-text">シャッターを<br>開けました</span>
+        </button>
+
+        <button id="simpleOfficeCloseButton" class="office-main-button close-button" type="button" onclick="sendSimpleOfficeAction('シャッターを閉めました')">
+          <span class="button-icon">🔒</span>
+          <span class="button-text">シャッターを<br>閉めました</span>
+        </button>
+      </div>
+
+      <div id="officeSendingArea" class="office-message office-sending hidden">
+        <div class="office-spinner"></div>
+        <p>登録しています</p>
+      </div>
+
+      <div id="officeResultArea" class="office-message hidden"></div>
+    </div>
+  </div>
+
+  <div id="shiftFullscreen" class="pdf-fullscreen hidden" role="dialog" aria-modal="true" aria-label="シフトPDF全画面表示">
+    <button class="pdf-full-close" type="button" onclick="closeShiftFullscreen()">×</button>
+    <iframe id="shiftFullFrame" title="シフトPDF全画面"></iframe>
+  </div>
+
+  <script src="./common.js?v=20260801-3"></script>
+  <script src="./office.js?v=20260808-1"></script>
+</body>
+</html>
