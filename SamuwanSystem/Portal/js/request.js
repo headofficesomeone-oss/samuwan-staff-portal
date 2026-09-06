@@ -49,7 +49,7 @@
     closeTargetSearchDialog: $('closeTargetSearchDialog'),
     targetSearchClient: $('targetSearchClient'),
     targetSearchDate: $('targetSearchDate'),
-		targetSearchMode: $('targetSearchMode'),
+		targetSearchSource: $('targetSearchSource'),
 		targetSearchDateField: $('targetSearchDateField'),
 		targetSearchWeekdayField: $('targetSearchWeekdayField'),
 		targetSearchWeekday: $('targetSearchWeekday'),
@@ -195,9 +195,9 @@
       searchTargetShifts_
     );
 
-		E.targetSearchMode?.addEventListener(
+		E.targetSearchSource?.addEventListener(
 		  'change',
-		  updateTargetSearchModeUi_
+		  updateTargetSearchSourceUi_
 		);
 
     E.targetSearchService?.addEventListener(
@@ -613,15 +613,15 @@
       'hidden'
     );
 
-		if (E.targetSearchMode) {
-		  E.targetSearchMode.value = 'date';
+		if (E.targetSearchSource) {
+		  E.targetSearchSource.value = 'actual';
 		}
 
 		if (E.targetSearchWeekday) {
 		  E.targetSearchWeekday.value = '';
 		}
 
-		updateTargetSearchModeUi_();
+		updateTargetSearchSourceUi_();
 
     E.targetSearchResults.innerHTML = '';
 
@@ -647,11 +647,11 @@
 	      ''
 	    ).trim();
 
-	  const searchMode =
-	    String(
-	      E.targetSearchMode?.value || 'date'
-	    ).trim();
-
+		const source =
+		  String(
+		    E.targetSearchSource?.value || 'actual'
+		  ).trim();
+  
 	  const targetDate =
 	    String(
 	      E.targetSearchDate?.value || ''
@@ -668,55 +668,62 @@
 	    return;
 	  }
 
-	  if (
-	    searchMode === 'date' &&
-	    !targetDate
-	  ) {
-	    E.targetSearchStatus.textContent =
-	      '日付を入力してください。';
-	    return;
-	  }
+		if (
+		  source !== 'rule' &&
+		  !targetDate
+		) {
+		  E.targetSearchStatus.textContent =
+		    '日付を入力してください。';
+		  return;
+		}
 
-	  if (
-	    searchMode === 'rule' &&
-	    !weekday
-	  ) {
-	    E.targetSearchStatus.textContent =
-	      '曜日を選択してください。';
-	    return;
-	  }
+		if (
+		  source === 'rule' &&
+		  !weekday
+		) {
+		  E.targetSearchStatus.textContent =
+		    '曜日を選択してください。';
+		  return;
+		}
 
 	  E.runTargetSearch.disabled = true;
 	  E.runTargetSearch.textContent = '検索中...';
 
 	  E.targetSearchStatus.textContent =
-	    searchMode === 'rule'
+	    source === 'rule'
 	      ? 'その曜日の規定値を取得しています...'
 	      : 'その日の支援候補を取得しています...';
 
 	  E.targetSearchResults.innerHTML = '';
 
 	  try {
-	    const result =
-	      await apiPost(
-	        'request.shift.search',
-	        {
-	          clientId,
-	          clientName,
-	          searchMode,
-	          targetDate:
-	            searchMode === 'date'
-	              ? targetDate
-	              : '',
-	          weekday:
-	            searchMode === 'rule'
-	              ? weekday
-	              : '',
-	          service: '',
-	          startTime: ''
-	        }
-	      );
+			const result =
+			  await apiPost(
+			    'request.shift.search',
+			    {
+			      clientId,
+			      clientName,
 
+			      searchMode:
+			        source === 'rule'
+			          ? 'rule'
+			          : 'date',
+
+			      targetDate:
+			        source === 'rule'
+			          ? ''
+			          : targetDate,
+
+			      weekday:
+			        source === 'rule'
+			          ? weekday
+			          : '',
+
+			      service: '',
+			      startTime: ''
+			    }
+			  )
+  
 	    if (
 	      !result ||
 	      result.ok === false
@@ -1067,14 +1074,14 @@
 	    });
 	}
 
-	function updateTargetSearchModeUi_() {
-	  const mode =
+	function updateTargetSearchSourceUi_() {
+	  const source =
 	    String(
-	      E.targetSearchMode?.value || 'date'
+	      E.targetSearchSource?.value || 'actual'
 	    );
 
 	  const isRule =
-	    mode === 'rule';
+	    source === 'rule';
 
 	  E.targetSearchDateField?.classList.toggle(
 	    'hidden',
@@ -1094,14 +1101,10 @@
 
 	  E.targetSearchResults.innerHTML = '';
 
-	  if (isRule) {
-	    E.targetSearchStatus.textContent =
-	      '利用者と曜日を選んで「候補を表示」を押してください。';
-	  }
-	  else {
-	    E.targetSearchStatus.textContent =
-	      '利用者と日付を選んで「候補を表示」を押してください。';
-	  }
+	  E.targetSearchStatus.textContent =
+	    isRule
+	      ? '利用者と曜日を選んで「候補を表示」を押してください。'
+	      : '利用者と日付を選んで「候補を表示」を押してください。';
 	}
 
 	async function selectTargetShift_(
