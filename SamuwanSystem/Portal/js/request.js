@@ -851,162 +851,212 @@
     );
   }
 
-  function renderTargetSearchResults_(targets) {
-    if (!state.targetCandidates.length) {
-      E.targetSearchStatus.textContent =
-        'この利用者の支援は見つかりませんでした。';
-      E.targetSearchResults.innerHTML = '';
-      return;
-    }
+	function renderTargetSearchResults_(targets) {
+	  if (!state.targetCandidates.length) {
+	    E.targetSearchStatus.textContent =
+	      'この利用者の支援は見つかりませんでした。';
+	    E.targetSearchResults.innerHTML = '';
+	    return;
+	  }
 
-    if (!targets.length) {
-      E.targetSearchStatus.textContent =
-        '選択したサービス・時間に一致する支援はありません。';
-      E.targetSearchResults.innerHTML = '';
-      return;
-    }
+	  if (!targets.length) {
+	    E.targetSearchStatus.textContent =
+	      '選択したサービス・時間に一致する支援はありません。';
+	    E.targetSearchResults.innerHTML = '';
+	    return;
+	  }
 
-    E.targetSearchStatus.textContent =
-      `${state.targetCandidates.length}件の候補があります。` +
-      (
-        targets.length !==
-        state.targetCandidates.length
-          ? `　絞り込み表示：${targets.length}件`
-          : ''
-      );
+	  E.targetSearchStatus.textContent =
+	    `${state.targetCandidates.length}件の候補があります。` +
+	    (
+	      targets.length !== state.targetCandidates.length
+	        ? `　絞り込み表示：${targets.length}件`
+	        : ''
+	    );
 
-    E.targetSearchResults.innerHTML =
-      targets.map((item, index) => {
-        const date =
-          item.targetDate ||
-          item.date ||
-          '';
+	  E.targetSearchResults.innerHTML =
+	    targets.map((item, index) => {
+	      const date =
+	        item.targetDate ||
+	        item.date ||
+	        '';
 
-        const start =
-          String(
-            item.startTime || ''
-          ).slice(0, 5);
+	      const start =
+	        String(
+	          item.startTime || ''
+	        ).slice(0, 5);
 
-        const end =
-          String(
-            item.endTime || ''
-          ).slice(0, 5);
+	      const end =
+	        String(
+	          item.endTime || ''
+	        ).slice(0, 5);
 
-        return `
-          <div class="target-search-result-card">
-            <div>
-              <strong>${esc(item.clientName || item.userName || item.user || '')}</strong>
-              <p class="target-result-service">${esc(item.service || 'サービス未設定')}</p>
-              <span class="target-result-time">${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>
-              <small>シフトID：${esc(item.shiftId || '')}</small>
-            </div>
-            <button
-              type="button"
-              class="primary-button"
-              data-target-shift-id="${escAttr(item.shiftId || '')}"
-            >
-              この支援を選択
-            </button>
-          </div>
-        `;
-      }).join('');
+	      const sourceLabel =
+	        item.sourceLabel ||
+	        (
+	          item.sourceType === 'RULE'
+	            ? '規定値'
+	            : ''
+	        );
 
-    E.targetSearchResults
-      .querySelectorAll(
-        '[data-target-shift-id]'
-      )
-      .forEach(button => {
-        button.addEventListener(
-          'click',
-          async () => {
-            const shiftId =
-              String(
-                button.dataset.targetShiftId ||
-                ''
-              );
+	      const idText =
+	        item.shiftId
+	          ? `シフトID：${esc(item.shiftId)}`
+	          : (
+	              item.ruleId
+	                ? `規定値ID：${esc(item.ruleId)}`
+	                : ''
+	            );
 
-            const item =
-              state.targetCandidates.find(
-                row =>
-                  String(
-                    row.shiftId || ''
-                  ) === shiftId
-              );
+	      return `
+	        <div class="target-search-result-card">
+	          <div>
+	            <strong>${esc(item.clientName || item.userName || item.user || '')}</strong>
+	            <p class="target-result-service">${esc(item.service || 'サービス未設定')}</p>
+	            <span class="target-result-time">${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>
+	            ${sourceLabel ? `<small>参照：${esc(sourceLabel)}</small>` : ''}
+	            ${idText ? `<small>${idText}</small>` : ''}
+	          </div>
+	          <button
+	            type="button"
+	            class="primary-button"
+	            data-target-index="${index}"
+	          >
+	            この支援を選択
+	          </button>
+	        </div>
+	      `;
+	    }).join('');
 
-            if (item) {
-              await selectTargetShift_(
-                item
-              );
-            }
-          }
-        );
-      });
-  }
+	  E.targetSearchResults
+	    .querySelectorAll(
+	      '[data-target-index]'
+	    )
+	    .forEach(button => {
+	      button.addEventListener(
+	        'click',
+	        async () => {
+	          const item =
+	            targets[
+	              Number(
+	                button.dataset.targetIndex
+	              )
+	            ];
 
-  async function selectTargetShift_(item) {
-    const shiftId =
-      String(
-        item?.shiftId || ''
-      ).trim();
+	          if (item) {
+	            await selectTargetShift_(
+	              item
+	            );
+	          }
+	        }
+	      );
+	    });
+	}
 
-    if (!shiftId) {
-      E.targetSearchStatus.textContent =
-        'シフトIDを確認できませんでした。';
-      return;
-    }
+	async function selectTargetShift_(item) {
+	  let shiftId =
+	    String(
+	      item?.shiftId || ''
+	    ).trim();
 
-    E.targetSearchStatus.textContent =
-      '登録済み情報を読み込んでいます...';
+	  E.targetSearchStatus.textContent =
+	    '登録済み情報を読み込んでいます...';
 
-    try {
-      const result =
-        await apiPost(
-          'request.shift.detail',
-          {
-            shiftId
-          }
-        );
+	  try {
+	    // 規定値Mだけにある未来の支援の場合
+	    if (
+	      !shiftId &&
+	      String(
+	        item?.sourceType || ''
+	      ) === 'RULE'
+	    ) {
+	      const ensureResult =
+	        await apiPost(
+	          'request.shift.ensure',
+	          {
+	            ruleId:
+	              String(
+	                item?.ruleId || ''
+	              ).trim(),
+	            targetDate:
+	              String(
+	                item?.targetDate || ''
+	              ).trim()
+	          }
+	        );
 
-      if (
-        !result ||
-        result.ok === false
-      ) {
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          'シフト情報を取得できません。'
-        );
-      }
+	      if (
+	        !ensureResult ||
+	        ensureResult.ok === false ||
+	        !ensureResult.shiftId
+	      ) {
+	        throw new Error(
+	          ensureResult?.message ||
+	          ensureResult?.error ||
+	          '規定値から対象シフトを作成できませんでした。'
+	        );
+	      }
 
-      const shift =
-        result.shift ||
-        item;
+	      shiftId =
+	        String(
+	          ensureResult.shiftId
+	        ).trim();
+	    }
 
-      state.selectedTarget = {
-        ...item,
-        ...shift,
-        shiftId
-      };
+	    if (!shiftId) {
+	      throw new Error(
+	        'シフトIDを確認できませんでした。'
+	      );
+	    }
 
-      E.targetShift.value =
-        shiftId;
+	    const result =
+	      await apiPost(
+	        'request.shift.detail',
+	        {
+	          shiftId
+	        }
+	      );
 
-      applyTargetShiftToForm_(
-        state.selectedTarget
-      );
+	    if (
+	      !result ||
+	      result.ok === false
+	    ) {
+	      throw new Error(
+	        result?.message ||
+	        result?.error ||
+	        'シフト情報を取得できません。'
+	      );
+	    }
 
-      renderSelectedTarget_();
+	    const shift =
+	      result.shift ||
+	      item;
 
-      E.targetSearchDialog.close();
+	    state.selectedTarget = {
+	      ...item,
+	      ...shift,
+	      shiftId
+	    };
 
-      updateSummary();
-    }
-    catch (err) {
-      E.targetSearchStatus.textContent =
-        err?.message ||
-        String(err);
-    }
-  }
+	    E.targetShift.value =
+	      shiftId;
+
+	    applyTargetShiftToForm_(
+	      state.selectedTarget
+	    );
+
+	    renderSelectedTarget_();
+
+	    E.targetSearchDialog.close();
+
+	    updateSummary();
+	  }
+	  catch (err) {
+	    E.targetSearchStatus.textContent =
+	      err?.message ||
+	      String(err);
+	  }
+	}
 
   function selectOptionByIdOrName_(
     select,
