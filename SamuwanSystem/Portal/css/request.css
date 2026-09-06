@@ -501,3 +501,233 @@ input[readonly]{background:#f3f6f4;color:var(--muted)}
     min-height:54px;
   }
 }
+
+
+/* ==================================================
+   2026-09-06 対象支援検索型レイアウト
+================================================== */
+
+/* 「選択中」枠は追加/その他で高さを変えない */
+.mode-action-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 180px;
+  gap:12px;
+  align-items:stretch;
+  margin-bottom:15px;
+}
+
+.selected-mode-summary{
+  height:68px;
+  min-height:68px;
+  max-height:68px;
+  margin:0;
+}
+
+.selected-mode-summary span,
+.selected-mode-summary strong{
+  flex:0 0 auto;
+}
+
+.target-search-open{
+  height:68px;
+  min-height:68px;
+  margin:0;
+  align-self:stretch;
+}
+
+.selected-target-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  margin:-3px 0 15px;
+  padding:12px 13px;
+  border:1px solid #b9d8c3;
+  border-radius:12px;
+  background:#f2faf4;
+}
+
+.selected-target-copy{
+  min-width:0;
+}
+
+.selected-target-copy>span{
+  display:block;
+  margin-bottom:3px;
+  color:var(--green-dark);
+  font-size:9px;
+  font-weight:900;
+}
+
+.selected-target-copy strong{
+  display:block;
+  font-size:14px;
+  color:var(--text);
+}
+
+.selected-target-copy p{
+  margin:4px 0 2px;
+  font-size:11px;
+  color:#536258;
+}
+
+.selected-target-copy small{
+  color:var(--muted);
+  font-size:9px;
+}
+
+.selected-target-card button{
+  min-width:94px;
+  min-height:40px;
+  margin:0;
+}
+
+/* 検索ダイアログ */
+.target-search-dialog{
+  width:min(720px,calc(100vw - 28px));
+  max-height:calc(100vh - 36px);
+  padding:0;
+  border:0;
+  border-radius:16px;
+  background:transparent;
+}
+
+.target-search-dialog::backdrop{
+  background:rgba(20,35,25,.42);
+}
+
+.target-search-dialog-card{
+  max-height:calc(100vh - 36px);
+  overflow:auto;
+  padding:18px;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 18px 52px rgba(0,0,0,.22);
+}
+
+.target-search-dialog-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.target-search-dialog-head strong{
+  display:block;
+  font-size:17px;
+}
+
+.target-search-dialog-head span{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:10px;
+}
+
+.dialog-close-button{
+  width:36px;
+  height:36px;
+  flex:0 0 36px;
+  border:1px solid var(--line);
+  border-radius:50%;
+  background:#fff;
+  font-size:20px;
+  line-height:1;
+}
+
+.target-search-actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:2px;
+}
+
+.target-search-actions button{
+  min-width:120px;
+}
+
+.target-search-status{
+  min-height:20px;
+  margin:10px 0 6px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.target-search-results{
+  display:grid;
+  gap:8px;
+}
+
+.target-search-result-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fafcfb;
+}
+
+.target-search-result-card strong{
+  display:block;
+  font-size:13px;
+}
+
+.target-search-result-card p{
+  margin:3px 0;
+  font-size:11px;
+}
+
+.target-search-result-card span,
+.target-search-result-card small{
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+}
+
+.target-search-result-card button{
+  min-width:110px;
+  min-height:40px;
+}
+
+/* 変更内容メニューは廃止 */
+.change-type-area{
+  display:none!important;
+}
+
+@media(max-width:720px){
+  .mode-action-row{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .selected-mode-summary{
+    height:58px;
+    min-height:58px;
+    max-height:58px;
+  }
+
+  .target-search-open{
+    width:100%;
+    height:44px;
+    min-height:44px;
+  }
+
+  .selected-target-card{
+    grid-template-columns:1fr;
+    margin-top:0;
+  }
+
+  .selected-target-card button{
+    width:100%;
+  }
+
+  .target-search-result-card{
+    grid-template-columns:1fr;
+  }
+
+  .target-search-result-card button{
+    width:100%;
+  }
+}
