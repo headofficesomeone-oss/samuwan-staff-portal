@@ -15,15 +15,30 @@
       meeting: { inputName: '', placeId: '' }
     },
     searchTimers: {},
-    registered: false
+    registered: false,
+    operationContext: 'request',
+    processMode: '追加',
+    changeType: ''
   };
 
   const E = {
     message: $('requestMessage'),
+    footerMessage: $('desktopFooterMessage'),
     form: $('requestForm'),
     reporter: $('reporterName'),
     headerReporter: $('headerReporter'),
     type: $('requestType'),
+    operationContextChoices: $('operationContextChoices'),
+    processModeChoices: $('processModeChoices'),
+    operationContextNote: $('operationContextNote'),
+    changeTypeArea: $('changeTypeArea'),
+    changeType: $('changeType'),
+    modeTestBadge: $('modeTestBadge'),
+    selectedModeSummary: $('selectedModeSummary'),
+    ruleWeekdayArea: $('ruleWeekdayArea'),
+    requestDateModeArea: $('requestDateModeArea'),
+    todayFixedArea: $('todayFixedArea'),
+    todayFixedDate: $('todayFixedDate'),
     targetField: $('targetShiftField'),
     targetShift: $('targetShiftId'),
     client: $('clientName'),
@@ -39,6 +54,7 @@
     end: $('endTime'),
     endAutoNote: $('endAutoNote'),
     appt: $('appointmentTime'),
+    apptPurpose: $('appointmentPurpose'),
     peopleCount: $('peopleCount'),
     destination: $('destination'),
     destinationId: $('destinationPlaceId'),
@@ -54,6 +70,9 @@
     staff3: $('staff3Name'),
     outDriver: $('outDriverName'),
     backDriver: $('backDriverName'),
+    outVehicle: $('outVehicle'),
+    backVehicle: $('backVehicle'),
+    transportNote: $('transportNote'),
     staffChangeFields: $('staffChangeFields'),
     oldStaff: $('oldStaffName'),
     newStaff: $('newStaffName'),
@@ -103,6 +122,8 @@
 
     setToday();
     updateServiceOptions();
+    renderProcessModes();
+    updateOperationModeUi();
     updateRequestMode();
     updateView();
 
@@ -118,6 +139,33 @@
 
   function bindEvents() {
     E.type.addEventListener('change', updateRequestMode);
+
+    document.querySelectorAll('input[name="operationContext"]')
+      .forEach(input => {
+        input.addEventListener('change', () => {
+          state.operationContext = input.value;
+          state.processMode = getProcessModes_()[0];
+          state.changeType = '';
+          renderProcessModes();
+          updateOperationModeUi();
+        });
+      });
+
+    document.querySelectorAll('input[name="changeTypeChoice"]')
+      .forEach(input => {
+        input.addEventListener('change', () => {
+          state.changeType = input.value;
+          if (E.changeType) E.changeType.value = state.changeType;
+          updateOperationModeUi();
+        });
+      });
+
+    document.querySelectorAll('[data-rule-weekday]')
+      .forEach(button => {
+        button.addEventListener('click', () => {
+          button.classList.toggle('active');
+        });
+      });
 
     document.querySelectorAll('[data-date-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -157,7 +205,8 @@
 
     [
       E.client, E.service, E.singleDate,
-      E.rangeStart, E.rangeEnd, E.appt, E.moveType,
+      E.rangeStart, E.rangeEnd, E.appt, E.apptPurpose, E.moveType,
+      E.outVehicle, E.backVehicle, E.transportNote,
       E.mainStaff, E.staff2, E.staff3, E.oldStaff,
       E.newStaff, E.support, E.change, E.reason, E.note
     ].forEach(el => {
@@ -271,11 +320,206 @@
     updatePeopleCount();
   }
 
+  const OPERATION_CONTEXTS_ = {
+    rule: {
+      label: '規定値',
+      note: '今後も繰り返す基本予定を登録・変更する想定です。現在は画面動作確認のみです。',
+      modes: ['追加', '変更', '担当変更', '取消']
+    },
+    request: {
+      label: '支援予定依頼',
+      note: '未来の支援予定を登録・変更します。「追加」は従来の新規依頼登録として実際に登録できます。',
+      modes: ['追加', '変更', 'キャンセル', '担当変更', '依頼取消']
+    },
+    today: {
+      label: '当日支援変更',
+      note: '本日の確定済み支援を変更する想定です。現在は画面動作確認のみです。',
+      modes: ['追加', '変更', 'キャンセル', '担当変更']
+    }
+  };
+
+  function getProcessModes_() {
+    return (
+      OPERATION_CONTEXTS_[state.operationContext]?.modes ||
+      ['追加']
+    );
+  }
+
+  function isLiveRegistrationMode_() {
+    return (
+      state.operationContext === 'request' &&
+      state.processMode === '追加'
+    );
+  }
+
+  function renderProcessModes() {
+    const modes = getProcessModes_();
+
+    if (!modes.includes(state.processMode)) {
+      state.processMode = modes[0];
+    }
+
+    if (!E.processModeChoices) return;
+
+    E.processModeChoices.innerHTML =
+      modes.map(mode => `
+        <label class="mode-radio">
+          <input
+            type="radio"
+            name="processMode"
+            value="${escAttr(mode)}"
+            ${mode === state.processMode ? 'checked' : ''}
+          >
+          <span>${esc(mode)}</span>
+        </label>
+      `).join('');
+
+    E.processModeChoices
+      .querySelectorAll('input[name="processMode"]')
+      .forEach(input => {
+        input.addEventListener('change', () => {
+          state.processMode = input.value;
+          state.changeType = '';
+          if (E.changeType) E.changeType.value = '';
+          document.querySelectorAll('input[name="changeTypeChoice"]')
+            .forEach(x => x.checked = false);
+          updateOperationModeUi();
+        });
+      });
+  }
+
+  function updateOperationModeUi() {
+    const cfg =
+      OPERATION_CONTEXTS_[state.operationContext] ||
+      OPERATION_CONTEXTS_.request;
+
+    if (E.operationContextNote) {
+      E.operationContextNote.textContent = cfg.note;
+    }
+
+    /*
+     * 既存のrequest.js / request-common.jsを壊さないため、
+     * hiddenのrequestTypeへ現在の処理モードを同期します。
+     */
+    if (E.type) {
+      const optionExists =
+        [...E.type.options]
+          .some(option => option.value === state.processMode);
+
+      if (!optionExists) {
+        const option = document.createElement('option');
+        option.value = state.processMode;
+        option.textContent = state.processMode;
+        E.type.appendChild(option);
+      }
+
+      E.type.value = state.processMode;
+    }
+
+    if (E.changeTypeArea) {
+      E.changeTypeArea.classList.toggle(
+        'hidden',
+        state.processMode !== '変更'
+      );
+    }
+
+    const live =
+      isLiveRegistrationMode_();
+
+    E.modeTestBadge?.classList.toggle(
+      'hidden',
+      live
+    );
+
+    if (E.selectedModeSummary) {
+      E.selectedModeSummary.innerHTML =
+        `<span>選択中</span><strong>${esc(cfg.label)} ＞ ${esc(state.processMode)}</strong>`;
+    }
+
+    /*
+     * 日付入力表示
+     */
+    E.ruleWeekdayArea?.classList.toggle(
+      'hidden',
+      state.operationContext !== 'rule'
+    );
+
+    E.requestDateModeArea?.classList.toggle(
+      'hidden',
+      state.operationContext !== 'request'
+    );
+
+    E.todayFixedArea?.classList.toggle(
+      'hidden',
+      state.operationContext !== 'today'
+    );
+
+    if (E.todayFixedDate) {
+      const d = new Date();
+      E.todayFixedDate.textContent =
+        `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    updateRequestMode();
+    updateRegistrationAvailability_();
+    updateSummary();
+  }
+
+  function updateRegistrationAvailability_() {
+    const live =
+      isLiveRegistrationMode_();
+
+    /*
+     * PCは確認画面までは見られる。
+     * 実際の「登録する」だけ、未実装モードでは無効化。
+     */
+    if (E.save) {
+      E.save.disabled =
+        !live ||
+        state.registered;
+
+      E.save.textContent =
+        live
+          ? '登録する'
+          : '動作確認のみ';
+    }
+
+    if (E.modeTestBadge) {
+      E.modeTestBadge.textContent =
+        live
+          ? ''
+          : '動作確認中';
+    }
+
+    if (E.footerMessage && !live) {
+      E.footerMessage.textContent =
+        `${OPERATION_CONTEXTS_[state.operationContext]?.label || ''} ＞ ${state.processMode} は現在、画面動作確認のみです。`;
+      E.footerMessage.className =
+        'desktop-footer-message mode-check';
+      E.footerMessage.classList.remove('hidden');
+    } else if (live && E.footerMessage?.classList.contains('mode-check')) {
+      E.footerMessage.classList.add('hidden');
+      E.footerMessage.textContent = '';
+    }
+
+    if (mobileQuery.matches && state.step === 4) {
+      E.next.disabled =
+        !live ||
+        state.registered;
+
+      E.next.textContent =
+        live
+          ? '登録する'
+          : '動作確認のみ';
+    }
+  }
+
   function updateRequestMode() {
     const type = E.type.value;
     E.targetField.classList.toggle('hidden', type === '追加');
     E.staffChangeFields.classList.toggle('hidden', type !== '担当変更');
     E.changeField.classList.toggle('hidden', type !== '変更');
+    updateRegistrationAvailability_();
     updateSummary();
   }
 
@@ -408,17 +652,27 @@
         if (!client.name) throw new Error('利用者を選択してください。');
         if (!E.service.value.trim()) throw new Error('サービスを入力してください。');
 
-        if (E.type.value !== '追加' && !E.targetShift.value.trim()) {
+        if (
+          isLiveRegistrationMode_() &&
+          E.type.value !== '追加' &&
+          !E.targetShift.value.trim()
+        ) {
           throw new Error('対象シフトIDを入力してください。');
         }
       }
 
       if (step === 2) {
-        RC.validateDates(getTargetDates());
-        if (!E.start.value) throw new Error('開始時刻を入力してください。');
+        if (isLiveRegistrationMode_()) {
+          RC.validateDates(getTargetDates());
+          if (!E.start.value) throw new Error('開始時刻を入力してください。');
+        }
       }
 
-      if (step === 3 && E.type.value === '担当変更') {
+      if (
+        step === 3 &&
+        isLiveRegistrationMode_() &&
+        E.type.value === '担当変更'
+      ) {
         if (!selected(E.oldStaff).name || !selected(E.newStaff).name) {
           throw new Error('変更前担当・変更後担当を選択してください。');
         }
@@ -668,6 +922,9 @@
       outDriverName: outDriver.name,
       backDriverId: backDriver.id,
       backDriverName: backDriver.name,
+      outVehicle: E.outVehicle.value.trim(),
+      backVehicle: E.backVehicle.value.trim(),
+      transportNote: E.transportNote.value.trim(),
 
       oldStaffId: oldStaff.id,
       oldStaffName: oldStaff.name,
@@ -677,6 +934,7 @@
       destination: E.destination.value.trim(),
       destinationPlaceId: E.destinationId.value.trim(),
       appointmentTime: E.appt.value,
+      appointmentPurpose: E.apptPurpose.value.trim(),
       meetingPlace: E.meeting.value.trim(),
       meetingPlaceId: E.meetingId.value.trim(),
 
@@ -740,6 +998,15 @@
 
   async function submit() {
     let payload;
+
+    if (!isLiveRegistrationMode_()) {
+      showMessage(
+        'このモードは現在、画面動作確認のみです。登録処理はまだ行いません。',
+        false
+      );
+      showToast('動作確認モードです');
+      return;
+    }
 
     if (state.registered) {
       showToast('この依頼は登録済みです。');
@@ -827,12 +1094,16 @@
       ['行き先場所ID', payload?.destinationPlaceId],
       ['待合せ場所', payload?.meetingPlace],
       ['待合せ場所ID', payload?.meetingPlaceId],
-      ['移動区分', payload?.moveType],
+      ['予約内容', payload?.appointmentPurpose],
+      ['移動手段', payload?.moveType],
       ['主担当', payload?.mainStaffName],
       ['担当2', payload?.staff2Name],
       ['担当3', payload?.staff3Name],
       ['行きドライバー', payload?.outDriverName],
+      ['行き車両', payload?.outVehicle],
       ['帰りドライバー', payload?.backDriverName],
+      ['帰り車両', payload?.backVehicle],
+      ['送迎補足', payload?.transportNote],
       ['支援内容', payload?.supportContent],
       ['特記事項', payload?.note]
     ].filter(([, value]) => String(value ?? '').trim());
@@ -848,12 +1119,25 @@
     state.registered = false;
     state.step = 1;
     state.dateMode = 'single';
+    state.operationContext = 'request';
+    state.processMode = '追加';
+    state.changeType = '';
     state.place.destination = { inputName: '', placeId: '' };
     state.place.meeting = { inputName: '', placeId: '' };
 
     E.form.reset();
 
+    document.querySelectorAll('input[name="operationContext"]')
+      .forEach(input => {
+        input.checked = input.value === 'request';
+      });
+
+    document.querySelectorAll('input[name="changeTypeChoice"]')
+      .forEach(input => input.checked = false);
+
     E.type.value = '追加';
+    if (E.changeType) E.changeType.value = '';
+    renderProcessModes();
     E.reporter.value = state.user.name || '職員情報未取得';
     updateServiceOptions();
     updateServiceOptions();
@@ -892,6 +1176,7 @@
     E.next.disabled = false;
 
     hideMessage();
+    updateOperationModeUi();
     updateRequestMode();
     updateView();
     updateSummary();
@@ -944,12 +1229,16 @@
       ['行き先場所ID', E.destinationId.value.trim()],
       ['待合せ場所', E.meeting.value.trim()],
       ['待合せ場所ID', E.meetingId.value.trim()],
-      ['移動区分', E.moveType.value],
+      ['予約内容', E.apptPurpose.value.trim()],
+      ['移動手段', E.moveType.value],
       ['主担当', selected(E.mainStaff).name],
       ['担当2', selected(E.staff2).name],
       ['担当3', selected(E.staff3).name],
       ['行きドライバー', selected(E.outDriver).name],
+      ['行き車両', E.outVehicle.value.trim()],
       ['帰りドライバー', selected(E.backDriver).name],
+      ['帰り車両', E.backVehicle.value.trim()],
+      ['送迎補足', E.transportNote.value.trim()],
       ['変更前担当', selected(E.oldStaff).name],
       ['変更後担当', selected(E.newStaff).name],
       ['支援内容', E.support.value.trim()],
@@ -997,7 +1286,20 @@
     });
 
     E.prev.classList.toggle('hidden', state.step === 1);
-    E.next.textContent = state.step === 4 ? '登録する' : '次へ';
+
+    if (state.step === 4) {
+      E.next.textContent =
+        isLiveRegistrationMode_()
+          ? '登録する'
+          : '動作確認のみ';
+
+      E.next.disabled =
+        !isLiveRegistrationMode_() ||
+        state.registered;
+    } else {
+      E.next.textContent = '次へ';
+      E.next.disabled = false;
+    }
 
     E.confirmActions.classList.add('hidden');
 
@@ -1018,22 +1320,54 @@
       E.save.textContent = '登録中...';
     } else {
       E.next.textContent =
-        state.step === 4 ? '登録する' : '次へ';
-      E.save.textContent = '登録する';
+        state.step === 4
+          ? (
+              isLiveRegistrationMode_()
+                ? '登録する'
+                : '動作確認のみ'
+            )
+          : '次へ';
+
+      E.save.textContent =
+        isLiveRegistrationMode_()
+          ? '登録する'
+          : '動作確認のみ';
+
+      updateRegistrationAvailability_();
     }
   }
 
   function showMessage(text, error) {
     E.message.textContent = text;
     E.message.className = `message ${error ? 'error' : 'success'}`;
-    E.message.classList.remove('hidden');
+
     if (mobileQuery.matches) {
+      E.message.classList.remove('hidden');
       E.message.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      if (E.footerMessage) {
+        E.footerMessage.classList.add('hidden');
+      }
+      return;
+    }
+
+    E.message.classList.add('hidden');
+
+    if (E.footerMessage) {
+      E.footerMessage.textContent = text;
+      E.footerMessage.className =
+        `desktop-footer-message ${error ? 'error' : 'success'}`;
+      E.footerMessage.classList.remove('hidden');
     }
   }
 
   function hideMessage() {
     E.message.classList.add('hidden');
+
+    if (E.footerMessage) {
+      E.footerMessage.classList.add('hidden');
+      E.footerMessage.textContent = '';
+    }
   }
 
   function showToast(text) {
