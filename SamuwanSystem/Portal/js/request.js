@@ -18,7 +18,8 @@
     registered: false,
     operationContext: 'request',
     processMode: '追加',
-    selectedTarget: null
+    selectedTarget: null,
+    targetCandidates: []
   };
 
   const E = {
@@ -50,6 +51,7 @@
     targetSearchDate: $('targetSearchDate'),
     targetSearchService: $('targetSearchService'),
     targetSearchStart: $('targetSearchStart'),
+    targetCandidateFilters: $('targetCandidateFilters'),
     runTargetSearch: $('runTargetSearchButton'),
     targetSearchStatus: $('targetSearchStatus'),
     targetSearchResults: $('targetSearchResults'),
@@ -187,6 +189,16 @@
     E.runTargetSearch?.addEventListener(
       'click',
       searchTargetShifts_
+    );
+
+    E.targetSearchService?.addEventListener(
+      'change',
+      updateTargetCandidateFilters_
+    );
+
+    E.targetSearchStart?.addEventListener(
+      'change',
+      renderFilteredTargetCandidates_
     );
 
     document.querySelectorAll('[data-date-mode]').forEach(btn => {
@@ -575,28 +587,26 @@
         state.selectedTarget.targetDate ||
         state.selectedTarget.date ||
         '';
-
-      E.targetSearchService.value =
-        state.selectedTarget.service ||
-        '';
-
-      E.targetSearchStart.value =
-        String(
-          state.selectedTarget.startTime ||
-          ''
-        ).slice(0, 5);
     } else {
       E.targetSearchDate.value =
         E.singleDate?.value || '';
-
-      E.targetSearchService.value =
-        E.service?.value || '';
-
-      E.targetSearchStart.value =
-        E.start?.value || '';
     }
 
-    E.targetSearchStatus.textContent = '';
+    state.targetCandidates = [];
+
+    E.targetSearchService.innerHTML =
+      '<option value="">すべて</option>';
+
+    E.targetSearchStart.innerHTML =
+      '<option value="">すべて</option>';
+
+    E.targetCandidateFilters?.classList.add(
+      'hidden'
+    );
+
+    E.targetSearchStatus.textContent =
+      '利用者と日付を選んで「候補を表示」を押してください。';
+
     E.targetSearchResults.innerHTML = '';
 
     E.targetSearchDialog.showModal();
@@ -626,16 +636,6 @@
         E.targetSearchDate?.value || ''
       ).trim();
 
-    const service =
-      String(
-        E.targetSearchService?.value || ''
-      ).trim();
-
-    const startTime =
-      String(
-        E.targetSearchStart?.value || ''
-      ).trim();
-
     if (!clientId && !clientName) {
       E.targetSearchStatus.textContent =
         '利用者を選択してください。';
@@ -648,22 +648,10 @@
       return;
     }
 
-    if (!service) {
-      E.targetSearchStatus.textContent =
-        'サービスを入力してください。';
-      return;
-    }
-
-    if (!startTime) {
-      E.targetSearchStatus.textContent =
-        '開始時刻を入力してください。';
-      return;
-    }
-
     E.runTargetSearch.disabled = true;
     E.runTargetSearch.textContent = '検索中...';
     E.targetSearchStatus.textContent =
-      '対象支援を検索しています...';
+      'その日の支援候補を取得しています...';
     E.targetSearchResults.innerHTML = '';
 
     try {
@@ -674,8 +662,8 @@
             clientId,
             clientName,
             targetDate,
-            service,
-            startTime
+            service: '',
+            startTime: ''
           }
         );
 
@@ -696,29 +684,196 @@
         result.shifts ||
         [];
 
-      renderTargetSearchResults_(targets);
+      state.targetCandidates =
+        targets;
+
+      populateTargetCandidateFilters_(
+        targets
+      );
+
+      renderFilteredTargetCandidates_();
     }
     catch (err) {
+      state.targetCandidates = [];
+
+      E.targetCandidateFilters?.classList.add(
+        'hidden'
+      );
+
       E.targetSearchStatus.textContent =
         err?.message ||
         String(err);
     }
     finally {
       E.runTargetSearch.disabled = false;
-      E.runTargetSearch.textContent = '検索';
+      E.runTargetSearch.textContent = '候補を表示';
     }
   }
 
+  function uniqueSorted_(values) {
+    return [
+      ...new Set(
+        values
+          .map(value =>
+            String(value || '').trim()
+          )
+          .filter(Boolean)
+      )
+    ].sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          'ja',
+          {
+            numeric: true,
+            sensitivity: 'base'
+          }
+        )
+    );
+  }
+
+  function populateTargetCandidateFilters_(
+    targets
+  ) {
+    const services =
+      uniqueSorted_(
+        targets.map(
+          item =>
+            item.service || ''
+        )
+      );
+
+    E.targetSearchService.innerHTML =
+      '<option value="">すべて</option>' +
+      services
+        .map(
+          service =>
+            `<option value="${escAttr(service)}">${esc(service)}</option>`
+        )
+        .join('');
+
+    E.targetSearchStart.innerHTML =
+      '<option value="">すべて</option>';
+
+    E.targetCandidateFilters?.classList.toggle(
+      'hidden',
+      !targets.length
+    );
+  }
+
+  function updateTargetCandidateFilters_() {
+    const selectedService =
+      String(
+        E.targetSearchService?.value || ''
+      ).trim();
+
+    const startTimes =
+      uniqueSorted_(
+        state.targetCandidates
+          .filter(item =>
+            !selectedService ||
+            String(item.service || '').trim() ===
+              selectedService
+          )
+          .map(item =>
+            String(
+              item.startTime || ''
+            ).slice(0, 5)
+          )
+      );
+
+    const currentStart =
+      String(
+        E.targetSearchStart?.value || ''
+      ).trim();
+
+    E.targetSearchStart.innerHTML =
+      '<option value="">すべて</option>' +
+      startTimes
+        .map(
+          time =>
+            `<option value="${escAttr(time)}">${esc(time)}</option>`
+        )
+        .join('');
+
+    if (
+      currentStart &&
+      startTimes.includes(
+        currentStart
+      )
+    ) {
+      E.targetSearchStart.value =
+        currentStart;
+    }
+
+    renderFilteredTargetCandidates_();
+  }
+
+  function renderFilteredTargetCandidates_() {
+    const selectedService =
+      String(
+        E.targetSearchService?.value || ''
+      ).trim();
+
+    const selectedStart =
+      String(
+        E.targetSearchStart?.value || ''
+      ).trim();
+
+    const targets =
+      state.targetCandidates
+        .filter(item => {
+          if (
+            selectedService &&
+            String(
+              item.service || ''
+            ).trim() !==
+              selectedService
+          ) {
+            return false;
+          }
+
+          if (
+            selectedStart &&
+            String(
+              item.startTime || ''
+            ).slice(0, 5) !==
+              selectedStart
+          ) {
+            return false;
+          }
+
+          return true;
+        });
+
+    renderTargetSearchResults_(
+      targets
+    );
+  }
+
   function renderTargetSearchResults_(targets) {
+    if (!state.targetCandidates.length) {
+      E.targetSearchStatus.textContent =
+        'この利用者の支援は見つかりませんでした。';
+      E.targetSearchResults.innerHTML = '';
+      return;
+    }
+
     if (!targets.length) {
       E.targetSearchStatus.textContent =
-        '一致する支援が見つかりませんでした。';
+        '選択したサービス・時間に一致する支援はありません。';
       E.targetSearchResults.innerHTML = '';
       return;
     }
 
     E.targetSearchStatus.textContent =
-      `${targets.length}件見つかりました。`;
+      `${state.targetCandidates.length}件の候補があります。` +
+      (
+        targets.length !==
+        state.targetCandidates.length
+          ? `　絞り込み表示：${targets.length}件`
+          : ''
+      );
 
     E.targetSearchResults.innerHTML =
       targets.map((item, index) => {
@@ -728,25 +883,27 @@
           '';
 
         const start =
-          item.startTime ||
-          '';
+          String(
+            item.startTime || ''
+          ).slice(0, 5);
 
         const end =
-          item.endTime ||
-          '';
+          String(
+            item.endTime || ''
+          ).slice(0, 5);
 
         return `
           <div class="target-search-result-card">
             <div>
               <strong>${esc(item.clientName || item.userName || item.user || '')}</strong>
-              <p>${esc(item.service || '')}</p>
-              <span>${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>
+              <p class="target-result-service">${esc(item.service || 'サービス未設定')}</p>
+              <span class="target-result-time">${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>
               <small>シフトID：${esc(item.shiftId || '')}</small>
             </div>
             <button
               type="button"
               class="primary-button"
-              data-target-index="${index}"
+              data-target-shift-id="${escAttr(item.shiftId || '')}"
             >
               この支援を選択
             </button>
@@ -755,18 +912,34 @@
       }).join('');
 
     E.targetSearchResults
-      .querySelectorAll('[data-target-index]')
+      .querySelectorAll(
+        '[data-target-shift-id]'
+      )
       .forEach(button => {
-        button.addEventListener('click', async () => {
-          const item =
-            targets[
-              Number(
-                button.dataset.targetIndex
-              )
-            ];
+        button.addEventListener(
+          'click',
+          async () => {
+            const shiftId =
+              String(
+                button.dataset.targetShiftId ||
+                ''
+              );
 
-          await selectTargetShift_(item);
-        });
+            const item =
+              state.targetCandidates.find(
+                row =>
+                  String(
+                    row.shiftId || ''
+                  ) === shiftId
+              );
+
+            if (item) {
+              await selectTargetShift_(
+                item
+              );
+            }
+          }
+        );
       });
   }
 
