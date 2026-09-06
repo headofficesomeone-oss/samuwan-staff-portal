@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
-  <link rel="stylesheet" href="./css/request.css?v=20260906-search2">
+  <link rel="stylesheet" href="./css/request.css?v=20260906-candidate1">
 </head>
 <body>
 <header class="request-header">
@@ -485,25 +485,30 @@
       </label>
     </div>
 
-    <div class="field-grid two">
-      <label class="field">
-        <span>サービス <em>必須</em></span>
-        <input id="targetSearchService" placeholder="例：同行援護">
-      </label>
-
-      <label class="field">
-        <span>開始時刻 <em>必須</em></span>
-        <input type="time" id="targetSearchStart">
-      </label>
-    </div>
-
     <div class="target-search-actions">
       <button type="button" id="runTargetSearchButton" class="primary-button">
-        検索
+        候補を表示
       </button>
     </div>
 
     <div id="targetSearchStatus" class="target-search-status"></div>
+
+    <div id="targetCandidateFilters" class="field-grid two target-candidate-filters hidden">
+      <label class="field">
+        <span>サービス</span>
+        <select id="targetSearchService">
+          <option value="">すべて</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>開始時刻</span>
+        <select id="targetSearchStart">
+          <option value="">すべて</option>
+        </select>
+      </label>
+    </div>
+
     <div id="targetSearchResults" class="target-search-results"></div>
   </div>
 </dialog>
@@ -532,6 +537,6 @@
 
 <script src="./js/common.js?v=20260903-7"></script>
 <script src="./js/request-common.js?v=20260904-driver-nav1"></script>
-<script src="./js/request.js?v=20260906-search2"></script>
+<script src="./js/request.js?v=20260906-candidate1"></script>
 </body>
 </html>
