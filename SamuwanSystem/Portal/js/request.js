@@ -18,7 +18,7 @@
     registered: false,
     operationContext: 'request',
     processMode: '追加',
-    changeType: ''
+    selectedTarget: null
   };
 
   const E = {
@@ -31,16 +31,28 @@
     operationContextChoices: $('operationContextChoices'),
     processModeChoices: $('processModeChoices'),
     operationContextNote: $('operationContextNote'),
-    changeTypeArea: $('changeTypeArea'),
-    changeType: $('changeType'),
     modeTestBadge: $('modeTestBadge'),
     selectedModeSummary: $('selectedModeSummary'),
     ruleWeekdayArea: $('ruleWeekdayArea'),
     requestDateModeArea: $('requestDateModeArea'),
     todayFixedArea: $('todayFixedArea'),
     todayFixedDate: $('todayFixedDate'),
-    targetField: $('targetShiftField'),
     targetShift: $('targetShiftId'),
+    openTargetSearch: $('openTargetSearchButton'),
+    selectedTargetCard: $('selectedTargetCard'),
+    selectedTargetTitle: $('selectedTargetTitle'),
+    selectedTargetMeta: $('selectedTargetMeta'),
+    selectedTargetShiftId: $('selectedTargetShiftId'),
+    reselectTarget: $('reselectTargetButton'),
+    targetSearchDialog: $('targetSearchDialog'),
+    closeTargetSearchDialog: $('closeTargetSearchDialog'),
+    targetSearchClient: $('targetSearchClient'),
+    targetSearchDate: $('targetSearchDate'),
+    targetSearchService: $('targetSearchService'),
+    targetSearchStart: $('targetSearchStart'),
+    runTargetSearch: $('runTargetSearchButton'),
+    targetSearchStatus: $('targetSearchStatus'),
+    targetSearchResults: $('targetSearchResults'),
     client: $('clientName'),
     system: $('system'),
     service: $('service'),
@@ -145,17 +157,7 @@
         input.addEventListener('change', () => {
           state.operationContext = input.value;
           state.processMode = getProcessModes_()[0];
-          state.changeType = '';
           renderProcessModes();
-          updateOperationModeUi();
-        });
-      });
-
-    document.querySelectorAll('input[name="changeTypeChoice"]')
-      .forEach(input => {
-        input.addEventListener('change', () => {
-          state.changeType = input.value;
-          if (E.changeType) E.changeType.value = state.changeType;
           updateOperationModeUi();
         });
       });
@@ -166,6 +168,26 @@
           button.classList.toggle('active');
         });
       });
+
+    E.openTargetSearch?.addEventListener(
+      'click',
+      openTargetSearchDialog_
+    );
+
+    E.reselectTarget?.addEventListener(
+      'click',
+      openTargetSearchDialog_
+    );
+
+    E.closeTargetSearchDialog?.addEventListener(
+      'click',
+      () => E.targetSearchDialog?.close()
+    );
+
+    E.runTargetSearch?.addEventListener(
+      'click',
+      searchTargetShifts_
+    );
 
     document.querySelectorAll('[data-date-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -379,10 +401,7 @@
       .forEach(input => {
         input.addEventListener('change', () => {
           state.processMode = input.value;
-          state.changeType = '';
-          if (E.changeType) E.changeType.value = '';
-          document.querySelectorAll('input[name="changeTypeChoice"]')
-            .forEach(x => x.checked = false);
+          clearSelectedTarget_();
           updateOperationModeUi();
         });
       });
@@ -416,13 +435,6 @@
       E.type.value = state.processMode;
     }
 
-    if (E.changeTypeArea) {
-      E.changeTypeArea.classList.toggle(
-        'hidden',
-        state.processMode !== '変更'
-      );
-    }
-
     const live =
       isLiveRegistrationMode_();
 
@@ -435,6 +447,20 @@
       E.selectedModeSummary.innerHTML =
         `<span>選択中</span><strong>${esc(cfg.label)} ＞ ${esc(state.processMode)}</strong>`;
     }
+
+    const needsTarget =
+      state.processMode !== '追加';
+
+    E.openTargetSearch?.classList.toggle(
+      'hidden',
+      !needsTarget
+    );
+
+    if (!needsTarget) {
+      clearSelectedTarget_();
+    }
+
+    renderSelectedTarget_();
 
     /*
      * 日付入力表示
@@ -493,7 +519,7 @@
 
     if (E.footerMessage && !live) {
       E.footerMessage.textContent =
-        `${OPERATION_CONTEXTS_[state.operationContext]?.label || ''} ＞ ${state.processMode} は現在、画面動作確認のみです。`;
+        `${OPERATION_CONTEXTS_[state.operationContext]?.label || ''} ＞ ${state.processMode} は現在、対象検索と画面表示の動作確認のみです。`;
       E.footerMessage.className =
         'desktop-footer-message mode-check';
       E.footerMessage.classList.remove('hidden');
@@ -514,9 +540,612 @@
     }
   }
 
+
+  function copyClientOptionsToSearch_() {
+    if (!E.targetSearchClient || !E.client) return;
+
+    const current =
+      E.targetSearchClient.value;
+
+    E.targetSearchClient.innerHTML =
+      E.client.innerHTML;
+
+    if (
+      current &&
+      [...E.targetSearchClient.options]
+        .some(option => option.value === current)
+    ) {
+      E.targetSearchClient.value =
+        current;
+    }
+  }
+
+  function openTargetSearchDialog_() {
+    if (!E.targetSearchDialog) return;
+
+    copyClientOptionsToSearch_();
+
+    if (state.selectedTarget) {
+      E.targetSearchClient.value =
+        state.selectedTarget.clientId ||
+        state.selectedTarget.userId ||
+        '';
+
+      E.targetSearchDate.value =
+        state.selectedTarget.targetDate ||
+        state.selectedTarget.date ||
+        '';
+
+      E.targetSearchService.value =
+        state.selectedTarget.service ||
+        '';
+
+      E.targetSearchStart.value =
+        String(
+          state.selectedTarget.startTime ||
+          ''
+        ).slice(0, 5);
+    } else {
+      E.targetSearchDate.value =
+        E.singleDate?.value || '';
+
+      E.targetSearchService.value =
+        E.service?.value || '';
+
+      E.targetSearchStart.value =
+        E.start?.value || '';
+    }
+
+    E.targetSearchStatus.textContent = '';
+    E.targetSearchResults.innerHTML = '';
+
+    E.targetSearchDialog.showModal();
+  }
+
+  async function searchTargetShifts_() {
+    const option =
+      E.targetSearchClient
+        ?.options[
+          E.targetSearchClient.selectedIndex
+        ];
+
+    const clientId =
+      String(
+        E.targetSearchClient?.value || ''
+      ).trim();
+
+    const clientName =
+      String(
+        option?.dataset?.name ||
+        option?.textContent ||
+        ''
+      ).trim();
+
+    const targetDate =
+      String(
+        E.targetSearchDate?.value || ''
+      ).trim();
+
+    const service =
+      String(
+        E.targetSearchService?.value || ''
+      ).trim();
+
+    const startTime =
+      String(
+        E.targetSearchStart?.value || ''
+      ).trim();
+
+    if (!clientId && !clientName) {
+      E.targetSearchStatus.textContent =
+        '利用者を選択してください。';
+      return;
+    }
+
+    if (!targetDate) {
+      E.targetSearchStatus.textContent =
+        '日付を入力してください。';
+      return;
+    }
+
+    if (!service) {
+      E.targetSearchStatus.textContent =
+        'サービスを入力してください。';
+      return;
+    }
+
+    if (!startTime) {
+      E.targetSearchStatus.textContent =
+        '開始時刻を入力してください。';
+      return;
+    }
+
+    E.runTargetSearch.disabled = true;
+    E.runTargetSearch.textContent = '検索中...';
+    E.targetSearchStatus.textContent =
+      '対象支援を検索しています...';
+    E.targetSearchResults.innerHTML = '';
+
+    try {
+      const result =
+        await apiPost(
+          'request.shift.search',
+          {
+            clientId,
+            clientName,
+            targetDate,
+            service,
+            startTime
+          }
+        );
+
+      if (
+        !result ||
+        result.ok === false
+      ) {
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '検索できませんでした。'
+        );
+      }
+
+      const targets =
+        result.targets ||
+        result.items ||
+        result.shifts ||
+        [];
+
+      renderTargetSearchResults_(targets);
+    }
+    catch (err) {
+      E.targetSearchStatus.textContent =
+        err?.message ||
+        String(err);
+    }
+    finally {
+      E.runTargetSearch.disabled = false;
+      E.runTargetSearch.textContent = '検索';
+    }
+  }
+
+  function renderTargetSearchResults_(targets) {
+    if (!targets.length) {
+      E.targetSearchStatus.textContent =
+        '一致する支援が見つかりませんでした。';
+      E.targetSearchResults.innerHTML = '';
+      return;
+    }
+
+    E.targetSearchStatus.textContent =
+      `${targets.length}件見つかりました。`;
+
+    E.targetSearchResults.innerHTML =
+      targets.map((item, index) => {
+        const date =
+          item.targetDate ||
+          item.date ||
+          '';
+
+        const start =
+          item.startTime ||
+          '';
+
+        const end =
+          item.endTime ||
+          '';
+
+        return `
+          <div class="target-search-result-card">
+            <div>
+              <strong>${esc(item.clientName || item.userName || item.user || '')}</strong>
+              <p>${esc(item.service || '')}</p>
+              <span>${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>
+              <small>シフトID：${esc(item.shiftId || '')}</small>
+            </div>
+            <button
+              type="button"
+              class="primary-button"
+              data-target-index="${index}"
+            >
+              この支援を選択
+            </button>
+          </div>
+        `;
+      }).join('');
+
+    E.targetSearchResults
+      .querySelectorAll('[data-target-index]')
+      .forEach(button => {
+        button.addEventListener('click', async () => {
+          const item =
+            targets[
+              Number(
+                button.dataset.targetIndex
+              )
+            ];
+
+          await selectTargetShift_(item);
+        });
+      });
+  }
+
+  async function selectTargetShift_(item) {
+    const shiftId =
+      String(
+        item?.shiftId || ''
+      ).trim();
+
+    if (!shiftId) {
+      E.targetSearchStatus.textContent =
+        'シフトIDを確認できませんでした。';
+      return;
+    }
+
+    E.targetSearchStatus.textContent =
+      '登録済み情報を読み込んでいます...';
+
+    try {
+      const result =
+        await apiPost(
+          'request.shift.detail',
+          {
+            shiftId
+          }
+        );
+
+      if (
+        !result ||
+        result.ok === false
+      ) {
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          'シフト情報を取得できません。'
+        );
+      }
+
+      const shift =
+        result.shift ||
+        item;
+
+      state.selectedTarget = {
+        ...item,
+        ...shift,
+        shiftId
+      };
+
+      E.targetShift.value =
+        shiftId;
+
+      applyTargetShiftToForm_(
+        state.selectedTarget
+      );
+
+      renderSelectedTarget_();
+
+      E.targetSearchDialog.close();
+
+      updateSummary();
+    }
+    catch (err) {
+      E.targetSearchStatus.textContent =
+        err?.message ||
+        String(err);
+    }
+  }
+
+  function selectOptionByIdOrName_(
+    select,
+    id,
+    name
+  ) {
+    if (!select) return;
+
+    const idText =
+      String(id || '').trim();
+
+    const nameText =
+      String(name || '').trim();
+
+    const options =
+      [...select.options];
+
+    const match =
+      options.find(option =>
+        idText &&
+        String(option.value || '').trim() === idText
+      ) ||
+      options.find(option =>
+        nameText &&
+        (
+          String(option.dataset?.name || '').trim() === nameText ||
+          String(option.textContent || '').trim() === nameText
+        )
+      );
+
+    if (match) {
+      select.value =
+        match.value;
+    }
+  }
+
+  function applyTargetShiftToForm_(shift) {
+    selectOptionByIdOrName_(
+      E.client,
+      shift.clientId ||
+      shift.userId,
+      shift.clientName ||
+      shift.userName ||
+      shift.user
+    );
+
+    if (shift.system) {
+      E.system.value =
+        shift.system;
+
+      updateServiceOptions();
+    }
+
+    if (shift.service) {
+      const serviceOptions =
+        [...E.service.options];
+
+      if (
+        !serviceOptions.some(
+          option =>
+            option.value ===
+            shift.service
+        )
+      ) {
+        const option =
+          document.createElement(
+            'option'
+          );
+
+        option.value =
+          shift.service;
+
+        option.textContent =
+          shift.service;
+
+        E.service.appendChild(
+          option
+        );
+      }
+
+      E.service.value =
+        shift.service;
+    }
+
+    const date =
+      shift.targetDate ||
+      shift.date ||
+      '';
+
+    if (date && E.singleDate) {
+      state.dateMode =
+        'single';
+
+      E.singleDate.value =
+        date;
+
+      setDateMode(
+        'single'
+      );
+    }
+
+    E.start.value =
+      String(
+        shift.startTime || ''
+      ).slice(0, 5);
+
+    E.end.value =
+      String(
+        shift.endTime || ''
+      ).slice(0, 5);
+
+    if (E.duration) {
+      E.duration.value =
+        shift.durationHours ??
+        shift.supportHours ??
+        '';
+    }
+
+    if (E.peopleCount) {
+      E.peopleCount.value =
+        shift.people ??
+        shift.peopleCount ??
+        '';
+    }
+
+    if (E.appt) {
+      E.appt.value =
+        String(
+          shift.appointmentTime ||
+          ''
+        ).slice(0, 5);
+    }
+
+    if (E.apptPurpose) {
+      E.apptPurpose.value =
+        shift.appointmentPurpose ||
+        '';
+    }
+
+    if (E.destination) {
+      E.destination.value =
+        shift.destination ||
+        shift.destinationName ||
+        '';
+    }
+
+    if (E.meeting) {
+      E.meeting.value =
+        shift.meetingPlace ||
+        shift.meeting ||
+        '';
+    }
+
+    if (E.moveType) {
+      E.moveType.value =
+        shift.moveType ||
+        shift.transportMethod ||
+        '';
+    }
+
+    selectOptionByIdOrName_(
+      E.mainStaff,
+      shift.mainStaffId,
+      shift.mainStaffName
+    );
+
+    selectOptionByIdOrName_(
+      E.staff2,
+      shift.staff2Id,
+      shift.staff2Name
+    );
+
+    selectOptionByIdOrName_(
+      E.staff3,
+      shift.staff3Id,
+      shift.staff3Name
+    );
+
+    selectOptionByIdOrName_(
+      E.outDriver,
+      shift.outDriverId,
+      shift.outDriverName
+    );
+
+    selectOptionByIdOrName_(
+      E.backDriver,
+      shift.backDriverId,
+      shift.backDriverName
+    );
+
+    if (E.outVehicle) {
+      E.outVehicle.value =
+        shift.outVehicle ||
+        shift.outboundVehicle ||
+        '';
+    }
+
+    if (E.backVehicle) {
+      E.backVehicle.value =
+        shift.backVehicle ||
+        shift.returnVehicle ||
+        '';
+    }
+
+    if (E.transportNote) {
+      E.transportNote.value =
+        shift.transportNote ||
+        shift.transportSupplement ||
+        '';
+    }
+
+    if (E.support) {
+      E.support.value =
+        shift.supportContent ||
+        shift.support ||
+        '';
+    }
+
+    if (E.note) {
+      E.note.value =
+        shift.note ||
+        '';
+    }
+
+    updateSummary();
+  }
+
+  function renderSelectedTarget_() {
+    const target =
+      state.selectedTarget;
+
+    const visible =
+      !!target &&
+      state.processMode !==
+        '追加';
+
+    E.selectedTargetCard?.classList.toggle(
+      'hidden',
+      !visible
+    );
+
+    if (!visible) {
+      return;
+    }
+
+    const client =
+      target.clientName ||
+      target.userName ||
+      target.user ||
+      '';
+
+    const service =
+      target.service ||
+      '';
+
+    const date =
+      target.targetDate ||
+      target.date ||
+      '';
+
+    const start =
+      target.startTime ||
+      '';
+
+    const end =
+      target.endTime ||
+      '';
+
+    E.selectedTargetTitle.textContent =
+      client ||
+      '対象支援';
+
+    E.selectedTargetMeta.textContent =
+      [
+        date,
+        start
+          ? (
+              start +
+              (
+                end
+                  ? '～' + end
+                  : ''
+              )
+            )
+          : '',
+        service
+      ]
+        .filter(Boolean)
+        .join('　');
+
+    E.selectedTargetShiftId.textContent =
+      'シフトID：' +
+      (
+        target.shiftId ||
+        ''
+      );
+  }
+
+  function clearSelectedTarget_() {
+    state.selectedTarget =
+      null;
+
+    if (E.targetShift) {
+      E.targetShift.value =
+        '';
+    }
+
+    renderSelectedTarget_();
+  }
+
   function updateRequestMode() {
     const type = E.type.value;
-    E.targetField.classList.toggle('hidden', type === '追加');
     E.staffChangeFields.classList.toggle('hidden', type !== '担当変更');
     E.changeField.classList.toggle('hidden', type !== '変更');
     updateRegistrationAvailability_();
@@ -1121,7 +1750,7 @@
     state.dateMode = 'single';
     state.operationContext = 'request';
     state.processMode = '追加';
-    state.changeType = '';
+    state.selectedTarget = null;
     state.place.destination = { inputName: '', placeId: '' };
     state.place.meeting = { inputName: '', placeId: '' };
 
@@ -1131,12 +1760,7 @@
       .forEach(input => {
         input.checked = input.value === 'request';
       });
-
-    document.querySelectorAll('input[name="changeTypeChoice"]')
-      .forEach(input => input.checked = false);
-
     E.type.value = '追加';
-    if (E.changeType) E.changeType.value = '';
     renderProcessModes();
     E.reporter.value = state.user.name || '職員情報未取得';
     updateServiceOptions();
