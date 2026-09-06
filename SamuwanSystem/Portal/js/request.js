@@ -49,6 +49,10 @@
     closeTargetSearchDialog: $('closeTargetSearchDialog'),
     targetSearchClient: $('targetSearchClient'),
     targetSearchDate: $('targetSearchDate'),
+		targetSearchMode: $('targetSearchMode'),
+		targetSearchDateField: $('targetSearchDateField'),
+		targetSearchWeekdayField: $('targetSearchWeekdayField'),
+		targetSearchWeekday: $('targetSearchWeekday'),
     targetSearchService: $('targetSearchService'),
     targetSearchStart: $('targetSearchStart'),
     targetCandidateFilters: $('targetCandidateFilters'),
@@ -190,6 +194,11 @@
       'click',
       searchTargetShifts_
     );
+
+		E.targetSearchMode?.addEventListener(
+		  'change',
+		  updateTargetSearchModeUi_
+		);
 
     E.targetSearchService?.addEventListener(
       'change',
@@ -604,111 +613,152 @@
       'hidden'
     );
 
-    E.targetSearchStatus.textContent =
-      '利用者と日付を選んで「候補を表示」を押してください。';
+		if (E.targetSearchMode) {
+		  E.targetSearchMode.value = 'date';
+		}
+
+		if (E.targetSearchWeekday) {
+		  E.targetSearchWeekday.value = '';
+		}
+
+		updateTargetSearchModeUi_();
 
     E.targetSearchResults.innerHTML = '';
 
     E.targetSearchDialog.showModal();
   }
 
-  async function searchTargetShifts_() {
-    const option =
-      E.targetSearchClient
-        ?.options[
-          E.targetSearchClient.selectedIndex
-        ];
+	async function searchTargetShifts_() {
+	  const option =
+	    E.targetSearchClient
+	      ?.options[
+	        E.targetSearchClient.selectedIndex
+	      ];
 
-    const clientId =
-      String(
-        E.targetSearchClient?.value || ''
-      ).trim();
+	  const clientId =
+	    String(
+	      E.targetSearchClient?.value || ''
+	    ).trim();
 
-    const clientName =
-      String(
-        option?.dataset?.name ||
-        option?.textContent ||
-        ''
-      ).trim();
+	  const clientName =
+	    String(
+	      option?.dataset?.name ||
+	      option?.textContent ||
+	      ''
+	    ).trim();
 
-    const targetDate =
-      String(
-        E.targetSearchDate?.value || ''
-      ).trim();
+	  const searchMode =
+	    String(
+	      E.targetSearchMode?.value || 'date'
+	    ).trim();
 
-    if (!clientId && !clientName) {
-      E.targetSearchStatus.textContent =
-        '利用者を選択してください。';
-      return;
-    }
+	  const targetDate =
+	    String(
+	      E.targetSearchDate?.value || ''
+	    ).trim();
 
-    if (!targetDate) {
-      E.targetSearchStatus.textContent =
-        '日付を入力してください。';
-      return;
-    }
+	  const weekday =
+	    String(
+	      E.targetSearchWeekday?.value || ''
+	    ).trim();
 
-    E.runTargetSearch.disabled = true;
-    E.runTargetSearch.textContent = '検索中...';
-    E.targetSearchStatus.textContent =
-      'その日の支援候補を取得しています...';
-    E.targetSearchResults.innerHTML = '';
+	  if (!clientId && !clientName) {
+	    E.targetSearchStatus.textContent =
+	      '利用者を選択してください。';
+	    return;
+	  }
 
-    try {
-      const result =
-        await apiPost(
-          'request.shift.search',
-          {
-            clientId,
-            clientName,
-            targetDate,
-            service: '',
-            startTime: ''
-          }
-        );
+	  if (
+	    searchMode === 'date' &&
+	    !targetDate
+	  ) {
+	    E.targetSearchStatus.textContent =
+	      '日付を入力してください。';
+	    return;
+	  }
 
-      if (
-        !result ||
-        result.ok === false
-      ) {
-        throw new Error(
-          result?.message ||
-          result?.error ||
-          '検索できませんでした。'
-        );
-      }
+	  if (
+	    searchMode === 'rule' &&
+	    !weekday
+	  ) {
+	    E.targetSearchStatus.textContent =
+	      '曜日を選択してください。';
+	    return;
+	  }
 
-      const targets =
-        result.targets ||
-        result.items ||
-        result.shifts ||
-        [];
+	  E.runTargetSearch.disabled = true;
+	  E.runTargetSearch.textContent = '検索中...';
 
-      state.targetCandidates =
-        targets;
+	  E.targetSearchStatus.textContent =
+	    searchMode === 'rule'
+	      ? 'その曜日の規定値を取得しています...'
+	      : 'その日の支援候補を取得しています...';
 
-      populateTargetCandidateFilters_(
-        targets
-      );
+	  E.targetSearchResults.innerHTML = '';
 
-      renderFilteredTargetCandidates_();
-    }
-    catch (err) {
-      state.targetCandidates = [];
+	  try {
+	    const result =
+	      await apiPost(
+	        'request.shift.search',
+	        {
+	          clientId,
+	          clientName,
+	          searchMode,
+	          targetDate:
+	            searchMode === 'date'
+	              ? targetDate
+	              : '',
+	          weekday:
+	            searchMode === 'rule'
+	              ? weekday
+	              : '',
+	          service: '',
+	          startTime: ''
+	        }
+	      );
 
-      E.targetCandidateFilters?.classList.add(
-        'hidden'
-      );
+	    if (
+	      !result ||
+	      result.ok === false
+	    ) {
+	      throw new Error(
+	        result?.message ||
+	        result?.error ||
+	        '検索できませんでした。'
+	      );
+	    }
 
-      E.targetSearchStatus.textContent =
-        err?.message ||
-        String(err);
-    }
-    finally {
-      E.runTargetSearch.disabled = false;
-      E.runTargetSearch.textContent = '候補を表示';
-    }
-  }
+	    const targets =
+	      result.targets ||
+	      result.items ||
+	      result.shifts ||
+	      [];
+
+	    state.targetCandidates =
+	      targets;
+
+	    populateTargetCandidateFilters_(
+	      targets
+	    );
+
+	    renderFilteredTargetCandidates_();
+	  }
+	  catch (err) {
+	    state.targetCandidates = [];
+
+	    E.targetCandidateFilters?.classList.add(
+	      'hidden'
+	    );
+
+	    E.targetSearchStatus.textContent =
+	      err?.message ||
+	      String(err);
+	  }
+	  finally {
+	    E.runTargetSearch.disabled = false;
+	    E.runTargetSearch.textContent = '候補を表示';
+	  }
+	}
 
   function uniqueSorted_(values) {
     return [
@@ -876,6 +926,11 @@
 
 	  E.targetSearchResults.innerHTML =
 	    targets.map((item, index) => {
+	      const isRule =
+	        String(
+	          item.sourceType || ''
+	        ) === 'RULE';
+
 	      const date =
 	        item.targetDate ||
 	        item.date ||
@@ -894,35 +949,64 @@
 	      const sourceLabel =
 	        item.sourceLabel ||
 	        (
-	          item.sourceType === 'RULE'
+	          isRule
 	            ? '規定値'
 	            : ''
 	        );
 
-	      const idText =
-	        item.shiftId
-	          ? `シフトID：${esc(item.shiftId)}`
-	          : (
-	              item.ruleId
-	                ? `規定値ID：${esc(item.ruleId)}`
-	                : ''
-	            );
+	      const applyText =
+	        isRule
+	          ? [
+	              item.applyStartDate || '開始日なし',
+	              item.applyEndDate || '終了日なし'
+	            ].join(' ～ ')
+	          : '';
+
+	      const instanceInput =
+	        isRule
+	          ? `
+	            <label class="field rule-target-date-field">
+	              <span>今回の対象日 <em>必須</em></span>
+	              <input
+	                type="date"
+	                data-rule-target-date-index="${index}"
+	              >
+	              <small>
+	                ${esc(item.weekday || '')}曜日の具体的な日を選択してください。
+	              </small>
+	            </label>
+	          `
+	          : '';
 
 	      return `
 	        <div class="target-search-result-card">
 	          <div>
 	            <strong>${esc(item.clientName || item.userName || item.user || '')}</strong>
 	            <p class="target-result-service">${esc(item.service || 'サービス未設定')}</p>
-	            <span class="target-result-time">${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>
+
+	            ${
+	              isRule
+	                ? `<span class="target-result-time">${esc(item.weekday || '')}曜日　${esc(start)}${end ? '～' + esc(end) : ''}</span>`
+	                : `<span class="target-result-time">${esc(date)}　${esc(start)}${end ? '～' + esc(end) : ''}</span>`
+	            }
+
 	            ${sourceLabel ? `<small>参照：${esc(sourceLabel)}</small>` : ''}
-	            ${idText ? `<small>${idText}</small>` : ''}
+
+	            ${
+	              isRule
+	                ? `<small>適用期間：${esc(applyText)}</small>`
+	                : `<small>シフトID：${esc(item.shiftId || '')}</small>`
+	            }
+
+	            ${instanceInput}
 	          </div>
+
 	          <button
 	            type="button"
 	            class="primary-button"
 	            data-target-index="${index}"
 	          >
-	            この支援を選択
+	            ${isRule ? 'この規定値を選択' : 'この支援を選択'}
 	          </button>
 	        </div>
 	      `;
@@ -936,24 +1020,94 @@
 	      button.addEventListener(
 	        'click',
 	        async () => {
-	          const item =
-	            targets[
-	              Number(
-	                button.dataset.targetIndex
-	              )
-	            ];
-
-	          if (item) {
-	            await selectTargetShift_(
-	              item
+	          const index =
+	            Number(
+	              button.dataset.targetIndex
 	            );
+
+	          const item =
+	            targets[index];
+
+	          if (!item) {
+	            return;
 	          }
+
+	          let ruleTargetDate = '';
+
+	          if (
+	            String(
+	              item.sourceType || ''
+	            ) === 'RULE'
+	          ) {
+	            const input =
+	              E.targetSearchResults
+	                .querySelector(
+	                  `[data-rule-target-date-index="${index}"]`
+	                );
+
+	            ruleTargetDate =
+	              String(
+	                input?.value || ''
+	              ).trim();
+
+	            if (!ruleTargetDate) {
+	              E.targetSearchStatus.textContent =
+	                '今回変更・取消する具体的な対象日を選択してください。';
+	              input?.focus();
+	              return;
+	            }
+	          }
+
+	          await selectTargetShift_(
+	            item,
+	            ruleTargetDate
+	          );
 	        }
 	      );
 	    });
 	}
 
-	async function selectTargetShift_(item) {
+	function updateTargetSearchModeUi_() {
+	  const mode =
+	    String(
+	      E.targetSearchMode?.value || 'date'
+	    );
+
+	  const isRule =
+	    mode === 'rule';
+
+	  E.targetSearchDateField?.classList.toggle(
+	    'hidden',
+	    isRule
+	  );
+
+	  E.targetSearchWeekdayField?.classList.toggle(
+	    'hidden',
+	    !isRule
+	  );
+
+	  state.targetCandidates = [];
+
+	  E.targetCandidateFilters?.classList.add(
+	    'hidden'
+	  );
+
+	  E.targetSearchResults.innerHTML = '';
+
+	  if (isRule) {
+	    E.targetSearchStatus.textContent =
+	      '利用者と曜日を選んで「候補を表示」を押してください。';
+	  }
+	  else {
+	    E.targetSearchStatus.textContent =
+	      '利用者と日付を選んで「候補を表示」を押してください。';
+	  }
+	}
+
+	async function selectTargetShift_(
+	  item,
+	  ruleTargetDate = ''
+	) {
 	  let shiftId =
 	    String(
 	      item?.shiftId || ''
@@ -963,7 +1117,6 @@
 	    '登録済み情報を読み込んでいます...';
 
 	  try {
-	    // 規定値Mだけにある未来の支援の場合
 	    if (
 	      !shiftId &&
 	      String(
@@ -980,7 +1133,7 @@
 	              ).trim(),
 	            targetDate:
 	              String(
-	                item?.targetDate || ''
+	                ruleTargetDate || ''
 	              ).trim()
 	          }
 	        );
@@ -1001,6 +1154,13 @@
 	        String(
 	          ensureResult.shiftId
 	        ).trim();
+
+	      item = {
+	        ...item,
+	        targetDate:
+	          ensureResult.targetDate ||
+	          ruleTargetDate
+	      };
 	    }
 
 	    if (!shiftId) {
