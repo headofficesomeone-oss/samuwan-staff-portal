@@ -163,3 +163,341 @@ input[readonly]{background:#f3f6f4;color:var(--muted)}
     padding:0 2px;
   }
 }
+
+
+/* ==================================================
+   2026-09-06 新規依頼レイアウト整理
+================================================== */
+
+/* 開始・支援時間数・終了を横3列 */
+.time-three-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:13px;
+  align-items:start;
+}
+
+/* 予約時間は開始時刻と同じ1列幅、予約内容は残り2列 */
+.appointment-grid{
+  display:grid;
+  grid-template-columns:1fr 2fr;
+  gap:13px;
+  align-items:start;
+}
+
+/* 送迎関係 */
+.transport-box{
+  margin:17px 0 18px;
+  padding:16px;
+  border:1px solid #cfded4;
+  border-radius:14px;
+  background:#f8fbf9;
+}
+
+.transport-box-title{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.transport-box-title strong{
+  font-size:14px;
+  color:var(--green-dark);
+}
+
+.transport-box-title span{
+  font-size:10px;
+  color:var(--muted);
+}
+
+.transport-three-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:13px;
+}
+
+.transport-note{
+  margin-bottom:0;
+}
+
+/* PCフッター左側メッセージ */
+.desktop-footer{
+  justify-content:space-between;
+  gap:14px;
+}
+
+.desktop-footer-message{
+  flex:1;
+  min-width:0;
+  max-width:620px;
+  padding:9px 12px;
+  border-radius:9px;
+  font-size:12px;
+  line-height:1.35;
+  background:#f6f8f7;
+  color:#56645c;
+  border:1px solid #dce4df;
+}
+
+.desktop-footer-message.error{
+  background:#fff1f1;
+  border-color:#e8baba;
+  color:#8d2929;
+}
+
+.desktop-footer-message.success{
+  background:var(--soft);
+  border-color:#b9dec7;
+  color:var(--green-dark);
+}
+
+@media(max-width:720px){
+  .time-three-grid,
+  .appointment-grid,
+  .transport-three-grid{
+    grid-template-columns:1fr;
+  }
+
+  .transport-box{
+    padding:13px;
+  }
+
+  .transport-box-title{
+    display:block;
+  }
+
+  .transport-box-title span{
+    display:block;
+    margin-top:3px;
+  }
+
+  .desktop-footer-message{
+    display:none!important;
+  }
+}
+
+
+/* ==================================================
+   2026-09-06 処理区分・処理モード上部選択
+================================================== */
+.request-mode-panel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px;
+  margin:0 0 14px;
+  box-shadow:var(--shadow);
+}
+
+.request-mode-panel-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:13px;
+}
+
+.request-mode-panel-head strong{
+  display:block;
+  font-size:15px;
+  color:var(--text);
+}
+
+.request-mode-panel-head span{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  color:var(--muted);
+}
+
+.mode-test-badge{
+  flex:0 0 auto;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#fff3d9;
+  border:1px solid #e9c572;
+  color:#8a6415!important;
+  font-size:10px!important;
+  font-weight:900;
+  margin:0!important;
+}
+
+.request-mode-label{
+  margin:10px 0 7px;
+  font-size:10px;
+  color:var(--green-dark);
+  font-weight:900;
+}
+
+.operation-context-choices{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.process-mode-choices{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+}
+
+.change-type-choices{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+
+.mode-radio{
+  position:relative;
+}
+
+.mode-radio input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+.mode-radio span{
+  min-height:43px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:7px 8px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  color:#4a5950;
+  font-size:11px;
+  font-weight:900;
+  text-align:center;
+  cursor:pointer;
+}
+
+.mode-radio input:checked + span{
+  background:var(--soft);
+  border-color:#84b896;
+  color:var(--green-dark);
+  box-shadow:inset 0 0 0 1px #84b896;
+}
+
+.operation-context-note{
+  margin-top:9px;
+  padding:9px 11px;
+  border-radius:9px;
+  background:#f7faf8;
+  border:1px solid #e5ebe7;
+  color:#5c6a61;
+  font-size:10px;
+  line-height:1.5;
+}
+
+.change-type-area{
+  margin-top:11px;
+  padding-top:10px;
+  border-top:1px dashed var(--line);
+}
+
+.selected-mode-summary{
+  min-height:67px;
+  border:1px solid #cfe0d5;
+  border-radius:11px;
+  padding:10px 12px;
+  background:#f8fbf9;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.selected-mode-summary span{
+  font-size:9px;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.selected-mode-summary strong{
+  margin-top:3px;
+  font-size:13px;
+  color:var(--green-dark);
+}
+
+.visual-only-note{
+  margin-bottom:10px;
+  padding:9px 11px;
+  background:#fff7e8;
+  border:1px solid #efcf9b;
+  border-radius:9px;
+  color:#74551d;
+  font-size:10px;
+  line-height:1.5;
+}
+
+.rule-weekday-area,
+.today-fixed-area{
+  margin-bottom:13px;
+}
+
+.rule-weekday-select{
+  margin-top:4px;
+}
+
+.today-fixed-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-height:46px;
+  padding:9px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fafcfb;
+}
+
+.today-fixed-row span{
+  font-size:10px;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.today-fixed-row strong{
+  font-size:14px;
+  color:var(--green-dark);
+}
+
+.desktop-footer-message.mode-check{
+  background:#fff7e8;
+  border-color:#efcf9b;
+  color:#74551d;
+}
+
+@media(max-width:720px){
+  .request-mode-panel{
+    margin:8px 10px 10px;
+    padding:12px;
+    border-radius:13px;
+  }
+
+  .request-mode-panel-head{
+    margin-bottom:9px;
+  }
+
+  .operation-context-choices{
+    grid-template-columns:1fr;
+  }
+
+  .process-mode-choices{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .change-type-choices{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .mode-radio span{
+    min-height:40px;
+    font-size:11px;
+  }
+
+  .selected-mode-summary{
+    min-height:54px;
+  }
+}
