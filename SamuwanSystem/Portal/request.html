@@ -466,24 +466,48 @@
     <div class="target-search-dialog-head">
       <div>
         <strong>対象支援を検索</strong>
-        <span>利用者・日付・サービス・開始時刻から候補を探します。</span>
+        <span>日付から実シフトを探すか、曜日から規定値を探します。</span>
       </div>
       <button type="button" id="closeTargetSearchDialog" class="dialog-close-button">×</button>
     </div>
 
-    <div class="field-grid two">
-      <label class="field">
-        <span>利用者 <em>必須</em></span>
-        <select id="targetSearchClient">
-          <option value="">利用者を選択</option>
-        </select>
-      </label>
+		<div class="field-grid two">
+		  <label class="field">
+		    <span>利用者 <em>必須</em></span>
+		    <select id="targetSearchClient">
+		      <option value="">利用者を選択</option>
+		    </select>
+		  </label>
 
-      <label class="field">
-        <span>日付 <em>必須</em></span>
-        <input type="date" id="targetSearchDate">
-      </label>
-    </div>
+		  <label class="field">
+		    <span>検索方法</span>
+		    <select id="targetSearchMode">
+		      <option value="date">日付から探す</option>
+		      <option value="rule">規定値（曜日）から探す</option>
+		    </select>
+		  </label>
+		</div>
+
+		<div class="field-grid two">
+		  <label class="field" id="targetSearchDateField">
+		    <span>日付 <em>必須</em></span>
+		    <input type="date" id="targetSearchDate">
+		  </label>
+
+		  <label class="field hidden" id="targetSearchWeekdayField">
+		    <span>曜日 <em>必須</em></span>
+		    <select id="targetSearchWeekday">
+		      <option value="">曜日を選択</option>
+		      <option value="月">月曜日</option>
+		      <option value="火">火曜日</option>
+		      <option value="水">水曜日</option>
+		      <option value="木">木曜日</option>
+		      <option value="金">金曜日</option>
+		      <option value="土">土曜日</option>
+		      <option value="日">日曜日</option>
+		    </select>
+		  </label>
+		</div>
 
     <div class="target-search-actions">
       <button type="button" id="runTargetSearchButton" class="primary-button">
@@ -537,6 +561,6 @@
 
 <script src="./js/common.js?v=20260903-7"></script>
 <script src="./js/request-common.js?v=20260904-driver-nav1"></script>
-<script src="./js/request.js?v=20260906-candidate1"></script>
+<script src="./js/request.js?v=20260906-candidate2"></script>
 </body>
 </html>
