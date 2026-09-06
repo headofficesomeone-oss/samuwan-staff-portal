@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
-  <link rel="stylesheet" href="./css/request.css?v=20260904-driver-nav1">
+  <link rel="stylesheet" href="./css/request.css?v=20260906-mode1">
 </head>
 <body>
 <header class="request-header">
@@ -24,6 +24,64 @@
 
 <main class="request-page">
   <div id="requestMessage" class="message hidden"></div>
+
+  <section class="request-mode-panel">
+    <div class="request-mode-panel-head">
+      <div>
+        <strong>何の処理を行いますか</strong>
+        <span>対象区分を選ぶと、利用できる処理モードが切り替わります。</span>
+      </div>
+      <span id="modeTestBadge" class="mode-test-badge hidden">動作確認中</span>
+    </div>
+
+    <div class="request-mode-label">対象区分</div>
+    <div id="operationContextChoices" class="operation-context-choices">
+      <label class="mode-radio">
+        <input type="radio" name="operationContext" value="rule">
+        <span>規定値</span>
+      </label>
+
+      <label class="mode-radio">
+        <input type="radio" name="operationContext" value="request" checked>
+        <span>支援予定依頼</span>
+      </label>
+
+      <label class="mode-radio">
+        <input type="radio" name="operationContext" value="today">
+        <span>当日支援変更</span>
+      </label>
+    </div>
+
+    <div id="operationContextNote" class="operation-context-note"></div>
+
+    <div class="request-mode-label">処理モード</div>
+    <div id="processModeChoices" class="process-mode-choices"></div>
+
+    <div id="changeTypeArea" class="change-type-area hidden">
+      <div class="request-mode-label">変更内容</div>
+      <div class="change-type-choices">
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="日付変更"><span>日付変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="曜日変更"><span>曜日変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="時間変更"><span>時間変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="場所変更"><span>場所変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="予約変更"><span>予約変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="送迎変更"><span>送迎変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="支援内容変更"><span>支援内容変更</span></label>
+        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="その他"><span>その他</span></label>
+      </div>
+    </div>
+
+    <!-- 既存GAS互換用。支援予定依頼＞追加では従来どおり requestType=追加 を使用します。 -->
+    <select id="requestType" class="hidden" aria-hidden="true" tabindex="-1">
+      <option value="追加" selected>追加</option>
+      <option value="変更">変更</option>
+      <option value="キャンセル">キャンセル</option>
+      <option value="担当変更">担当変更</option>
+      <option value="依頼取消">依頼取消</option>
+      <option value="取消">取消</option>
+    </select>
+    <input type="hidden" id="changeType" value="">
+  </section>
 
   <nav class="mobile-progress" aria-label="入力進行">
     <button type="button" class="progress-item active" data-step-jump="1"><span>1</span><b>基本</b></button>
@@ -49,15 +107,10 @@
           </div>
 
           <div class="field-grid two">
-            <label class="field">
-              <span>依頼種別 <em>必須</em></span>
-              <select id="requestType">
-                <option value="追加">追加</option>
-                <option value="変更">変更</option>
-                <option value="キャンセル">キャンセル</option>
-                <option value="担当変更">担当変更</option>
-              </select>
-            </label>
+            <div id="selectedModeSummary" class="selected-mode-summary">
+              <span>選択中</span>
+              <strong>支援予定依頼 ＞ 追加</strong>
+            </div>
 
             <label class="field hidden" id="targetShiftField">
               <span>対象シフトID <em>必須</em></span>
@@ -105,6 +158,29 @@
             </div>
           </div>
 
+          <div id="ruleWeekdayArea" class="rule-weekday-area hidden">
+            <div class="visual-only-note">規定値は曜日を基準として登録する想定です。現在は画面動作確認のみです。</div>
+            <div class="weekday-select rule-weekday-select">
+              <span>規定曜日</span>
+              <button type="button" data-rule-weekday="1">月</button>
+              <button type="button" data-rule-weekday="2">火</button>
+              <button type="button" data-rule-weekday="3">水</button>
+              <button type="button" data-rule-weekday="4">木</button>
+              <button type="button" data-rule-weekday="5">金</button>
+              <button type="button" data-rule-weekday="6">土</button>
+              <button type="button" data-rule-weekday="0">日</button>
+            </div>
+          </div>
+
+          <div id="todayFixedArea" class="today-fixed-area hidden">
+            <div class="visual-only-note">当日支援変更は本日の確定済み支援を対象にする想定です。現在は画面動作確認のみです。</div>
+            <div class="today-fixed-row">
+              <span>対象日</span>
+              <strong id="todayFixedDate">--/--/--</strong>
+            </div>
+          </div>
+
+          <div id="requestDateModeArea">
           <div class="date-mode-tabs">
             <button type="button" class="date-mode-btn active" data-date-mode="single">1日</button>
             <button type="button" class="date-mode-btn" data-date-mode="multi">複数日</button>
@@ -153,12 +229,14 @@
             <small class="field-note">期間から対象曜日を抽出します。最大5日まで登録できます。</small>
           </div>
 
-          <label class="field">
-            <span>開始時刻 <em>必須</em></span>
-            <input type="time" id="startTime">
-          </label>
+          </div>
 
-          <div class="field-grid two">
+          <div class="time-three-grid">
+            <label class="field">
+              <span>開始時刻 <em>必須</em></span>
+              <input type="time" id="startTime">
+            </label>
+
             <label class="field">
               <span>支援時間数 <small>任意</small></span>
               <div class="duration-input">
@@ -175,10 +253,17 @@
             </label>
           </div>
 
-          <label class="field">
-            <span>予約時間 <small>任意</small></span>
-            <input type="time" id="appointmentTime">
-          </label>
+          <div class="appointment-grid">
+            <label class="field">
+              <span>予約時間 <small>任意</small></span>
+              <input type="time" id="appointmentTime">
+            </label>
+
+            <label class="field appointment-purpose-field">
+              <span>予約内容 <small>任意</small></span>
+              <input id="appointmentPurpose" placeholder="例：診察予約、迎車予約、面談予約">
+            </label>
+          </div>
         </section>
 
         <section class="request-card step-screen" data-step="3">
@@ -202,58 +287,85 @@
             <div id="destinationStatus" class="place-status">場所ID：未選択</div>
           </div>
 
-          <div class="place-field">
-            <label class="field">
-              <span>待合せ場所</span>
-              <div class="place-search-wrap">
-                <input id="meetingPlace" autocomplete="off" placeholder="例：若葉駅東口">
-                <input type="hidden" id="meetingPlaceId">
-                <div id="meetingPlaceResults" class="place-results hidden"></div>
-              </div>
+          <div class="transport-box">
+            <div class="transport-box-title">
+              <strong>送迎関係</strong>
+              <span>必要な場合のみ入力します。</span>
+            </div>
+
+            <div class="place-field">
+              <label class="field">
+                <span>待合せ場所</span>
+                <div class="place-search-wrap">
+                  <input id="meetingPlace" autocomplete="off" placeholder="例：若葉駅東口">
+                  <input type="hidden" id="meetingPlaceId">
+                  <div id="meetingPlaceResults" class="place-results hidden"></div>
+                </div>
+              </label>
+              <div id="meetingPlaceStatus" class="place-status">場所ID：未選択</div>
+            </div>
+
+            <div class="transport-three-grid">
+              <label class="field">
+                <span>移動手段</span>
+                <select id="moveType">
+                  <option value="">指定なし</option>
+                  <option value="有償運送">有償運送</option>
+                  <option value="送迎">送迎</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>行きドライバー</span>
+                <select id="outDriverName"><option value="">指定なし</option></select>
+              </label>
+
+              <label class="field">
+                <span>行き車両</span>
+                <input id="outVehicle" placeholder="例：タント、N-BOX">
+              </label>
+            </div>
+
+            <div class="transport-three-grid">
+              <div></div>
+
+              <label class="field">
+                <span>帰りドライバー</span>
+                <select id="backDriverName"><option value="">指定なし</option></select>
+              </label>
+
+              <label class="field">
+                <span>帰り車両</span>
+                <input id="backVehicle" placeholder="例：タント、N-BOX">
+              </label>
+            </div>
+
+            <label class="field transport-note">
+              <span>送迎補足</span>
+              <textarea id="transportNote" rows="2" placeholder="例：帰りのみ送迎、家族が迎え、車いす積載あり"></textarea>
             </label>
-            <div id="meetingPlaceStatus" class="place-status">場所ID：未選択</div>
           </div>
 
           <div class="field-grid two">
-            <label class="field">
-              <span>移動区分</span>
-              <select id="moveType">
-                <option value="">指定なし</option>
-                <option value="公共交通">公共交通</option>
-                <option value="有償運送">有償運送</option>
-                <option value="家族送迎">家族送迎</option>
-                <option value="その他">その他</option>
-              </select>
-            </label>
-
             <label class="field">
               <span>主担当</span>
               <select id="mainStaffName">
                 <option value="">指定なし</option>
               </select>
             </label>
-          </div>
 
-          <div class="field-grid two">
             <label class="field">
               <span>担当2</span>
               <select id="staff2Name"><option value="">指定なし</option></select>
             </label>
-            <label class="field">
-              <span>担当3</span>
-              <select id="staff3Name"><option value="">指定なし</option></select>
-            </label>
           </div>
 
           <div class="field-grid two">
             <label class="field">
-              <span>行きドライバー</span>
-              <select id="outDriverName"><option value="">指定なし</option></select>
+              <span>担当3</span>
+              <select id="staff3Name"><option value="">指定なし</option></select>
             </label>
-            <label class="field">
-              <span>帰りドライバー</span>
-              <select id="backDriverName"><option value="">指定なし</option></select>
-            </label>
+            <div></div>
           </div>
 
           <div class="field-grid two">
@@ -335,6 +447,7 @@
 </footer>
 
 <div class="desktop-footer">
+  <div id="desktopFooterMessage" class="desktop-footer-message hidden"></div>
   <div class="desktop-footer-actions">
     <button type="button" class="secondary-button" onclick="location.href='./index.html'">ポータルへ戻る</button>
     <button type="button" id="desktopConfirmButton" class="primary-button">入力内容を確認</button>
@@ -369,6 +482,6 @@
 
 <script src="./js/common.js?v=20260903-7"></script>
 <script src="./js/request-common.js?v=20260904-driver-nav1"></script>
-<script src="./js/request.js?v=20260904-driver-nav1"></script>
+<script src="./js/request.js?v=20260906-mode1"></script>
 </body>
 </html>
