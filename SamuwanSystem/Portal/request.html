@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
-  <link rel="stylesheet" href="./css/request.css?v=20260906-mode1">
+  <link rel="stylesheet" href="./css/request.css?v=20260906-search2">
 </head>
 <body>
 <header class="request-header">
@@ -57,20 +57,6 @@
     <div class="request-mode-label">処理モード</div>
     <div id="processModeChoices" class="process-mode-choices"></div>
 
-    <div id="changeTypeArea" class="change-type-area hidden">
-      <div class="request-mode-label">変更内容</div>
-      <div class="change-type-choices">
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="日付変更"><span>日付変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="曜日変更"><span>曜日変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="時間変更"><span>時間変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="場所変更"><span>場所変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="予約変更"><span>予約変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="送迎変更"><span>送迎変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="支援内容変更"><span>支援内容変更</span></label>
-        <label class="mode-radio"><input type="radio" name="changeTypeChoice" value="その他"><span>その他</span></label>
-      </div>
-    </div>
-
     <!-- 既存GAS互換用。支援予定依頼＞追加では従来どおり requestType=追加 を使用します。 -->
     <select id="requestType" class="hidden" aria-hidden="true" tabindex="-1">
       <option value="追加" selected>追加</option>
@@ -80,7 +66,6 @@
       <option value="依頼取消">依頼取消</option>
       <option value="取消">取消</option>
     </select>
-    <input type="hidden" id="changeType" value="">
   </section>
 
   <nav class="mobile-progress" aria-label="入力進行">
@@ -106,16 +91,21 @@
             </div>
           </div>
 
-          <div class="field-grid two">
+          <div class="mode-action-row">
             <div id="selectedModeSummary" class="selected-mode-summary">
               <span>選択中</span>
               <strong>支援予定依頼 ＞ 追加</strong>
             </div>
 
-            <label class="field hidden" id="targetShiftField">
-              <span>対象シフトID <em>必須</em></span>
-              <input id="targetShiftId" placeholder="例：S000123">
-            </label>
+            <button
+              type="button"
+              id="openTargetSearchButton"
+              class="target-search-open secondary-button hidden"
+            >
+              対象支援を検索
+            </button>
+
+            <input type="hidden" id="targetShiftId">
           </div>
 
           <label class="field">
@@ -124,6 +114,18 @@
               <option value="">利用者を取得しています...</option>
             </select>
           </label>
+
+          <div id="selectedTargetCard" class="selected-target-card hidden">
+            <div class="selected-target-copy">
+              <span>選択中の支援</span>
+              <strong id="selectedTargetTitle">－</strong>
+              <p id="selectedTargetMeta">－</p>
+              <small id="selectedTargetShiftId">－</small>
+            </div>
+            <button type="button" id="reselectTargetButton" class="secondary-button">
+              選び直す
+            </button>
+          </div>
 
           <div class="field-grid two">
             <label class="field">
@@ -458,6 +460,54 @@
   </div>
 </div>
 
+
+<dialog id="targetSearchDialog" class="target-search-dialog">
+  <div class="target-search-dialog-card">
+    <div class="target-search-dialog-head">
+      <div>
+        <strong>対象支援を検索</strong>
+        <span>利用者・日付・サービス・開始時刻から候補を探します。</span>
+      </div>
+      <button type="button" id="closeTargetSearchDialog" class="dialog-close-button">×</button>
+    </div>
+
+    <div class="field-grid two">
+      <label class="field">
+        <span>利用者 <em>必須</em></span>
+        <select id="targetSearchClient">
+          <option value="">利用者を選択</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>日付 <em>必須</em></span>
+        <input type="date" id="targetSearchDate">
+      </label>
+    </div>
+
+    <div class="field-grid two">
+      <label class="field">
+        <span>サービス <em>必須</em></span>
+        <input id="targetSearchService" placeholder="例：同行援護">
+      </label>
+
+      <label class="field">
+        <span>開始時刻 <em>必須</em></span>
+        <input type="time" id="targetSearchStart">
+      </label>
+    </div>
+
+    <div class="target-search-actions">
+      <button type="button" id="runTargetSearchButton" class="primary-button">
+        検索
+      </button>
+    </div>
+
+    <div id="targetSearchStatus" class="target-search-status"></div>
+    <div id="targetSearchResults" class="target-search-results"></div>
+  </div>
+</dialog>
+
 <div id="successPanel" class="success-panel hidden" role="status">
   <div class="success-head">
     <div>
@@ -482,6 +532,6 @@
 
 <script src="./js/common.js?v=20260903-7"></script>
 <script src="./js/request-common.js?v=20260904-driver-nav1"></script>
-<script src="./js/request.js?v=20260906-mode1"></script>
+<script src="./js/request.js?v=20260906-search2"></script>
 </body>
 </html>
