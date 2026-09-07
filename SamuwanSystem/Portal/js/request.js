@@ -49,10 +49,9 @@
     closeTargetSearchDialog: $('closeTargetSearchDialog'),
     targetSearchClient: $('targetSearchClient'),
     targetSearchDate: $('targetSearchDate'),
-		targetSearchSource: $('targetSearchSource'),
-		targetSearchDateField: $('targetSearchDateField'),
-		targetSearchWeekdayField: $('targetSearchWeekdayField'),
-		targetSearchWeekday: $('targetSearchWeekday'),
+    targetSearchDateField: $('targetSearchDateField'),
+    targetSearchWeekdayField: $('targetSearchWeekdayField'),
+    targetSearchWeekday: $('targetSearchWeekday'),
     targetSearchService: $('targetSearchService'),
     targetSearchStart: $('targetSearchStart'),
     targetCandidateFilters: $('targetCandidateFilters'),
@@ -194,11 +193,6 @@
       'click',
       searchTargetShifts_
     );
-
-		E.targetSearchSource?.addEventListener(
-		  'change',
-		  updateTargetSearchSourceUi_
-		);
 
     E.targetSearchService?.addEventListener(
       'change',
@@ -613,15 +607,11 @@
       'hidden'
     );
 
-		if (E.targetSearchSource) {
-		  E.targetSearchSource.value = 'actual';
-		}
-
 		if (E.targetSearchWeekday) {
 		  E.targetSearchWeekday.value = '';
 		}
 
-		updateTargetSearchSourceUi_();
+		updateTargetSearchContextUi_();
 
     E.targetSearchResults.innerHTML = '';
 
@@ -647,11 +637,9 @@
 	      ''
 	    ).trim();
 
-		const source =
-		  String(
-		    E.targetSearchSource?.value || 'actual'
-		  ).trim();
-  
+	  const isRule =
+	    state.operationContext === 'rule';
+
 	  const targetDate =
 	    String(
 	      E.targetSearchDate?.value || ''
@@ -668,61 +656,59 @@
 	    return;
 	  }
 
-		if (
-		  source !== 'rule' &&
-		  !targetDate
-		) {
-		  E.targetSearchStatus.textContent =
-		    '日付を入力してください。';
-		  return;
-		}
 
-		if (
-		  source === 'rule' &&
-		  !weekday
-		) {
-		  E.targetSearchStatus.textContent =
-		    '曜日を選択してください。';
-		  return;
-		}
+	  if (
+	    !isRule &&
+	    !targetDate
+	  ) {
+	    E.targetSearchStatus.textContent =
+	      '日付を入力してください。';
+	    return;
+	  }
+
+	  if (
+	    isRule &&
+	    !weekday
+	  ) {
+	    E.targetSearchStatus.textContent =
+	      '曜日を選択してください。';
+	    return;
+	  }
+
 
 	  E.runTargetSearch.disabled = true;
 	  E.runTargetSearch.textContent = '検索中...';
 
 	  E.targetSearchStatus.textContent =
-	    source === 'rule'
+	    isRule
 	      ? 'その曜日の規定値を取得しています...'
 	      : 'その日の支援候補を取得しています...';
 
 	  E.targetSearchResults.innerHTML = '';
 
 	  try {
-			const result =
-			  await apiPost(
-			    'request.shift.search',
-			    {
-			      clientId,
-			      clientName,
-
-			      searchMode:
-			        source === 'rule'
-			          ? 'rule'
-			          : 'date',
-
-			      targetDate:
-			        source === 'rule'
-			          ? ''
-			          : targetDate,
-
-			      weekday:
-			        source === 'rule'
-			          ? weekday
-			          : '',
-
-			      service: '',
-			      startTime: ''
-			    }
-			  )
+	  const result =
+	    await apiPost(
+    	      'request.shift.search',
+	      {
+	        clientId,
+      		clientName,
+	        searchMode:
+        	  isRule
+          	    ? 'rule'
+          	    : 'date',
+      	        targetDate:
+        	  isRule
+          	    ? ''
+          	    : targetDate,
+      	        weekday:
+        	  isRule
+          	    ? weekday
+          	    : '',
+      	        service: '',
+      	        startTime: ''
+	      }
+	    );
   
 	    if (
 	      !result ||
@@ -969,22 +955,6 @@
 	            ].join(' ～ ')
 	          : '';
 
-	      const instanceInput =
-	        isRule
-	          ? `
-	            <label class="field rule-target-date-field">
-	              <span>今回の対象日 <em>必須</em></span>
-	              <input
-	                type="date"
-	                data-rule-target-date-index="${index}"
-	              >
-	              <small>
-	                ${esc(item.weekday || '')}曜日の具体的な日を選択してください。
-	              </small>
-	            </label>
-	          `
-	          : '';
-
 	      return `
 	        <div class="target-search-result-card">
 	          <div>
@@ -1005,7 +975,6 @@
 	                : `<small>シフトID：${esc(item.shiftId || '')}</small>`
 	            }
 
-	            ${instanceInput}
 	          </div>
 
 	          <button
@@ -1065,6 +1034,25 @@
 	            }
 	          }
 
+		  if (
+		    String(
+		      item.sourceType || ''
+		    ) === 'RULE'
+		  ) {
+		    state.selectedTarget = {
+		      ...item
+		    };
+
+		    if (E.targetShift) {
+		      E.targetShift.value = '';
+		    }
+
+		    renderSelectedTarget_();
+		    E.targetSearchDialog.close();
+		    updateSummary();
+		    return;
+		  }
+
 	          await selectTargetShift_(
 	            item,
 	            ruleTargetDate
@@ -1074,14 +1062,9 @@
 	    });
 	}
 
-	function updateTargetSearchSourceUi_() {
-	  const source =
-	    String(
-	      E.targetSearchSource?.value || 'actual'
-	    );
-
-	  const isRule =
-	    source === 'rule';
+	function updateTargetSearchContextUi_() {
+  	const isRule =
+	    state.operationContext === 'rule';
 
 	  E.targetSearchDateField?.classList.toggle(
 	    'hidden',
@@ -1096,7 +1079,7 @@
 	  state.targetCandidates = [];
 
 	  E.targetCandidateFilters?.classList.add(
-	    'hidden'
+    		'hidden'
 	  );
 
 	  E.targetSearchResults.innerHTML = '';
@@ -1120,51 +1103,6 @@
 	    '登録済み情報を読み込んでいます...';
 
 	  try {
-	    if (
-	      !shiftId &&
-	      String(
-	        item?.sourceType || ''
-	      ) === 'RULE'
-	    ) {
-	      const ensureResult =
-	        await apiPost(
-	          'request.shift.ensure',
-	          {
-	            ruleId:
-	              String(
-	                item?.ruleId || ''
-	              ).trim(),
-	            targetDate:
-	              String(
-	                ruleTargetDate || ''
-	              ).trim()
-	          }
-	        );
-
-	      if (
-	        !ensureResult ||
-	        ensureResult.ok === false ||
-	        !ensureResult.shiftId
-	      ) {
-	        throw new Error(
-	          ensureResult?.message ||
-	          ensureResult?.error ||
-	          '規定値から対象シフトを作成できませんでした。'
-	        );
-	      }
-
-	      shiftId =
-	        String(
-	          ensureResult.shiftId
-	        ).trim();
-
-	      item = {
-	        ...item,
-	        targetDate:
-	          ensureResult.targetDate ||
-	          ruleTargetDate
-	      };
-	    }
 
 	    if (!shiftId) {
 	      throw new Error(
