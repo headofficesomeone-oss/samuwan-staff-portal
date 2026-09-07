@@ -34,23 +34,14 @@
       <span id="modeTestBadge" class="mode-test-badge hidden">動作確認中</span>
     </div>
 
-    <div class="request-mode-label">対象区分</div>
-    <div id="operationContextChoices" class="operation-context-choices">
-      <label class="mode-radio">
-        <input type="radio" name="operationContext" value="rule">
-        <span>規定値</span>
-      </label>
-
-      <label class="mode-radio">
-        <input type="radio" name="operationContext" value="request" checked>
-        <span>支援予定依頼</span>
-      </label>
-
-      <label class="mode-radio">
-        <input type="radio" name="operationContext" value="today">
-        <span>当日支援変更</span>
-      </label>
-    </div>
+		<label class="field">
+		  <span>対象区分</span>
+		  <select id="operationContextSelect">
+		    <option value="rule">規定値</option>
+		    <option value="request" selected>支援予定依頼</option>
+		    <option value="today">当日支援変更</option>
+		  </select>
+		</label>
 
     <div id="operationContextNote" class="operation-context-note"></div>
 
