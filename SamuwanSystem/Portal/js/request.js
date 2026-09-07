@@ -1242,22 +1242,29 @@
         shift.service;
     }
 
-    const date =
-      shift.targetDate ||
-      shift.date ||
-      '';
+		if (date && E.singleDate) {
+		  state.dateMode = 'single';
 
-    if (date && E.singleDate) {
-      state.dateMode =
-        'single';
+		  E.singleDate.value = date;
 
-      E.singleDate.value =
-        date;
+		  document
+		    .querySelectorAll('[data-date-mode]')
+		    .forEach(btn => {
+		      btn.classList.toggle(
+		        'active',
+		        btn.dataset.dateMode === 'single'
+		      );
+		    });
 
-      setDateMode(
-        'single'
-      );
-    }
+		  document
+		    .querySelectorAll('[data-date-area]')
+		    .forEach(area => {
+		      area.classList.toggle(
+		        'hidden',
+		        area.dataset.dateArea !== 'single'
+		      );
+		    });
+		}
 
     E.start.value =
       String(
@@ -1594,6 +1601,20 @@
     );
   }
 
+	function getRuleWeekdays_() {
+	  return [
+	    ...document.querySelectorAll(
+	      '[data-rule-weekday].active'
+	    )
+	  ]
+	    .map(button =>
+	      String(
+	        button.dataset.ruleWeekday || ''
+	      ).trim()
+	    )
+	    .filter(Boolean);
+	}
+
   function selected(select) {
     return RC.selectedMaster(select);
   }
@@ -1614,12 +1635,35 @@
         }
       }
 
-      if (step === 2) {
-        if (isLiveRegistrationMode_()) {
-          RC.validateDates(getTargetDates());
-          if (!E.start.value) throw new Error('開始時刻を入力してください。');
-        }
-      }
+			if (step === 2) {
+			  if (state.operationContext === 'rule') {
+			    const weekdays =
+			      getRuleWeekdays_();
+
+			    if (!weekdays.length) {
+			      throw new Error(
+			        '曜日を1つ以上選択してください。'
+			      );
+			    }
+
+			    if (!E.start.value) {
+			      throw new Error(
+			        '開始時刻を入力してください。'
+			      );
+			    }
+			  }
+			  else if (isLiveRegistrationMode_()) {
+			    RC.validateDates(
+			      getTargetDates()
+			    );
+
+			    if (!E.start.value) {
+			      throw new Error(
+			        '開始時刻を入力してください。'
+			      );
+			    }
+			  }
+			}
 
       if (
         step === 3 &&
@@ -1857,7 +1901,16 @@
       system: E.system.value,
       service: E.service.value.trim(),
 
-      targetDates: getTargetDates(),
+			targetDates:
+			  state.operationContext === 'rule'
+			    ? []
+			    : getTargetDates(),
+
+			ruleWeekdays:
+			  state.operationContext === 'rule'
+			    ? getRuleWeekdays_()
+			    : [],
+    
       startTime: E.start.value,
       durationHours: E.duration.value ? Number(E.duration.value) : '',
       endTime: E.end.value,
@@ -2142,14 +2195,33 @@
   }
 
   function updateSummary() {
-    const client = selected(E.client);
-    const service = E.service.value.trim();
-    const dates = getTargetDates();
-    const start = E.start.value;
-    const end = E.end.value;
-    const duration = E.duration.value;
+	  const client = selected(E.client);
+	  const service = E.service.value.trim();
 
-    const dateText = formatDates(dates);
+	  const isRule =
+	    state.operationContext === 'rule';
+
+	  const dates =
+	    isRule
+	      ? []
+	      : getTargetDates();
+
+	  const ruleWeekdays =
+	    isRule
+	      ? getRuleWeekdays_()
+	      : [];
+
+	  const start = E.start.value;
+	  const end = E.end.value;
+	  const duration = E.duration.value;
+
+	  const dateText =
+	    isRule
+	      ? ruleWeekdays
+	          .map(day => `${day}曜日`)
+	          .join('・')
+	      : formatDates(dates);
+      
     const timeText =
       start
         ? `開始 ${start}` +
@@ -2160,12 +2232,25 @@
     E.confirmClient.textContent = client.name || '未選択';
     E.confirmService.textContent = service || '未選択';
     E.confirmDateTime.textContent =
-      `${dateText || '日付未選択'}　${timeText}`;
+      ``${dateText || (isRule ? '曜日未選択' : '日付未選択')}　${timeText}`;
 
     E.pcClient.textContent = client.name || '利用者未選択';
     E.pcService.textContent = service || 'サービス未選択';
-    E.pcTime.textContent =
-      `${dateText || '日時未選択'}${start ? `　${start}${end ? `～${end}` : ''}` : ''}`;
+
+		E.pcTime.textContent =
+		  `${
+		    dateText ||
+		    (
+		      isRule
+		        ? '曜日未選択'
+		        : '日時未選択'
+		    )
+		  }${
+		    start
+		      ? `　${start}${end ? `～${end}` : ''}`
+		      : ''
+		  }`;
+  
 
     const detail = [
       ['依頼種別', E.type.value],
