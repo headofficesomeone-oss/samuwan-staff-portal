@@ -29,7 +29,7 @@
     reporter: $('reporterName'),
     headerReporter: $('headerReporter'),
     type: $('requestType'),
-    operationContextChoices: $('operationContextChoices'),
+    operationContextSelect: $('operationContextSelect'),
     processModeChoices: $('processModeChoices'),
     operationContextNote: $('operationContextNote'),
     modeTestBadge: $('modeTestBadge'),
@@ -126,6 +126,11 @@
   async function start() {
     bindEvents();
 
+		if (E.operationContextSelect) {
+		  E.operationContextSelect.value =
+		    state.operationContext;
+		}
+
     E.reporter.value = state.user.name || '職員情報未取得';
     E.headerReporter.textContent =
       state.user.name ? `${state.user.name} さん` : '職員情報未取得';
@@ -157,15 +162,20 @@
   function bindEvents() {
     E.type.addEventListener('change', updateRequestMode);
 
-    document.querySelectorAll('input[name="operationContext"]')
-      .forEach(input => {
-        input.addEventListener('change', () => {
-          state.operationContext = input.value;
-          state.processMode = getProcessModes_()[0];
-          renderProcessModes();
-          updateOperationModeUi();
-        });
-      });
+		E.operationContextSelect?.addEventListener(
+		  'change',
+		  () => {
+		    state.operationContext =
+		      E.operationContextSelect.value;
+
+		    state.processMode =
+		      getProcessModes_()[0];
+
+		    clearSelectedTarget_();
+		    renderProcessModes();
+		    updateOperationModeUi();
+		  }
+		);
 
     document.querySelectorAll('[data-rule-weekday]')
       .forEach(button => {
@@ -2133,10 +2143,12 @@
 
     E.form.reset();
 
-    document.querySelectorAll('input[name="operationContext"]')
-      .forEach(input => {
-        input.checked = input.value === 'request';
-      });
+		state.operationContext = 'request';
+
+		if (E.operationContextSelect) {
+		  E.operationContextSelect.value = 'request';
+		}
+      
     E.type.value = '追加';
     renderProcessModes();
     E.reporter.value = state.user.name || '職員情報未取得';
