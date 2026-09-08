@@ -1249,6 +1249,36 @@
         shift.service;
     }
 
+
+		const date =
+		  shift.targetDate ||
+		  shift.date ||
+		  '';
+
+		if (date && E.singleDate) {
+		  state.dateMode = 'single';
+
+		  E.singleDate.value = date;
+
+		  document
+		    .querySelectorAll('[data-date-mode]')
+		    .forEach(btn => {
+		      btn.classList.toggle(
+		        'active',
+		        btn.dataset.dateMode === 'single'
+		      );
+		    });
+
+		  document
+		    .querySelectorAll('[data-date-area]')
+		    .forEach(area => {
+		      area.classList.toggle(
+		        'hidden',
+		        area.dataset.dateArea !== 'single'
+		      );
+		    });
+		}
+
 		if (date && E.singleDate) {
 		  state.dateMode = 'single';
 
