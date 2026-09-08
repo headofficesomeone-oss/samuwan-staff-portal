@@ -1100,10 +1100,7 @@
 	      : '利用者と日付を選んで「候補を表示」を押してください。';
 	}
 
-	async function selectTargetShift_(
-	  item,
-	  ruleTargetDate = ''
-	) {
+	async function selectTargetShift_(item) {
 	  let shiftId =
 	    String(
 	      item?.shiftId || ''
@@ -2244,7 +2241,7 @@
     E.confirmClient.textContent = client.name || '未選択';
     E.confirmService.textContent = service || '未選択';
     E.confirmDateTime.textContent =
-      ``${dateText || (isRule ? '曜日未選択' : '日付未選択')}　${timeText}`;
+      `${dateText || (isRule ? '曜日未選択' : '日付未選択')}　${timeText}`;
 
     E.pcClient.textContent = client.name || '利用者未選択';
     E.pcService.textContent = service || 'サービス未選択';
