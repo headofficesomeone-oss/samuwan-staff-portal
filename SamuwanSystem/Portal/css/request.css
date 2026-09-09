@@ -221,6 +221,56 @@ input[readonly]{background:#f3f6f4;color:var(--muted)}
   margin-bottom:0;
 }
 
+.transport-subbox{
+  margin-top:14px;
+  padding:14px;
+  border:1px solid #dce8e0;
+  border-radius:12px;
+  background:#fff;
+}
+
+.transport-subtitle{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.transport-subtitle strong{
+  font-size:13px;
+  color:var(--green-dark);
+}
+
+.transport-subtitle span{
+  font-size:10px;
+  color:var(--muted);
+}
+
+.transport-two-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px;
+}
+
+.transport-two-grid + .transport-two-grid{
+  margin-top:10px;
+}
+
+@media(max-width:720px){
+  .transport-two-grid{
+    grid-template-columns:1fr;
+  }
+
+  .transport-subtitle{
+    display:block;
+  }
+
+  .transport-subtitle span{
+    display:block;
+    margin-top:3px;
+  }
+}
+
 /* PCフッター左側メッセージ */
 .desktop-footer{
   justify-content:space-between;
