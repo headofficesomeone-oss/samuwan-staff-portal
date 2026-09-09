@@ -292,6 +292,67 @@
 					  <div id="meetingPlaceStatus" class="place-status">場所ID：未選択</div>
 					</div>
 
+          <div class="field-grid two">
+            <label class="field">
+              <span>主担当</span>
+              <select id="mainStaffName">
+                <option value="">指定なし</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>担当2</span>
+              <select id="staff2Name"><option value="">指定なし</option></select>
+            </label>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>担当3</span>
+              <select id="staff3Name"><option value="">指定なし</option></select>
+            </label>
+            <div></div>
+          </div>
+
+          <div class="field-grid two">
+            <label class="field">
+              <span>人数 <small>主担当・担当2から自動計算</small></span>
+              <input id="peopleCount" type="text" value="" readonly aria-readonly="true" placeholder="自動計算">
+            </label>
+            <div></div>
+          </div>
+
+          <div id="staffChangeFields" class="field-grid two hidden">
+            <label class="field">
+              <span>変更前担当 <em>必須</em></span>
+              <select id="oldStaffName"><option value="">選択してください</option></select>
+            </label>
+            <label class="field">
+              <span>変更後担当 <em>必須</em></span>
+              <select id="newStaffName"><option value="">選択してください</option></select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>支援内容</span>
+            <input id="supportContent" placeholder="例：通院介助、買い物同行">
+          </label>
+
+          <label class="field hidden" id="changeContentField">
+            <span>変更内容</span>
+            <input id="changeContent">
+          </label>
+
+          <label class="field" id="changeReasonField">
+            <span>変更理由・キャンセル理由</span>
+            <input id="changeReason">
+          </label>
+
+          <label class="field">
+            <span>特記事項</span>
+            <textarea id="note" rows="4" placeholder="受診内容、待合せ時の注意、持ち物、ご家族からの伝達事項など"></textarea>
+          </label>
+
 					<div class="transport-box">
 					  <div class="transport-box-title">
 					    <strong>移動・送迎</strong>
@@ -410,67 +471,6 @@
 					      placeholder="例：車いす積載あり、家族迎え、支援後は事業所へ送迎"></textarea>
 					  </label>
 					</div>
-
-          <div class="field-grid two">
-            <label class="field">
-              <span>主担当</span>
-              <select id="mainStaffName">
-                <option value="">指定なし</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span>担当2</span>
-              <select id="staff2Name"><option value="">指定なし</option></select>
-            </label>
-          </div>
-
-          <div class="field-grid two">
-            <label class="field">
-              <span>担当3</span>
-              <select id="staff3Name"><option value="">指定なし</option></select>
-            </label>
-            <div></div>
-          </div>
-
-          <div class="field-grid two">
-            <label class="field">
-              <span>人数 <small>主担当・担当2から自動計算</small></span>
-              <input id="peopleCount" type="text" value="" readonly aria-readonly="true" placeholder="自動計算">
-            </label>
-            <div></div>
-          </div>
-
-          <div id="staffChangeFields" class="field-grid two hidden">
-            <label class="field">
-              <span>変更前担当 <em>必須</em></span>
-              <select id="oldStaffName"><option value="">選択してください</option></select>
-            </label>
-            <label class="field">
-              <span>変更後担当 <em>必須</em></span>
-              <select id="newStaffName"><option value="">選択してください</option></select>
-            </label>
-          </div>
-
-          <label class="field">
-            <span>支援内容</span>
-            <input id="supportContent" placeholder="例：通院介助、買い物同行">
-          </label>
-
-          <label class="field hidden" id="changeContentField">
-            <span>変更内容</span>
-            <input id="changeContent">
-          </label>
-
-          <label class="field" id="changeReasonField">
-            <span>変更理由・キャンセル理由</span>
-            <input id="changeReason">
-          </label>
-
-          <label class="field">
-            <span>特記事項</span>
-            <textarea id="note" rows="4" placeholder="受診内容、待合せ時の注意、持ち物、ご家族からの伝達事項など"></textarea>
-          </label>
         </section>
 
         <section class="request-card step-screen confirm-screen" data-step="4">
