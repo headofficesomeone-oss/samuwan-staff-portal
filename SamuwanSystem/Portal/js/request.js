@@ -89,6 +89,17 @@
     backDriver: $('backDriverName'),
     outVehicle: $('outVehicle'),
     backVehicle: $('backVehicle'),
+
+    beforeTransportMeeting: $('beforeTransportMeeting'),
+    beforeTransportMeetingTime: $('beforeTransportMeetingTime'),
+    beforeTransportDriver: $('beforeTransportDriverName'),
+    beforeTransportVehicle: $('beforeTransportVehicle'),
+
+    afterTransportDestination: $('afterTransportDestination'),
+    afterTransportDepartureTime: $('afterTransportDepartureTime'),
+    afterTransportDriver: $('afterTransportDriverName'),
+    afterTransportVehicle: $('afterTransportVehicle'),
+
     transportNote: $('transportNote'),
     staffChangeFields: $('staffChangeFields'),
     oldStaff: $('oldStaffName'),
@@ -253,7 +264,12 @@
     [
       E.client, E.service, E.singleDate,
       E.rangeStart, E.rangeEnd, E.appt, E.apptPurpose, E.moveType,
-      E.outVehicle, E.backVehicle, E.transportNote,
+      E.outVehicle, E.backVehicle,
+      E.beforeTransportMeeting, E.beforeTransportMeetingTime,
+      E.beforeTransportVehicle,
+      E.afterTransportDestination, E.afterTransportDepartureTime,
+      E.afterTransportVehicle,
+      E.transportNote,
       E.mainStaff, E.staff2, E.staff3, E.oldStaff,
       E.newStaff, E.support, E.change, E.reason, E.note
     ].forEach(el => {
@@ -361,8 +377,13 @@
       ).join('');
 
     [E.mainStaff, E.staff2, E.staff3, E.oldStaff, E.newStaff,
-      E.outDriver, E.backDriver]
-      .forEach(select => select.innerHTML = staffHtml);
+      E.outDriver, E.backDriver,
+      E.beforeTransportDriver, E.afterTransportDriver]
+      .forEach(select => {
+        if (select) {
+          select.innerHTML = staffHtml;
+        }
+      });
 
     updatePeopleCount();
   }
@@ -1249,35 +1270,10 @@
         shift.service;
     }
 
-
-		const date =
-		  shift.targetDate ||
-		  shift.date ||
-		  '';
-
-		if (date && E.singleDate) {
-		  state.dateMode = 'single';
-
-		  E.singleDate.value = date;
-
-		  document
-		    .querySelectorAll('[data-date-mode]')
-		    .forEach(btn => {
-		      btn.classList.toggle(
-		        'active',
-		        btn.dataset.dateMode === 'single'
-		      );
-		    });
-
-		  document
-		    .querySelectorAll('[data-date-area]')
-		    .forEach(area => {
-		      area.classList.toggle(
-		        'hidden',
-		        area.dataset.dateArea !== 'single'
-		      );
-		    });
-		}
+    const date =
+      shift.targetDate ||
+      shift.date ||
+      '';
 
 		if (date && E.singleDate) {
 		  state.dateMode = 'single';
@@ -1391,6 +1387,68 @@
       shift.backDriverId,
       shift.backDriverName
     );
+
+    selectOptionByIdOrName_(
+      E.beforeTransportDriver,
+      shift.beforeTransportDriverId ||
+        shift.supportBeforeTransportDriverId,
+      shift.beforeTransportDriverName ||
+        shift.supportBeforeTransportDriverName
+    );
+
+    selectOptionByIdOrName_(
+      E.afterTransportDriver,
+      shift.afterTransportDriverId ||
+        shift.supportAfterTransportDriverId,
+      shift.afterTransportDriverName ||
+        shift.supportAfterTransportDriverName
+    );
+
+    if (E.beforeTransportMeeting) {
+      E.beforeTransportMeeting.value =
+        shift.beforeTransportMeeting ||
+        shift.supportBeforeTransportMeeting ||
+        '';
+    }
+
+    if (E.beforeTransportMeetingTime) {
+      E.beforeTransportMeetingTime.value =
+        String(
+          shift.beforeTransportMeetingTime ||
+          shift.supportBeforeTransportMeetingTime ||
+          ''
+        ).slice(0, 5);
+    }
+
+    if (E.beforeTransportVehicle) {
+      E.beforeTransportVehicle.value =
+        shift.beforeTransportVehicle ||
+        shift.supportBeforeTransportVehicle ||
+        '';
+    }
+
+    if (E.afterTransportDestination) {
+      E.afterTransportDestination.value =
+        shift.afterTransportDestination ||
+        shift.supportAfterTransportDestination ||
+        '';
+    }
+
+    if (E.afterTransportDepartureTime) {
+      E.afterTransportDepartureTime.value =
+        String(
+          shift.afterTransportDepartureTime ||
+          shift.supportAfterTransportDepartureTime ||
+          ''
+        ).slice(0, 5);
+    }
+
+    if (E.afterTransportVehicle) {
+      E.afterTransportVehicle.value =
+        shift.afterTransportVehicle ||
+        shift.supportAfterTransportVehicle ||
+        '';
+    }
 
     if (E.outVehicle) {
       E.outVehicle.value =
@@ -1653,6 +1711,13 @@
 	}
 
   function selected(select) {
+    if (!select) {
+      return {
+        id: '',
+        name: ''
+      };
+    }
+
     return RC.selectedMaster(select);
   }
 
@@ -1922,6 +1987,8 @@
     const staff3 = selected(E.staff3);
     const outDriver = selected(E.outDriver);
     const backDriver = selected(E.backDriver);
+    const beforeTransportDriver = selected(E.beforeTransportDriver);
+    const afterTransportDriver = selected(E.afterTransportDriver);
     const oldStaff = selected(E.oldStaff);
     const newStaff = selected(E.newStaff);
 
@@ -1967,6 +2034,29 @@
       backDriverName: backDriver.name,
       outVehicle: E.outVehicle.value.trim(),
       backVehicle: E.backVehicle.value.trim(),
+
+      beforeTransportMeeting:
+        E.beforeTransportMeeting?.value.trim() || '',
+      beforeTransportMeetingTime:
+        E.beforeTransportMeetingTime?.value || '',
+      beforeTransportDriverId:
+        beforeTransportDriver.id,
+      beforeTransportDriverName:
+        beforeTransportDriver.name,
+      beforeTransportVehicle:
+        E.beforeTransportVehicle?.value.trim() || '',
+
+      afterTransportDestination:
+        E.afterTransportDestination?.value.trim() || '',
+      afterTransportDepartureTime:
+        E.afterTransportDepartureTime?.value || '',
+      afterTransportDriverId:
+        afterTransportDriver.id,
+      afterTransportDriverName:
+        afterTransportDriver.name,
+      afterTransportVehicle:
+        E.afterTransportVehicle?.value.trim() || '',
+
       transportNote: E.transportNote.value.trim(),
 
       oldStaffId: oldStaff.id,
@@ -2112,6 +2202,41 @@
     }
   }
 
+  function effectiveAfterTransportDeparture_(source) {
+    const explicit =
+      String(
+        source?.afterTransportDepartureTime || ''
+      ).trim();
+
+    if (explicit) {
+      return explicit;
+    }
+
+    const hasAfterTransport =
+      [
+        source?.afterTransportDestination,
+        source?.afterTransportDriverName,
+        source?.afterTransportVehicle
+      ]
+        .some(
+          value =>
+            String(value || '').trim()
+        );
+
+    if (!hasAfterTransport) {
+      return '';
+    }
+
+    const supportEnd =
+      String(
+        source?.endTime || ''
+      ).trim();
+
+    return supportEnd
+      ? `${supportEnd}（支援終了時刻）`
+      : '支援終了時刻';
+  }
+
   function renderSuccessSummary(payload, result) {
     if (!E.successSummaryBody) return;
 
@@ -2146,6 +2271,20 @@
       ['行き車両', payload?.outVehicle],
       ['帰りドライバー', payload?.backDriverName],
       ['帰り車両', payload?.backVehicle],
+
+      ['支援前送迎・待合せ', payload?.beforeTransportMeeting],
+      ['支援前送迎・待合せ時間', payload?.beforeTransportMeetingTime],
+      ['支援前送迎・ドライバー', payload?.beforeTransportDriverName],
+      ['支援前送迎・車両', payload?.beforeTransportVehicle],
+
+      ['支援後送迎・行き先', payload?.afterTransportDestination],
+      [
+        '支援後送迎・出発時間',
+        effectiveAfterTransportDeparture_(payload)
+      ],
+      ['支援後送迎・ドライバー', payload?.afterTransportDriverName],
+      ['支援後送迎・車両', payload?.afterTransportVehicle],
+
       ['送迎補足', payload?.transportNote],
       ['支援内容', payload?.supportContent],
       ['特記事項', payload?.note]
@@ -2291,6 +2430,19 @@
 		  }`;
   
 
+    const afterTransportSummarySource = {
+      afterTransportDestination:
+        E.afterTransportDestination?.value.trim() || '',
+      afterTransportDepartureTime:
+        E.afterTransportDepartureTime?.value || '',
+      afterTransportDriverName:
+        selected(E.afterTransportDriver).name,
+      afterTransportVehicle:
+        E.afterTransportVehicle?.value.trim() || '',
+      endTime:
+        E.end.value
+    };
+
     const detail = [
       ['依頼種別', E.type.value],
       ['制度', E.system.value],
@@ -2310,6 +2462,20 @@
       ['行き車両', E.outVehicle.value.trim()],
       ['帰りドライバー', selected(E.backDriver).name],
       ['帰り車両', E.backVehicle.value.trim()],
+
+      ['支援前送迎・待合せ', E.beforeTransportMeeting?.value.trim() || ''],
+      ['支援前送迎・待合せ時間', E.beforeTransportMeetingTime?.value || ''],
+      ['支援前送迎・ドライバー', selected(E.beforeTransportDriver).name],
+      ['支援前送迎・車両', E.beforeTransportVehicle?.value.trim() || ''],
+
+      ['支援後送迎・行き先', E.afterTransportDestination?.value.trim() || ''],
+      [
+        '支援後送迎・出発時間',
+        effectiveAfterTransportDeparture_(afterTransportSummarySource)
+      ],
+      ['支援後送迎・ドライバー', selected(E.afterTransportDriver).name],
+      ['支援後送迎・車両', E.afterTransportVehicle?.value.trim() || ''],
+
       ['送迎補足', E.transportNote.value.trim()],
       ['変更前担当', selected(E.oldStaff).name],
       ['変更後担当', selected(E.newStaff).name],
