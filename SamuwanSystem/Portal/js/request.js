@@ -400,7 +400,7 @@
     },
     request: {
       label: '支援予定依頼',
-      note: '未来の支援予定を登録・変更します。「追加」「変更」「キャンセル」は実際に依頼情報Rへ登録できます。',
+      note: '未来の支援予定を登録・変更します。「追加」「変更」「キャンセル」「担当変更」は実際に依頼情報Rへ登録できます。',
       modes: ['追加', '変更', 'キャンセル', '担当変更', '依頼取消']
     },
     today: {
@@ -423,7 +423,8 @@
       (
         state.processMode === '追加' ||
         state.processMode === '変更' ||
-        state.processMode === 'キャンセル'
+        state.processMode === 'キャンセル' ||
+        state.processMode === '担当変更'
       )
     );
   }
@@ -433,7 +434,8 @@
       state.operationContext === 'request' &&
       (
         state.processMode === '変更' ||
-        state.processMode === 'キャンセル'
+        state.processMode === 'キャンセル' ||
+        state.processMode === '担当変更'
       )
     );
   }
@@ -2264,7 +2266,9 @@
           ? '変更依頼'
           : state.processMode === 'キャンセル'
             ? 'キャンセル依頼'
-            : '依頼';
+            : state.processMode === '担当変更'
+              ? '担当変更依頼'
+              : '依頼';
 
       showMessage(
         result.count > 1
