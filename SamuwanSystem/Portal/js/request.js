@@ -227,6 +227,10 @@
 
     document.querySelectorAll('[data-date-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.disabled) {
+          return;
+        }
+
         state.dateMode = btn.dataset.dateMode;
         document.querySelectorAll('[data-date-mode]')
           .forEach(x => x.classList.toggle('active', x === btn));
@@ -396,7 +400,7 @@
     },
     request: {
       label: '支援予定依頼',
-      note: '未来の支援予定を登録・変更します。「追加」は従来の新規依頼登録として実際に登録できます。',
+      note: '未来の支援予定を登録・変更します。「追加」と「変更」は実際に依頼情報Rへ登録できます。',
       modes: ['追加', '変更', 'キャンセル', '担当変更', '依頼取消']
     },
     today: {
@@ -416,8 +420,56 @@
   function isLiveRegistrationMode_() {
     return (
       state.operationContext === 'request' &&
-      state.processMode === '追加'
+      (
+        state.processMode === '追加' ||
+        state.processMode === '変更'
+      )
     );
+  }
+
+  function isSingleTargetRegistrationMode_() {
+    return (
+      state.operationContext === 'request' &&
+      state.processMode === '変更'
+    );
+  }
+
+  function updateDateModeAvailability_() {
+    const singleOnly =
+      isSingleTargetRegistrationMode_();
+
+    if (singleOnly) {
+      state.dateMode = 'single';
+    }
+
+    document
+      .querySelectorAll('[data-date-mode]')
+      .forEach(btn => {
+        const isSingle =
+          btn.dataset.dateMode === 'single';
+
+        btn.disabled =
+          singleOnly &&
+          !isSingle;
+
+        if (singleOnly) {
+          btn.classList.toggle(
+            'active',
+            isSingle
+          );
+        }
+      });
+
+    if (singleOnly) {
+      document
+        .querySelectorAll('[data-date-area]')
+        .forEach(area => {
+          area.classList.toggle(
+            'hidden',
+            area.dataset.dateArea !== 'single'
+          );
+        });
+    }
   }
 
   function renderProcessModes() {
@@ -532,6 +584,7 @@
         `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
     }
 
+    updateDateModeAvailability_();
     updateRequestMode();
     updateRegistrationAvailability_();
     updateSummary();
@@ -1981,6 +2034,15 @@
   }
 
   function buildPayload() {
+    if (
+      isSingleTargetRegistrationMode_() &&
+      getTargetDates().length > 1
+    ) {
+      throw new Error(
+        '変更依頼は対象シフト1件につき1日で登録してください。'
+      );
+    }
+
     const client = selected(E.client);
     const main = selected(E.mainStaff);
     const staff2 = selected(E.staff2);
@@ -2155,17 +2217,22 @@
       payload = await completePlaces(payload);
       const result = await RC.saveRequest(payload);
 
+      const successLabel =
+        state.processMode === '変更'
+          ? '変更依頼'
+          : '依頼';
+
       showMessage(
         result.count > 1
-          ? `${result.count}日分の依頼を登録しました。`
-          : '依頼を登録しました。',
+          ? `${result.count}日分の${successLabel}を登録しました。`
+          : `${successLabel}を登録しました。`,
         false
       );
 
       showToast(
         result.requestId
-          ? `登録しました：${result.requestId}`
-          : '登録しました'
+          ? `${successLabel}を登録しました：${result.requestId}`
+          : `${successLabel}を登録しました`
       );
 
       state.registered = true;
