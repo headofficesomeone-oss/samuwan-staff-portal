@@ -400,7 +400,7 @@
     },
     request: {
       label: '支援予定依頼',
-      note: '未来の支援予定を登録・変更します。「追加」と「変更」は実際に依頼情報Rへ登録できます。',
+      note: '未来の支援予定を登録・変更します。「追加」「変更」「キャンセル」は実際に依頼情報Rへ登録できます。',
       modes: ['追加', '変更', 'キャンセル', '担当変更', '依頼取消']
     },
     today: {
@@ -422,7 +422,8 @@
       state.operationContext === 'request' &&
       (
         state.processMode === '追加' ||
-        state.processMode === '変更'
+        state.processMode === '変更' ||
+        state.processMode === 'キャンセル'
       )
     );
   }
@@ -430,7 +431,10 @@
   function isSingleTargetRegistrationMode_() {
     return (
       state.operationContext === 'request' &&
-      state.processMode === '変更'
+      (
+        state.processMode === '変更' ||
+        state.processMode === 'キャンセル'
+      )
     );
   }
 
@@ -1824,7 +1828,7 @@
           E.type.value !== '追加' &&
           !E.targetShift.value.trim()
         ) {
-          throw new Error('対象シフトIDを入力してください。');
+          throw new Error('対象支援を検索して選択してください。');
         }
       }
 
@@ -2077,7 +2081,7 @@
       getTargetDates().length > 1
     ) {
       throw new Error(
-        '変更依頼は対象シフト1件につき1日で登録してください。'
+        'この処理は対象シフト1件につき1日で登録してください。'
       );
     }
 
@@ -2258,7 +2262,9 @@
       const successLabel =
         state.processMode === '変更'
           ? '変更依頼'
-          : '依頼';
+          : state.processMode === 'キャンセル'
+            ? 'キャンセル依頼'
+            : '依頼';
 
       showMessage(
         result.count > 1
