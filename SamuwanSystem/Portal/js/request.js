@@ -1771,7 +1771,45 @@
       };
     }
 
-    return RC.selectedMaster(select);
+    // 「指定なし」等の未選択optionは、
+    // 表示文字ではなく空欄として扱う。
+    if (!String(select.value || '').trim()) {
+      return {
+        id: '',
+        name: ''
+      };
+    }
+
+    const item =
+      RC.selectedMaster(select) || {};
+
+    return {
+      id:
+        String(
+          item.id || ''
+        ).trim(),
+      name:
+        requestOptionalSelectionText_(
+          item.name
+        )
+    };
+  }
+
+  function requestOptionalSelectionText_(value) {
+    const text =
+      String(
+        value || ''
+      ).trim();
+
+    if (
+      !text ||
+      text === '指定なし' ||
+      text === '選択してください'
+    ) {
+      return '';
+    }
+
+    return text;
   }
 
   function validateStep(step) {
