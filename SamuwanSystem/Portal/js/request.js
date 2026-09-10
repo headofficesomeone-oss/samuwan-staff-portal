@@ -400,7 +400,7 @@
     },
     request: {
       label: '支援予定依頼',
-      note: '未来の支援予定を登録・変更します。「追加」「変更」「キャンセル」「担当変更」は実際に依頼情報Rへ登録できます。',
+      note: '未来の支援予定を登録・変更します。「追加」「変更」「キャンセル」「担当変更」「依頼取消」は実際に依頼情報Rへ登録できます。',
       modes: ['追加', '変更', 'キャンセル', '担当変更', '依頼取消']
     },
     today: {
@@ -424,8 +424,16 @@
         state.processMode === '追加' ||
         state.processMode === '変更' ||
         state.processMode === 'キャンセル' ||
-        state.processMode === '担当変更'
+        state.processMode === '担当変更' ||
+        state.processMode === '依頼取消'
       )
+    );
+  }
+
+  function isRequestCancelMode_() {
+    return (
+      state.operationContext === 'request' &&
+      state.processMode === '依頼取消'
     );
   }
 
@@ -435,7 +443,8 @@
       (
         state.processMode === '変更' ||
         state.processMode === 'キャンセル' ||
-        state.processMode === '担当変更'
+        state.processMode === '担当変更' ||
+        state.processMode === '依頼取消'
       )
     );
   }
@@ -730,6 +739,9 @@
 	  const isRule =
 	    state.operationContext === 'rule';
 
+	  const isRequestCancel =
+	    isRequestCancelMode_();
+
 	  const targetDate =
 	    String(
 	      E.targetSearchDate?.value || ''
@@ -772,7 +784,9 @@
 	  E.targetSearchStatus.textContent =
 	    isRule
 	      ? 'その曜日の規定値を取得しています...'
-	      : 'その日の支援候補を取得しています...';
+	      : isRequestCancel
+	        ? 'その日の未反映依頼を取得しています...'
+	        : 'その日の支援候補を取得しています...';
 
 	  E.targetSearchResults.innerHTML = '';
 
@@ -786,7 +800,9 @@
 	        searchMode:
         	  isRule
           	    ? 'rule'
-          	    : 'date',
+          	    : isRequestCancel
+          	      ? 'request'
+          	      : 'date',
       	        targetDate:
         	  isRule
           	    ? ''
@@ -1014,6 +1030,11 @@
 	          item.sourceType || ''
 	        ) === 'RULE';
 
+	      const isRequest =
+	        String(
+	          item.sourceType || ''
+	        ) === 'REQUEST';
+
 	      const date =
 	        item.targetDate ||
 	        item.date ||
@@ -1062,7 +1083,9 @@
 	            ${
 	              isRule
 	                ? `<small>適用期間：${esc(applyText)}</small>`
-	                : `<small>シフトID：${esc(item.shiftId || '')}</small>`
+	                : isRequest
+	                  ? `<small>依頼ID：${esc(item.requestId || '')} ／ ${esc(item.requestType || '')} ／ 未反映</small>`
+	                  : `<small>シフトID：${esc(item.shiftId || '')}</small>`
 	            }
 
 	          </div>
@@ -1072,7 +1095,13 @@
 	            class="primary-button"
 	            data-target-index="${index}"
 	          >
-	            ${isRule ? 'この規定値を選択' : 'この支援を選択'}
+	            ${
+	              isRule
+	                ? 'この規定値を選択'
+	                : isRequest
+	                  ? 'この依頼を選択'
+	                  : 'この支援を選択'
+	            }
 	          </button>
 	        </div>
 	      `;
@@ -1143,6 +1172,32 @@
 		    return;
 		  }
 
+		  if (
+		    String(
+		      item.sourceType || ''
+		    ) === 'REQUEST'
+		  ) {
+		    state.selectedTarget = {
+		      ...item
+		    };
+
+		    if (E.targetShift) {
+		      E.targetShift.value =
+		        String(
+		          item.shiftId || ''
+		        ).trim();
+		    }
+
+		    applyTargetShiftToForm_(
+		      state.selectedTarget
+		    );
+
+		    renderSelectedTarget_();
+		    E.targetSearchDialog.close();
+		    updateSummary();
+		    return;
+		  }
+
 	          await selectTargetShift_(
 	            item,
 	            ruleTargetDate
@@ -1177,7 +1232,9 @@
 	  E.targetSearchStatus.textContent =
 	    isRule
 	      ? '利用者と曜日を選んで「候補を表示」を押してください。'
-	      : '利用者と日付を選んで「候補を表示」を押してください。';
+	      : isRequestCancelMode_()
+	        ? '利用者と日付を選んで、取り消す未反映依頼を選択してください。'
+	        : '利用者と日付を選んで「候補を表示」を押してください。';
 	}
 
 	async function selectTargetShift_(item) {
@@ -1827,10 +1884,28 @@
 
         if (
           isLiveRegistrationMode_() &&
-          E.type.value !== '追加' &&
-          !E.targetShift.value.trim()
+          E.type.value !== '追加'
         ) {
-          throw new Error('対象支援を検索して選択してください。');
+          if (
+            isRequestCancelMode_()
+          ) {
+            if (
+              !String(
+                state.selectedTarget?.requestId || ''
+              ).trim()
+            ) {
+              throw new Error(
+                '取り消す依頼を検索して選択してください。'
+              );
+            }
+          }
+          else if (
+            !E.targetShift.value.trim()
+          ) {
+            throw new Error(
+              '対象支援を検索して選択してください。'
+            );
+          }
         }
       }
 
@@ -2101,6 +2176,12 @@
     return {
       requestType: E.type.value,
       targetShiftId: E.targetShift.value.trim(),
+      sourceRequestId:
+        isRequestCancelMode_()
+          ? String(
+              state.selectedTarget?.requestId || ''
+            ).trim()
+          : '',
 
       reporterId: state.user.id,
       reporterName: state.user.name,
@@ -2268,7 +2349,9 @@
             ? 'キャンセル依頼'
             : state.processMode === '担当変更'
               ? '担当変更依頼'
-              : '依頼';
+              : state.processMode === '依頼取消'
+                ? '依頼取消'
+                : '依頼';
 
       showMessage(
         result.count > 1
