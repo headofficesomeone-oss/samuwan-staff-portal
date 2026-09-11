@@ -395,7 +395,7 @@
   const OPERATION_CONTEXTS_ = {
     rule: {
       label: '規定値',
-      note: '今後も繰り返す基本予定を登録・変更する想定です。現在は画面動作確認のみです。',
+      note: '今後も繰り返す基本予定を登録・変更します。「追加」は実際に規定値Mへ登録できます。',
       modes: ['追加', '変更', '担当変更', '取消']
     },
     request: {
@@ -419,13 +419,19 @@
 
   function isLiveRegistrationMode_() {
     return (
-      state.operationContext === 'request' &&
       (
-        state.processMode === '追加' ||
-        state.processMode === '変更' ||
-        state.processMode === 'キャンセル' ||
-        state.processMode === '担当変更' ||
-        state.processMode === '依頼取消'
+        state.operationContext === 'rule' &&
+        state.processMode === '追加'
+      ) ||
+      (
+        state.operationContext === 'request' &&
+        (
+          state.processMode === '追加' ||
+          state.processMode === '変更' ||
+          state.processMode === 'キャンセル' ||
+          state.processMode === '担当変更' ||
+          state.processMode === '依頼取消'
+        )
       )
     );
   }
@@ -2329,7 +2335,7 @@
     }
 
     if (state.registered) {
-      showToast('この依頼は登録済みです。');
+      showToast('この内容は登録済みです。');
       return;
     }
 
@@ -2340,30 +2346,59 @@
       setSaving(true);
 
       payload = await completePlaces(payload);
-      const result = await RC.saveRequest(payload);
+
+      const isRuleAdd =
+        state.operationContext === 'rule' &&
+        state.processMode === '追加';
+
+      const result =
+        isRuleAdd
+          ? await apiPost('rule.save', payload)
+          : await RC.saveRequest(payload);
+
+      if (!result || result.ok === false) {
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '登録できませんでした。'
+        );
+      }
 
       const successLabel =
-        state.processMode === '変更'
-          ? '変更依頼'
-          : state.processMode === 'キャンセル'
-            ? 'キャンセル依頼'
-            : state.processMode === '担当変更'
-              ? '担当変更依頼'
-              : state.processMode === '依頼取消'
-                ? '依頼取消'
-                : '依頼';
+        isRuleAdd
+          ? '規定値'
+          : state.processMode === '変更'
+            ? '変更依頼'
+            : state.processMode === 'キャンセル'
+              ? 'キャンセル依頼'
+              : state.processMode === '担当変更'
+                ? '担当変更依頼'
+                : state.processMode === '依頼取消'
+                  ? '依頼取消'
+                  : '依頼';
 
       showMessage(
         result.count > 1
-          ? `${result.count}日分の${successLabel}を登録しました。`
+          ? (
+              isRuleAdd
+                ? `${result.count}曜日分の${successLabel}を登録しました。`
+                : `${result.count}日分の${successLabel}を登録しました。`
+            )
           : `${successLabel}を登録しました。`,
         false
       );
 
+      const ruleIds =
+        Array.isArray(result.ruleIds)
+          ? result.ruleIds.filter(Boolean)
+          : [];
+
       showToast(
-        result.requestId
-          ? `${successLabel}を登録しました：${result.requestId}`
-          : `${successLabel}を登録しました`
+        isRuleAdd && ruleIds.length
+          ? `${successLabel}を登録しました：${ruleIds.join(', ')}`
+          : result.requestId
+            ? `${successLabel}を登録しました：${result.requestId}`
+            : `${successLabel}を登録しました`
       );
 
       state.registered = true;
@@ -2386,10 +2421,25 @@
     E.confirmActions.classList.add('hidden');
     E.desktopConfirm.classList.add('hidden');
 
+    const ruleIds =
+      Array.isArray(result.ruleIds)
+        ? result.ruleIds.filter(Boolean)
+        : [];
+
     E.successRequestId.textContent =
-      result.requestId
-        ? `依頼ID：${result.requestId}`
-        : (result.count > 1 ? `${result.count}日分登録` : '');
+      ruleIds.length
+        ? `規定値ID：${ruleIds.join(', ')}`
+        : result.requestId
+          ? `依頼ID：${result.requestId}`
+          : (
+              result.count > 1
+                ? (
+                    state.operationContext === 'rule'
+                      ? `${result.count}曜日分登録`
+                      : `${result.count}日分登録`
+                  )
+                : ''
+            );
 
     renderSuccessSummary(payload, result);
     E.successPanel.classList.remove('hidden');
