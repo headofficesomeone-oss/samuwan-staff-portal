@@ -125,6 +125,7 @@
     edit: $('editButton'),
     save: $('saveRequestButton'),
     successPanel: $('successPanel'),
+    successTitle: document.querySelector('#successPanel .success-head strong'),
     successRequestId: $('successRequestId'),
     successSummaryBody: $('successSummaryBody'),
     newRequest: $('newRequestButton'),
@@ -1834,18 +1835,31 @@
   }
 
 	function getRuleWeekdays_() {
-	  return [
-	    ...document.querySelectorAll(
-	      '[data-rule-weekday].active'
-	    )
-	  ]
-	    .map(button =>
-	      String(
-	        button.dataset.ruleWeekday || ''
-	      ).trim()
-	    )
-	    .filter(Boolean);
-	}
+    const weekdayMap = {
+      '0': '日',
+      '1': '月',
+      '2': '火',
+      '3': '水',
+      '4': '木',
+      '5': '金',
+      '6': '土'
+    };
+
+    return [
+      ...document.querySelectorAll(
+        '[data-rule-weekday].active'
+      )
+    ]
+      .map(button => {
+        const value =
+          String(
+            button.dataset.ruleWeekday || ''
+          ).trim();
+
+        return weekdayMap[value] || value;
+      })
+      .filter(Boolean);
+  }
 
   function selected(select) {
     if (!select) {
@@ -2396,7 +2410,7 @@
         result.count > 1
           ? (
               isRuleAdd
-                ? `${result.count}曜日分の${successLabel}を登録しました。`
+                ? `${result.count}件の${successLabel}を登録しました。`
                 : `${result.count}日分の${successLabel}を登録しました。`
             )
           : `${successLabel}を登録しました。`,
@@ -2436,6 +2450,28 @@
     E.confirmActions.classList.add('hidden');
     E.desktopConfirm.classList.add('hidden');
 
+    const isRuleRegistration =
+      state.operationContext === 'rule';
+
+    if (E.successTitle) {
+      E.successTitle.textContent =
+        isRuleRegistration
+          ? '規定値を登録しました'
+          : '依頼を登録しました';
+    }
+
+    if (E.newRequest) {
+      E.newRequest.textContent =
+        isRuleRegistration
+          ? '新しい規定値を入力'
+          : '新しい依頼を入力';
+    }
+
+    E.viewRegistered?.classList.toggle(
+      'hidden',
+      isRuleRegistration
+    );
+
     const ruleIds =
       Array.isArray(result.ruleIds)
         ? result.ruleIds.filter(Boolean)
@@ -2450,7 +2486,7 @@
               result.count > 1
                 ? (
                     state.operationContext === 'rule'
-                      ? `${result.count}曜日分登録`
+                      ? `${result.count}件登録`
                       : `${result.count}日分登録`
                   )
                 : ''
@@ -2561,11 +2597,16 @@
   }
 
   function resetForNewRequest() {
+    const nextContext =
+      state.operationContext === 'rule'
+        ? 'rule'
+        : 'request';
+
     setReviewInputLock_(false);
     state.registered = false;
     state.step = 1;
     state.dateMode = 'single';
-    state.operationContext = 'request';
+    state.operationContext = nextContext;
     state.processMode = '追加';
     state.selectedTarget = null;
     state.place.destination = { inputName: '', placeId: '' };
@@ -2595,6 +2636,28 @@
     document.querySelectorAll('[data-weekday]').forEach(btn => {
       btn.classList.remove('active');
     });
+    document.querySelectorAll('[data-rule-weekday]').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    if (E.successTitle) {
+      E.successTitle.textContent =
+        state.operationContext === 'rule'
+          ? '規定値を登録しました'
+          : '依頼を登録しました';
+    }
+
+    if (E.newRequest) {
+      E.newRequest.textContent =
+        state.operationContext === 'rule'
+          ? '新しい規定値を入力'
+          : '新しい依頼を入力';
+    }
+
+    E.viewRegistered?.classList.toggle(
+      'hidden',
+      state.operationContext === 'rule'
+    );
 
     const rows = [...E.multiList.querySelectorAll('.multi-date-row')];
     rows.slice(1).forEach(row => row.remove());
