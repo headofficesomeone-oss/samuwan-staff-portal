@@ -477,8 +477,8 @@
           <div class="section-title">
             <span class="step-number">4</span>
             <div>
-              <h2>入力内容の確認</h2>
-              <p>登録前に内容を確認してください。</p>
+              <h2 id="confirmSectionTitle">入力内容の確認</h2>
+              <p id="confirmSectionNote">登録前に内容を確認してください。</p>
             </div>
           </div>
 
@@ -490,6 +490,22 @@
 
           <h3 class="detail-heading">その他の依頼内容</h3>
           <div id="confirmDetail" class="confirm-detail"></div>
+
+          <div id="successPanel" class="hidden" role="status" style="margin-top:18px">
+            <div class="confirm-important">
+              <div>
+                <span>登録結果</span>
+                <strong id="successTitle">登録しました</strong>
+                <small id="successRequestId" style="display:block;margin-top:4px"></small>
+              </div>
+            </div>
+
+            <div class="success-actions">
+              <button type="button" id="newRequestButton" class="primary-button">新しい依頼を入力</button>
+              <button type="button" id="viewRegisteredButton" class="secondary-button">登録済み依頼を見る</button>
+              <button type="button" id="successPortalButton" class="secondary-button">ポータルへ戻る</button>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -592,30 +608,10 @@
   </div>
 </dialog>
 
-<div id="successPanel" class="success-panel hidden" role="status">
-  <div class="success-head">
-    <div>
-      <strong>依頼を登録しました</strong>
-      <span id="successRequestId"></span>
-    </div>
-  </div>
-
-  <div class="success-summary">
-    <div class="success-summary-title">今回登録した内容</div>
-    <div id="successSummaryBody" class="success-summary-body"></div>
-  </div>
-
-  <div class="success-actions">
-    <button type="button" id="newRequestButton" class="primary-button">新しい依頼を入力</button>
-    <button type="button" id="viewRegisteredButton" class="secondary-button">登録済み依頼を見る</button>
-    <button type="button" id="successPortalButton" class="secondary-button">ポータルへ戻る</button>
-  </div>
-</div>
-
 <div id="toast" class="toast hidden"></div>
 
 <script src="./js/common.js?v=20260903-7"></script>
 <script src="./js/request-common.js?v=20260904-driver-nav1"></script>
-<script src="./js/request.js?v=20260910-cancel16"></script>
+<script src="./js/request.js?v=20260911-inline-success1"></script>
 </body>
 </html>
