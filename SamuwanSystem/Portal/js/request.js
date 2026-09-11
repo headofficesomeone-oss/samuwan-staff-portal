@@ -19,7 +19,8 @@
     operationContext: 'request',
     processMode: '追加',
     selectedTarget: null,
-    targetCandidates: []
+    targetCandidates: [],
+    reviewLocked: false
   };
 
   const E = {
@@ -307,6 +308,9 @@
     E.prev.addEventListener('click', () => {
       if (state.step > 1) {
         state.step--;
+        if (state.step < 4) {
+          setReviewInputLock_(false);
+        }
         updateView();
       }
     });
@@ -315,6 +319,10 @@
       if (state.step < 4) {
         if (!validateStep(state.step)) return;
         state.step++;
+        if (state.step === 4) {
+          updateSummary();
+          setReviewInputLock_(true);
+        }
         updateView();
         return;
       }
@@ -325,6 +333,7 @@
     E.pcPreview.addEventListener('click', showConfirmDesktop);
 
     E.edit.addEventListener('click', () => {
+      setReviewInputLock_(false);
       E.confirmActions.classList.add('hidden');
       E.desktopConfirm.classList.remove('hidden');
       if (mobileQuery.matches) {
@@ -350,6 +359,12 @@
         const target = Number(btn.dataset.stepJump || 1);
         if (target <= state.step || target === 4) {
           state.step = target;
+          if (state.step < 4) {
+            setReviewInputLock_(false);
+          } else if (state.step === 4) {
+            updateSummary();
+            setReviewInputLock_(true);
+          }
           updateView();
         }
       });
@@ -2546,6 +2561,7 @@
   }
 
   function resetForNewRequest() {
+    setReviewInputLock_(false);
     state.registered = false;
     state.step = 1;
     state.dateMode = 'single';
@@ -2609,10 +2625,28 @@
     updateSummary();
   }
 
+  function setReviewInputLock_(locked) {
+    state.reviewLocked = !!locked;
+
+    document
+      .querySelectorAll('[data-step="1"], [data-step="2"], [data-step="3"]')
+      .forEach(section => {
+        section.inert = !!locked;
+
+        if (locked) {
+          section.setAttribute('aria-disabled', 'true');
+        } else {
+          section.removeAttribute('aria-disabled');
+        }
+      });
+  }
+
   function showConfirmDesktop() {
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     updateSummary();
+    setReviewInputLock_(true);
+
     document.querySelector('[data-step="4"]')
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
