@@ -125,9 +125,13 @@
     edit: $('editButton'),
     save: $('saveRequestButton'),
     successPanel: $('successPanel'),
-    successTitle: document.querySelector('#successPanel .success-head strong'),
+    successTitle: $('successTitle'),
     successRequestId: $('successRequestId'),
-    successSummaryBody: $('successSummaryBody'),
+    confirmSectionTitle: $('confirmSectionTitle'),
+    confirmSectionNote: $('confirmSectionNote'),
+    desktopFooter: document.querySelector('.desktop-footer'),
+    mobileFooter: document.querySelector('.mobile-footer'),
+    pcSummary: document.querySelector('.pc-summary'),
     newRequest: $('newRequestButton'),
     viewRegistered: $('viewRegisteredButton'),
     successPortal: $('successPortalButton'),
@@ -2453,12 +2457,44 @@
     const isRuleRegistration =
       state.operationContext === 'rule';
 
+    const ruleIds =
+      Array.isArray(result.ruleIds)
+        ? result.ruleIds.filter(Boolean)
+        : [];
+
+    if (E.confirmSectionTitle) {
+      E.confirmSectionTitle.textContent =
+        isRuleRegistration
+          ? '登録した規定値'
+          : '登録した依頼内容';
+    }
+
+    if (E.confirmSectionNote) {
+      E.confirmSectionNote.textContent =
+        '登録が完了しました。登録内容を確認できます。';
+    }
+
     if (E.successTitle) {
       E.successTitle.textContent =
         isRuleRegistration
           ? '規定値を登録しました'
           : '依頼を登録しました';
     }
+
+    E.successRequestId.textContent =
+      ruleIds.length
+        ? `規定値ID：${ruleIds.join(', ')}`
+        : result.requestId
+          ? `依頼ID：${result.requestId}`
+          : (
+              result.count > 1
+                ? (
+                    isRuleRegistration
+                      ? `${result.count}件登録`
+                      : `${result.count}日分登録`
+                  )
+                : ''
+            );
 
     if (E.newRequest) {
       E.newRequest.textContent =
@@ -2472,34 +2508,21 @@
       isRuleRegistration
     );
 
-    const ruleIds =
-      Array.isArray(result.ruleIds)
-        ? result.ruleIds.filter(Boolean)
-        : [];
+    // 登録後は中央の確認内容と次の操作だけを残す。
+    E.desktopFooter?.classList.add('hidden');
+    E.mobileFooter?.classList.add('hidden');
+    E.pcSummary?.classList.add('hidden');
 
-    E.successRequestId.textContent =
-      ruleIds.length
-        ? `規定値ID：${ruleIds.join(', ')}`
-        : result.requestId
-          ? `依頼ID：${result.requestId}`
-          : (
-              result.count > 1
-                ? (
-                    state.operationContext === 'rule'
-                      ? `${result.count}件登録`
-                      : `${result.count}日分登録`
-                  )
-                : ''
-            );
-
-    renderSuccessSummary(payload, result);
     E.successPanel.classList.remove('hidden');
 
-    if (mobileQuery.matches) {
-      E.next.textContent = '登録済み';
-      E.prev.classList.add('hidden');
-    }
+    document
+      .querySelector('[data-step="4"]')
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
   }
+
 
   function effectiveAfterTransportDeparture_(source) {
     const explicit =
@@ -2536,64 +2559,9 @@
       : '支援終了時刻';
   }
 
-  function renderSuccessSummary(payload, result) {
-    if (!E.successSummaryBody) return;
-
-    const dates = RC.uniqueDates(payload?.targetDates || []);
-    const dateText = formatDates(dates);
-    const timeText =
-      payload?.startTime
-        ? `${payload.startTime}${payload.endTime ? `～${payload.endTime}` : ''}`
-        : '';
-
-    const rows = [
-      ['利用者', payload?.clientName],
-      ['制度', payload?.system],
-      ['サービス', payload?.service],
-      ['日時', [dateText, timeText].filter(Boolean).join('　')],
-      ['支援時間数',
-        payload?.durationHours !== '' && payload?.durationHours != null
-          ? `${payload.durationHours}時間`
-          : ''
-      ],
-      ['人数', payload?.people ? `${payload.people}人` : ''],
-      ['行き先', payload?.destination],
-      ['行き先場所ID', payload?.destinationPlaceId],
-      ['待合せ場所', payload?.meetingPlace],
-      ['待合せ場所ID', payload?.meetingPlaceId],
-      ['予約内容', payload?.appointmentPurpose],
-      ['移動手段', payload?.moveType],
-      ['主担当', payload?.mainStaffName],
-      ['担当2', payload?.staff2Name],
-      ['担当3', payload?.staff3Name],
-      ['行きドライバー', payload?.outDriverName],
-      ['行き車両', payload?.outVehicle],
-      ['帰りドライバー', payload?.backDriverName],
-      ['帰り車両', payload?.backVehicle],
-
-      ['支援前送迎・待合せ', payload?.beforeTransportMeeting],
-      ['支援前送迎・待合せ時間', payload?.beforeTransportMeetingTime],
-      ['支援前送迎・ドライバー', payload?.beforeTransportDriverName],
-      ['支援前送迎・車両', payload?.beforeTransportVehicle],
-
-      ['支援後送迎・行き先', payload?.afterTransportDestination],
-      [
-        '支援後送迎・出発時間',
-        effectiveAfterTransportDeparture_(payload)
-      ],
-      ['支援後送迎・ドライバー', payload?.afterTransportDriverName],
-      ['支援後送迎・車両', payload?.afterTransportVehicle],
-
-      ['送迎補足', payload?.transportNote],
-      ['支援内容', payload?.supportContent],
-      ['特記事項', payload?.note]
-    ].filter(([, value]) => String(value ?? '').trim());
-
-    E.successSummaryBody.innerHTML = rows.length
-      ? rows.map(([label, value]) =>
-          `<div class="success-summary-row"><b>${esc(label)}</b><span>${esc(value)}</span></div>`
-        ).join('')
-      : '<div class="success-summary-row"><b>内容</b><span>登録済み</span></div>';
+  function renderSuccessSummary() {
+    // 登録後は既存の「入力内容の確認」をそのまま表示するため、
+    // 二重の登録内容一覧は作成しません。
   }
 
   function resetForNewRequest() {
@@ -2674,7 +2642,21 @@
     updatePeopleCount();
 
     E.successPanel.classList.add('hidden');
-    if (E.successSummaryBody) E.successSummaryBody.innerHTML = '';
+
+    if (E.confirmSectionTitle) {
+      E.confirmSectionTitle.textContent =
+        '入力内容の確認';
+    }
+
+    if (E.confirmSectionNote) {
+      E.confirmSectionNote.textContent =
+        '登録前に内容を確認してください。';
+    }
+
+    E.desktopFooter?.classList.remove('hidden');
+    E.mobileFooter?.classList.remove('hidden');
+    E.pcSummary?.classList.remove('hidden');
+
     E.desktopConfirm.classList.remove('hidden');
     E.desktopConfirm.disabled = false;
     E.edit.disabled = false;
