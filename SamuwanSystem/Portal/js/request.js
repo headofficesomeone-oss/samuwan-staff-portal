@@ -441,7 +441,10 @@
     return (
       (
         state.operationContext === 'rule' &&
-        state.processMode === '追加'
+        (
+          state.processMode === '追加' ||
+          state.processMode === '変更'
+        )
       ) ||
       (
         state.operationContext === 'request' &&
@@ -460,6 +463,13 @@
     return (
       state.operationContext === 'request' &&
       state.processMode === '依頼取消'
+    );
+  }
+
+  function isRuleChangeMode_() {
+    return (
+      state.operationContext === 'rule' &&
+      state.processMode === '変更'
     );
   }
 
@@ -1153,50 +1163,54 @@
 	            return;
 	          }
 
-	          let ruleTargetDate = '';
-
 	          if (
-	            String(
-	              item.sourceType || ''
-	            ) === 'RULE'
-	          ) {
-	            const input =
-	              E.targetSearchResults
-	                .querySelector(
-	                  `[data-rule-target-date-index="${index}"]`
-	                );
+            String(
+              item.sourceType || ''
+            ) === 'RULE'
+          ) {
+            state.selectedTarget = {
+              ...item
+            };
 
-	            ruleTargetDate =
-	              String(
-	                input?.value || ''
-	              ).trim();
+            if (E.targetShift) {
+              E.targetShift.value = '';
+            }
 
-	            if (!ruleTargetDate) {
-	              E.targetSearchStatus.textContent =
-	                '今回変更・取消する具体的な対象日を選択してください。';
-	              input?.focus();
-	              return;
-	            }
-	          }
+            applyTargetShiftToForm_(
+              state.selectedTarget
+            );
 
-		  if (
-		    String(
-		      item.sourceType || ''
-		    ) === 'RULE'
-		  ) {
-		    state.selectedTarget = {
-		      ...item
-		    };
+            const weekdayMap = {
+              '0': '日',
+              '1': '月',
+              '2': '火',
+              '3': '水',
+              '4': '木',
+              '5': '金',
+              '6': '土'
+            };
 
-		    if (E.targetShift) {
-		      E.targetShift.value = '';
-		    }
+            document
+              .querySelectorAll('[data-rule-weekday]')
+              .forEach(button => {
+                const value =
+                  weekdayMap[
+                    String(
+                      button.dataset.ruleWeekday || ''
+                    ).trim()
+                  ] || '';
 
-		    renderSelectedTarget_();
-		    E.targetSearchDialog.close();
-		    updateSummary();
-		    return;
-		  }
+                button.classList.toggle(
+                  'active',
+                  value === String(item.weekday || '').trim()
+                );
+              });
+
+            renderSelectedTarget_();
+            E.targetSearchDialog.close();
+            updateSummary();
+            return;
+          }
 
 		  if (
 		    String(
@@ -1225,8 +1239,7 @@
 		  }
 
 	          await selectTargetShift_(
-	            item,
-	            ruleTargetDate
+	            item
 	          );
 	        }
 	      );
@@ -1657,10 +1670,23 @@
       target.service ||
       '';
 
+    const isRuleTarget =
+      String(
+        target.sourceType || ''
+      ) === 'RULE';
+
     const date =
-      target.targetDate ||
-      target.date ||
-      '';
+      isRuleTarget
+        ? (
+            target.weekday
+              ? `${target.weekday}曜日`
+              : ''
+          )
+        : (
+            target.targetDate ||
+            target.date ||
+            ''
+          );
 
     const start =
       target.startTime ||
@@ -1693,11 +1719,21 @@
         .join('　');
 
     E.selectedTargetShiftId.textContent =
-      'シフトID：' +
-      (
-        target.shiftId ||
-        ''
-      );
+      isRuleTarget
+        ? (
+            '規定値ID：' +
+            (
+              target.ruleId ||
+              ''
+            )
+          )
+        : (
+            'シフトID：' +
+            (
+              target.shiftId ||
+              ''
+            )
+          );
   }
 
   function clearSelectedTarget_() {
@@ -1714,8 +1750,20 @@
 
   function updateRequestMode() {
     const type = E.type.value;
-    E.staffChangeFields.classList.toggle('hidden', type !== '担当変更');
-    E.changeField.classList.toggle('hidden', type !== '変更');
+
+    E.staffChangeFields.classList.toggle(
+      'hidden',
+      type !== '担当変更'
+    );
+
+    E.changeField.classList.toggle(
+      'hidden',
+      !(
+        state.operationContext === 'request' &&
+        type === '変更'
+      )
+    );
+
     updateRegistrationAvailability_();
     updateSummary();
   }
@@ -1939,6 +1987,19 @@
             }
           }
           else if (
+            isRuleChangeMode_()
+          ) {
+            if (
+              !String(
+                state.selectedTarget?.ruleId || ''
+              ).trim()
+            ) {
+              throw new Error(
+                '変更する規定値を検索して選択してください。'
+              );
+            }
+          }
+          else if (
             !E.targetShift.value.trim()
           ) {
             throw new Error(
@@ -1958,6 +2019,15 @@
 			        '曜日を1つ以上選択してください。'
 			      );
 			    }
+
+          if (
+            isRuleChangeMode_() &&
+            weekdays.length !== 1
+          ) {
+            throw new Error(
+              '規定値の変更では曜日を1つだけ選択してください。'
+            );
+          }
 
 			    if (!E.start.value) {
 			      throw new Error(
@@ -2215,6 +2285,12 @@
     return {
       requestType: E.type.value,
       targetShiftId: E.targetShift.value.trim(),
+      targetRuleId:
+        state.operationContext === 'rule'
+          ? String(
+              state.selectedTarget?.ruleId || ''
+            ).trim()
+          : '',
       sourceRequestId:
         isRequestCancelMode_()
           ? String(
@@ -2384,10 +2460,16 @@
         state.operationContext === 'rule' &&
         state.processMode === '追加';
 
+      const isRuleChange =
+        state.operationContext === 'rule' &&
+        state.processMode === '変更';
+
       const result =
         isRuleAdd
           ? await apiPost('rule.save', payload)
-          : await RC.saveRequest(payload);
+          : isRuleChange
+            ? await apiPost('rule.update', payload)
+            : await RC.saveRequest(payload);
 
       if (!result || result.ok === false) {
         throw new Error(
@@ -2398,7 +2480,7 @@
       }
 
       const successLabel =
-        isRuleAdd
+        (isRuleAdd || isRuleChange)
           ? '規定値'
           : state.processMode === '変更'
             ? '変更依頼'
@@ -2411,13 +2493,15 @@
                   : '依頼';
 
       showMessage(
-        result.count > 1
-          ? (
-              isRuleAdd
-                ? `${result.count}件の${successLabel}を登録しました。`
-                : `${result.count}日分の${successLabel}を登録しました。`
-            )
-          : `${successLabel}を登録しました。`,
+        isRuleChange
+          ? '規定値を変更しました。'
+          : result.count > 1
+            ? (
+                isRuleAdd
+                  ? `${result.count}件の${successLabel}を登録しました。`
+                  : `${result.count}日分の${successLabel}を登録しました。`
+              )
+            : `${successLabel}を登録しました。`,
         false
       );
 
@@ -2427,9 +2511,11 @@
           : [];
 
       showToast(
-        isRuleAdd && ruleIds.length
-          ? `${successLabel}を登録しました：${ruleIds.join(', ')}`
-          : result.requestId
+        isRuleChange && result.ruleId
+          ? `規定値を変更しました：${result.ruleId}`
+          : isRuleAdd && ruleIds.length
+            ? `${successLabel}を登録しました：${ruleIds.join(', ')}`
+            : result.requestId
             ? `${successLabel}を登録しました：${result.requestId}`
             : `${successLabel}を登録しました`
       );
@@ -2462,10 +2548,23 @@
         ? result.ruleIds.filter(Boolean)
         : [];
 
+    const changedRuleId =
+      String(
+        result.ruleId || ''
+      ).trim();
+
+    const isRuleChange =
+      isRuleRegistration &&
+      state.processMode === '変更';
+
     if (E.confirmSectionTitle) {
       E.confirmSectionTitle.textContent =
         isRuleRegistration
-          ? '登録した規定値'
+          ? (
+              isRuleChange
+                ? '変更した規定値'
+                : '登録した規定値'
+            )
           : '登録した依頼内容';
     }
 
@@ -2477,14 +2576,20 @@
     if (E.successTitle) {
       E.successTitle.textContent =
         isRuleRegistration
-          ? '規定値を登録しました'
+          ? (
+              isRuleChange
+                ? '規定値を変更しました'
+                : '規定値を登録しました'
+            )
           : '依頼を登録しました';
     }
 
     E.successRequestId.textContent =
-      ruleIds.length
-        ? `規定値ID：${ruleIds.join(', ')}`
-        : result.requestId
+      changedRuleId
+        ? `規定値ID：${changedRuleId}`
+        : ruleIds.length
+          ? `規定値ID：${ruleIds.join(', ')}`
+          : result.requestId
           ? `依頼ID：${result.requestId}`
           : (
               result.count > 1
@@ -2582,11 +2687,10 @@
 
     E.form.reset();
 
-		state.operationContext = 'request';
-
-		if (E.operationContextSelect) {
-		  E.operationContextSelect.value = 'request';
-		}
+    if (E.operationContextSelect) {
+      E.operationContextSelect.value =
+        state.operationContext;
+    }
       
     E.type.value = '追加';
     renderProcessModes();
