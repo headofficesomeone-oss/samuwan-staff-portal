@@ -444,7 +444,8 @@
         (
           state.processMode === '追加' ||
           state.processMode === '変更' ||
-          state.processMode === '担当変更'
+          state.processMode === '担当変更' ||
+          state.processMode === '取消'
         )
       ) ||
       (
@@ -481,10 +482,18 @@
     );
   }
 
+  function isRuleCancelMode_() {
+    return (
+      state.operationContext === 'rule' &&
+      state.processMode === '取消'
+    );
+  }
+
   function isRuleSingleTargetMode_() {
     return (
       isRuleChangeMode_() ||
-      isRuleStaffChangeMode_()
+      isRuleStaffChangeMode_() ||
+      isRuleCancelMode_()
     );
   }
 
@@ -2010,9 +2019,11 @@
               ).trim()
             ) {
               throw new Error(
-                isRuleStaffChangeMode_()
-                  ? '担当変更する規定値を検索して選択してください。'
-                  : '変更する規定値を検索して選択してください。'
+                isRuleCancelMode_()
+                  ? '取り消す規定値を検索して選択してください。'
+                  : isRuleStaffChangeMode_()
+                    ? '担当変更する規定値を検索して選択してください。'
+                    : '変更する規定値を検索して選択してください。'
               );
             }
           }
@@ -2042,7 +2053,7 @@
             weekdays.length !== 1
           ) {
             throw new Error(
-              '規定値の変更・担当変更では曜日を1つだけ選択してください。'
+              '規定値の変更・担当変更・取消では曜日を1つだけ選択してください。'
             );
           }
 
@@ -2485,6 +2496,10 @@
         state.operationContext === 'rule' &&
         state.processMode === '担当変更';
 
+      const isRuleCancel =
+        state.operationContext === 'rule' &&
+        state.processMode === '取消';
+
       const result =
         isRuleAdd
           ? await apiPost('rule.save', payload)
@@ -2492,7 +2507,9 @@
             ? await apiPost('rule.update', payload)
             : isRuleStaffChange
               ? await apiPost('rule.staffchange.apply', payload)
-              : await RC.saveRequest(payload);
+              : isRuleCancel
+                ? await apiPost('rule.cancel.apply', payload)
+                : await RC.saveRequest(payload);
 
       if (!result || result.ok === false) {
         throw new Error(
@@ -2503,7 +2520,7 @@
       }
 
       const successLabel =
-        (isRuleAdd || isRuleChange || isRuleStaffChange)
+        (isRuleAdd || isRuleChange || isRuleStaffChange || isRuleCancel)
           ? '規定値'
           : state.processMode === '変更'
             ? '変更依頼'
@@ -2516,11 +2533,13 @@
                   : '依頼';
 
       showMessage(
-        isRuleStaffChange
-          ? '規定値の担当を変更しました。'
-          : isRuleChange
-            ? '規定値を変更しました。'
-            : result.count > 1
+        isRuleCancel
+          ? '規定値を取り消しました。'
+          : isRuleStaffChange
+            ? '規定値の担当を変更しました。'
+            : isRuleChange
+              ? '規定値を変更しました。'
+              : result.count > 1
             ? (
                 isRuleAdd
                   ? `${result.count}件の${successLabel}を登録しました。`
@@ -2536,11 +2555,13 @@
           : [];
 
       showToast(
-        isRuleStaffChange && result.ruleId
-          ? `規定値の担当を変更しました：${result.ruleId}`
-          : isRuleChange && result.ruleId
-            ? `規定値を変更しました：${result.ruleId}`
-            : isRuleAdd && ruleIds.length
+        isRuleCancel && result.ruleId
+          ? `規定値を取り消しました：${result.ruleId}`
+          : isRuleStaffChange && result.ruleId
+            ? `規定値の担当を変更しました：${result.ruleId}`
+            : isRuleChange && result.ruleId
+              ? `規定値を変更しました：${result.ruleId}`
+              : isRuleAdd && ruleIds.length
             ? `${successLabel}を登録しました：${ruleIds.join(', ')}`
             : result.requestId
             ? `${successLabel}を登録しました：${result.requestId}`
@@ -2588,15 +2609,21 @@
       isRuleRegistration &&
       state.processMode === '担当変更';
 
+    const isRuleCancel =
+      isRuleRegistration &&
+      state.processMode === '取消';
+
     if (E.confirmSectionTitle) {
       E.confirmSectionTitle.textContent =
         isRuleRegistration
           ? (
-              isRuleStaffChange
-                ? '担当変更した規定値'
-                : isRuleChange
-                  ? '変更した規定値'
-                  : '登録した規定値'
+              isRuleCancel
+                ? '取り消した規定値'
+                : isRuleStaffChange
+                  ? '担当変更した規定値'
+                  : isRuleChange
+                    ? '変更した規定値'
+                    : '登録した規定値'
             )
           : '登録した依頼内容';
     }
@@ -2610,11 +2637,13 @@
       E.successTitle.textContent =
         isRuleRegistration
           ? (
-              isRuleStaffChange
-                ? '規定値の担当を変更しました'
-                : isRuleChange
-                  ? '規定値を変更しました'
-                  : '規定値を登録しました'
+              isRuleCancel
+                ? '規定値を取り消しました'
+                : isRuleStaffChange
+                  ? '規定値の担当を変更しました'
+                  : isRuleChange
+                    ? '規定値を変更しました'
+                    : '規定値を登録しました'
             )
           : '依頼を登録しました';
     }
