@@ -3691,6 +3691,14 @@
 
 
   function lockAfterSuccess(result, payload) {
+    document.body.classList.add(
+      'registered-mode'
+    );
+
+    document.body.classList.remove(
+      'review-mode'
+    );
+
     E.next.disabled = true;
     E.save.disabled = true;
     E.desktopConfirm.disabled = true;
@@ -3842,12 +3850,6 @@
       );
     });
 
-    document
-      .querySelector('[data-step="4"]')
-      ?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
   }
 
 
@@ -3898,6 +3900,11 @@
         : 'request';
 
     setReviewInputLock_(false);
+
+    document.body.classList.remove(
+      'registered-mode'
+    );
+
     state.registered = false;
     state.step = 1;
     state.dateMode = 'single';
@@ -4034,6 +4041,11 @@
   function setReviewInputLock_(locked) {
     state.reviewLocked = !!locked;
 
+    document.body.classList.toggle(
+      'review-mode',
+      !!locked
+    );
+
     document
       .querySelectorAll(
         '[data-step="1"], [data-step="2"], [data-step="3"], .request-mode-panel, .mobile-progress'
@@ -4063,8 +4075,12 @@
     updateSummary();
     setReviewInputLock_(true);
 
-    document.querySelector('[data-step="4"]')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    requestAnimationFrame(() => {
+      scrollToVisibleTop_(
+        document.querySelector('[data-step="4"]'),
+        14
+      );
+    });
 
     E.desktopConfirm.classList.add('hidden');
     E.confirmActions.classList.remove('hidden');
