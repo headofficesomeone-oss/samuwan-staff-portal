@@ -523,6 +523,20 @@
     );
   }
 
+  function isRequestStaffChangeMode_() {
+    return (
+      state.operationContext === 'request' &&
+      state.processMode === '担当変更'
+    );
+  }
+
+  function isMultiStaffChangeMode_() {
+    return (
+      isRuleStaffChangeMode_() ||
+      isRequestStaffChangeMode_()
+    );
+  }
+
   function isRuleCancelMode_() {
     return (
       state.operationContext === 'rule' &&
@@ -1478,6 +1492,7 @@
       }
 
 	    renderSelectedTarget_();
+      updateRulePresentation_();
 
 	    E.targetSearchDialog.close();
 
@@ -1923,7 +1938,8 @@
       'hidden',
       !(
         type === '担当変更' &&
-        state.operationContext !== 'rule'
+        state.operationContext !== 'rule' &&
+        state.operationContext !== 'request'
       )
     );
 
@@ -2111,8 +2127,23 @@
     }
 
     if (E.ruleStep2Summary) {
+      const firstRow =
+        state.operationContext === 'rule'
+          ? [
+              '曜日',
+              target.weekday
+                ? `${target.weekday}曜日`
+                : ''
+            ]
+          : [
+              '対象日',
+              target.targetDate ||
+              target.date ||
+              ''
+            ];
+
       const rows = [
-        ['曜日', target.weekday ? `${target.weekday}曜日` : ''],
+        firstRow,
         [
           '時間',
           [
@@ -2261,7 +2292,7 @@
 
   function ensureRuleStaffChangeRows_() {
     if (
-      !isRuleStaffChangeMode_() ||
+      !isMultiStaffChangeMode_() ||
       !state.selectedTarget ||
       !E.ruleStaffChangeRows
     ) {
@@ -2348,9 +2379,26 @@
     const isRule =
       state.operationContext === 'rule';
 
+    const isRequest =
+      state.operationContext === 'request';
+
     const nonAdd =
       isRule &&
       state.processMode !== '追加';
+
+    const compactRuleMode =
+      nonAdd &&
+      (
+        state.processMode === '担当変更' ||
+        state.processMode === '取消'
+      );
+
+    const compactRequestStaffMode =
+      isRequestStaffChangeMode_();
+
+    const compactMode =
+      compactRuleMode ||
+      compactRequestStaffMode;
 
     document.body.classList.toggle(
       'rule-target-mode',
@@ -2359,23 +2407,18 @@
 
     document.body.classList.toggle(
       'rule-compact-step2',
-      nonAdd &&
-      (
-        state.processMode === '担当変更' ||
-        state.processMode === '取消'
-      )
+      compactMode
     );
 
     document.body.classList.toggle(
       'rule-compact-step3',
-      nonAdd &&
-      (
-        state.processMode === '担当変更' ||
-        state.processMode === '取消'
-      )
+      compactMode
     );
 
-    if (isRule && nonAdd) {
+    if (
+      (isRule && nonAdd) ||
+      compactRequestStaffMode
+    ) {
       [E.client, E.system, E.service]
         .filter(Boolean)
         .forEach(element => {
@@ -2392,30 +2435,18 @@
 
     E.ruleStep2Summary?.classList.toggle(
       'hidden',
-      !(
-        nonAdd &&
-        (
-          state.processMode === '担当変更' ||
-          state.processMode === '取消'
-        )
-      )
+      !compactMode
     );
 
     E.ruleStep3Summary?.classList.toggle(
       'hidden',
-      !(
-        nonAdd &&
-        (
-          state.processMode === '担当変更' ||
-          state.processMode === '取消'
-        )
-      )
+      !compactMode
     );
 
     E.ruleStaffChangeEditor?.classList.toggle(
       'hidden',
       !(
-        isRuleStaffChangeMode_() &&
+        isMultiStaffChangeMode_() &&
         !!state.selectedTarget
       )
     );
@@ -2425,7 +2456,10 @@
 
     if (
       E.openTargetSearch &&
-      nonAdd
+      (
+        nonAdd ||
+        compactRequestStaffMode
+      )
     ) {
       E.openTargetSearch.classList.toggle(
         'hidden',
@@ -2658,6 +2692,9 @@
     const isRuleStaff =
       isRuleStaffChangeMode_();
 
+    const isRequestStaff =
+      isRequestStaffChangeMode_();
+
     const isRequestChange =
       state.operationContext === 'request' &&
       state.processMode === '変更';
@@ -2665,6 +2702,7 @@
     const showChangeSummary =
       isRuleChange ||
       isRuleStaff ||
+      isRequestStaff ||
       isRequestChange;
 
     E.confirmChangeSummaryWrap?.classList.toggle(
@@ -2686,7 +2724,10 @@
 
     const rows = [];
 
-    if (isRuleStaff) {
+    if (
+      isRuleStaff ||
+      isRequestStaff
+    ) {
       collectRuleStaffChanges_()
         .forEach(change => {
           rows.push({
@@ -3145,7 +3186,7 @@
         isLiveRegistrationMode_() &&
         E.type.value === '担当変更'
       ) {
-        if (isRuleStaffChangeMode_()) {
+        if (isMultiStaffChangeMode_()) {
           const changes =
             collectRuleStaffChanges_();
 
@@ -3501,7 +3542,7 @@
       newStaffName: newStaff.name,
 
       staffChanges:
-        isRuleStaffChangeMode_()
+        isMultiStaffChangeMode_()
           ? collectRuleStaffChanges_()
           : [],
 
