@@ -3974,6 +3974,13 @@
     updateRegistrationAvailability_();
     updateView();
     updateSummary();
+
+    // 新規入力へ戻る際は、画面最上部から開始する。
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
   }
 
   function setReviewInputLock_(locked) {
