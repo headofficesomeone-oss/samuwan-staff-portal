@@ -29,6 +29,11 @@
       background: #fff;
     }
 
+    /* 入力中は①〜③だけ、確認・完了時だけ④を表示 v25.6 */
+    body:not(.review-mode):not(.registered-mode) [data-step="4"] {
+      display: none !important;
+    }
+
     /* 固定ヘッダー配下へ見切れないためのスクロール余白 v25.5 */
     [data-step="4"] {
       scroll-margin-top: 150px;
