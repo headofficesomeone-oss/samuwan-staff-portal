@@ -736,11 +736,6 @@
               </div>
             </div>
 
-            <div class="success-actions">
-              <button type="button" id="newRequestButton" class="primary-button">新しい依頼を入力</button>
-              <button type="button" id="viewRegisteredButton" class="secondary-button">登録済み依頼を見る</button>
-              <button type="button" id="successPortalButton" class="secondary-button">ポータルへ戻る</button>
-            </div>
           </div>
         </section>
       </div>
@@ -759,19 +754,34 @@
 </main>
 
 <footer class="mobile-footer">
-  <button type="button" id="prevStepButton" class="secondary-button hidden">戻る</button>
-  <button type="button" id="nextStepButton" class="primary-button">次へ</button>
+  <div id="mobileNormalFooterActions" style="display:contents">
+    <button type="button" id="prevStepButton" class="secondary-button hidden">戻る</button>
+    <button type="button" id="nextStepButton" class="primary-button">次へ</button>
+  </div>
+
+  <div id="mobileSuccessFooterActions" class="hidden" style="width:100%;display:grid;grid-template-columns:1fr;gap:8px">
+    <button type="button" id="mobileNewRequestButton" class="primary-button">新しい依頼を入力</button>
+    <button type="button" id="mobileViewRegisteredButton" class="secondary-button">登録済み依頼を見る</button>
+    <button type="button" id="mobileSuccessPortalButton" class="secondary-button">ポータルへ戻る</button>
+  </div>
 </footer>
 
 <div class="desktop-footer">
   <div id="desktopFooterMessage" class="desktop-footer-message hidden"></div>
-  <div class="desktop-footer-actions">
+
+  <div id="desktopNormalFooterActions" class="desktop-footer-actions">
     <button type="button" class="secondary-button" onclick="location.href='./index.html'">ポータルへ戻る</button>
     <button type="button" id="desktopConfirmButton" class="primary-button">入力内容を確認</button>
     <div id="confirmActions" class="confirm-actions hidden">
       <button type="button" id="editButton" class="secondary-button">修正する</button>
       <button type="button" id="saveRequestButton" class="primary-button">登録する</button>
     </div>
+  </div>
+
+  <div id="desktopSuccessFooterActions" class="desktop-footer-actions hidden">
+    <button type="button" id="newRequestButton" class="primary-button">新しい依頼を入力</button>
+    <button type="button" id="viewRegisteredButton" class="secondary-button">登録済み依頼を見る</button>
+    <button type="button" id="successPortalButton" class="secondary-button">ポータルへ戻る</button>
   </div>
 </div>
 
