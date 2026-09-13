@@ -3457,6 +3457,26 @@
     const oldStaff = selected(E.oldStaff);
     const newStaff = selected(E.newStaff);
 
+    const staffChanges =
+      isMultiStaffChangeMode_()
+        ? collectRuleStaffChanges_()
+        : [];
+
+    const firstStaffChange =
+      staffChanges[0] || {};
+
+    const staffChangeDetail =
+      (
+        isRequestStaffChangeMode_() &&
+        staffChanges.length
+      )
+        ? JSON.stringify({
+            type: 'staffChanges',
+            version: 1,
+            changes: staffChanges
+          })
+        : '';
+
     return {
       requestType: E.type.value,
       targetShiftId: E.targetShift.value.trim(),
@@ -3536,15 +3556,24 @@
 
       transportNote: E.transportNote.value.trim(),
 
-      oldStaffId: oldStaff.id,
-      oldStaffName: oldStaff.name,
-      newStaffId: newStaff.id,
-      newStaffName: newStaff.name,
+      oldStaffId:
+        firstStaffChange.oldStaffId ||
+        oldStaff.id,
+
+      oldStaffName:
+        firstStaffChange.oldStaffName ||
+        oldStaff.name,
+
+      newStaffId:
+        firstStaffChange.newStaffId ||
+        newStaff.id,
+
+      newStaffName:
+        firstStaffChange.newStaffName ||
+        newStaff.name,
 
       staffChanges:
-        isMultiStaffChangeMode_()
-          ? collectRuleStaffChanges_()
-          : [],
+        staffChanges,
 
       destination: E.destination.value.trim(),
       destinationPlaceId: E.destinationId.value.trim(),
@@ -3555,7 +3584,9 @@
 
       moveType: E.moveType.value,
       supportContent: E.support.value.trim(),
-      changeContent: E.change.value.trim(),
+      changeContent:
+        staffChangeDetail ||
+        E.change.value.trim(),
       changeReason: E.reason.value.trim(),
       note: E.note.value.trim(),
 
