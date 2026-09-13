@@ -2815,6 +2815,47 @@
         : '<div class="confirm-change-empty">変更された項目はありません。</div>';
   }
 
+
+  function getFixedTopHeight_() {
+    const fixedTop =
+      document.querySelector(
+        '.request-fixed-top'
+      );
+
+    return fixedTop
+      ? fixedTop.getBoundingClientRect().height
+      : 0;
+  }
+
+  function scrollToVisibleTop_(
+    target,
+    extraMargin
+  ) {
+    if (!target) {
+      return;
+    }
+
+    const headerHeight =
+      getFixedTopHeight_();
+
+    const margin =
+      Number(
+        extraMargin ?? 14
+      );
+
+    const top =
+      window.scrollY +
+      target.getBoundingClientRect().top -
+      headerHeight -
+      margin;
+
+    window.scrollTo({
+      top: Math.max(0, top),
+      left: 0,
+      behavior: 'smooth'
+    });
+  }
+
   function setToday() {
     const now = new Date();
     const value =
@@ -3793,6 +3834,13 @@
     );
 
     E.successPanel.classList.remove('hidden');
+
+    requestAnimationFrame(() => {
+      scrollToVisibleTop_(
+        document.querySelector('[data-step="4"]'),
+        14
+      );
+    });
 
     document
       .querySelector('[data-step="4"]')
