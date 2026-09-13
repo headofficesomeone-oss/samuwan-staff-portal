@@ -143,10 +143,17 @@
     confirmSectionNote: $('confirmSectionNote'),
     desktopFooter: document.querySelector('.desktop-footer'),
     mobileFooter: document.querySelector('.mobile-footer'),
+    desktopNormalFooterActions: $('desktopNormalFooterActions'),
+    desktopSuccessFooterActions: $('desktopSuccessFooterActions'),
+    mobileNormalFooterActions: $('mobileNormalFooterActions'),
+    mobileSuccessFooterActions: $('mobileSuccessFooterActions'),
     pcSummary: document.querySelector('.pc-summary'),
     newRequest: $('newRequestButton'),
     viewRegistered: $('viewRegisteredButton'),
     successPortal: $('successPortalButton'),
+    mobileNewRequest: $('mobileNewRequestButton'),
+    mobileViewRegistered: $('mobileViewRegisteredButton'),
+    mobileSuccessPortal: $('mobileSuccessPortalButton'),
     toast: $('toast')
   };
 
@@ -377,6 +384,25 @@
     E.successPortal?.addEventListener('click', () => {
       window.location.href = './index.html';
     });
+
+    E.mobileNewRequest?.addEventListener(
+      'click',
+      resetForNewRequest
+    );
+
+    E.mobileViewRegistered?.addEventListener(
+      'click',
+      () => {
+        window.location.href = './request-view.html';
+      }
+    );
+
+    E.mobileSuccessPortal?.addEventListener(
+      'click',
+      () => {
+        window.location.href = './index.html';
+      }
+    );
 
     document.querySelectorAll('[data-step-jump]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3721,15 +3747,49 @@
           : '新しい依頼を入力';
     }
 
+    if (E.mobileNewRequest) {
+      E.mobileNewRequest.textContent =
+        isRuleRegistration
+          ? '新しい規定値を入力'
+          : '新しい依頼を入力';
+    }
+
     E.viewRegistered?.classList.toggle(
       'hidden',
       isRuleRegistration
     );
 
-    // 登録後は中央の確認内容と次の操作だけを残す。
-    E.desktopFooter?.classList.add('hidden');
-    E.mobileFooter?.classList.add('hidden');
+    E.mobileViewRegistered?.classList.toggle(
+      'hidden',
+      isRuleRegistration
+    );
+
+    // 登録後も操作場所は固定フッターに統一する。
+    // 通常の「確認 / 修正 / 登録」を隠し、
+    // 「新しい依頼 / 登録済み依頼 / ポータル」を表示する。
+    E.desktopFooter?.classList.remove('hidden');
+    E.mobileFooter?.classList.remove('hidden');
     E.pcSummary?.classList.add('hidden');
+
+    E.desktopNormalFooterActions?.classList.add(
+      'hidden'
+    );
+
+    E.desktopSuccessFooterActions?.classList.remove(
+      'hidden'
+    );
+
+    if (E.mobileNormalFooterActions) {
+      E.mobileNormalFooterActions.classList.add(
+        'hidden'
+      );
+    }
+
+    if (E.mobileSuccessFooterActions) {
+      E.mobileSuccessFooterActions.classList.remove(
+        'hidden'
+      );
+    }
 
     E.successPanel.classList.remove('hidden');
 
@@ -3873,6 +3933,22 @@
     E.desktopFooter?.classList.remove('hidden');
     E.mobileFooter?.classList.remove('hidden');
     E.pcSummary?.classList.remove('hidden');
+
+    E.desktopNormalFooterActions?.classList.remove(
+      'hidden'
+    );
+
+    E.desktopSuccessFooterActions?.classList.add(
+      'hidden'
+    );
+
+    E.mobileNormalFooterActions?.classList.remove(
+      'hidden'
+    );
+
+    E.mobileSuccessFooterActions?.classList.add(
+      'hidden'
+    );
 
     E.desktopConfirm.classList.remove('hidden');
     E.desktopConfirm.disabled = false;
