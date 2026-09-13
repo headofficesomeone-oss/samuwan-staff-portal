@@ -21,7 +21,8 @@
     selectedTarget: null,
     targetCandidates: [],
     reviewLocked: false,
-    ruleOriginalSnapshot: null
+    ruleOriginalSnapshot: null,
+    requestOriginalSnapshot: null
   };
 
   const E = {
@@ -650,6 +651,15 @@
 
     if (!needsTarget) {
       clearSelectedTarget_();
+    }
+
+    if (
+      !(
+        state.operationContext === 'request' &&
+        state.processMode === '変更'
+      )
+    ) {
+      state.requestOriginalSnapshot = null;
     }
 
     renderSelectedTarget_();
@@ -1339,6 +1349,7 @@
 		    );
 
 		    renderSelectedTarget_();
+        updateRegistrationAvailability_();
 		    E.targetSearchDialog.close();
 		    updateSummary();
 		    return;
@@ -1435,10 +1446,21 @@
 	      state.selectedTarget
 	    );
 
+      if (
+        state.operationContext === 'request' &&
+        state.processMode === '変更'
+      ) {
+        state.requestOriginalSnapshot =
+          captureRequestSnapshotFromTarget_(
+            state.selectedTarget
+          );
+      }
+
 	    renderSelectedTarget_();
 
 	    E.targetSearchDialog.close();
 
+      updateRegistrationAvailability_();
 	    updateSummary();
 	  }
 	  catch (err) {
@@ -1862,6 +1884,7 @@
     }
 
     state.ruleOriginalSnapshot = null;
+    state.requestOriginalSnapshot = null;
 
     if (E.ruleStaffChangeRows) {
       E.ruleStaffChangeRows.innerHTML = '';
@@ -2390,6 +2413,193 @@
     }
   }
 
+
+  function captureRequestSnapshotFromTarget_(target) {
+    target = target || {};
+
+    return {
+      targetDate:
+        String(
+          target.targetDate ||
+          target.date ||
+          ''
+        ).trim(),
+      startTime:
+        String(
+          target.startTime || ''
+        ).slice(0, 5),
+      endTime:
+        String(
+          target.endTime || ''
+        ).slice(0, 5),
+      appointmentTime:
+        String(
+          target.appointmentTime || ''
+        ).slice(0, 5),
+      appointmentPurpose:
+        String(
+          target.appointmentPurpose || ''
+        ).trim(),
+      people:
+        String(
+          target.people ??
+          target.peopleCount ??
+          ''
+        ).trim(),
+      supportContent:
+        String(
+          target.supportContent || ''
+        ).trim(),
+      destination:
+        String(
+          target.destination ||
+          target.destinationName ||
+          ''
+        ).trim(),
+      meetingPlace:
+        String(
+          target.meetingPlace ||
+          target.meeting ||
+          ''
+        ).trim(),
+      moveType:
+        String(
+          target.moveType ||
+          target.transportMethod ||
+          ''
+        ).trim(),
+      mainStaff:
+        String(
+          target.mainStaffName || ''
+        ).trim(),
+      staff2:
+        String(
+          target.staff2Name || ''
+        ).trim(),
+      staff3:
+        String(
+          target.staff3Name || ''
+        ).trim(),
+      outDriver:
+        String(
+          target.outDriverName || ''
+        ).trim(),
+      outVehicle:
+        String(
+          target.outVehicle || ''
+        ).trim(),
+      backDriver:
+        String(
+          target.backDriverName || ''
+        ).trim(),
+      backVehicle:
+        String(
+          target.backVehicle || ''
+        ).trim(),
+      beforeTransportMeeting:
+        String(
+          target.beforeTransportMeeting || ''
+        ).trim(),
+      beforeTransportMeetingTime:
+        String(
+          target.beforeTransportMeetingTime || ''
+        ).slice(0, 5),
+      beforeTransportDriver:
+        String(
+          target.beforeTransportDriverName || ''
+        ).trim(),
+      beforeTransportVehicle:
+        String(
+          target.beforeTransportVehicle || ''
+        ).trim(),
+      afterTransportDestination:
+        String(
+          target.afterTransportDestination || ''
+        ).trim(),
+      afterTransportDepartureTime:
+        String(
+          target.afterTransportDepartureTime || ''
+        ).slice(0, 5),
+      afterTransportDriver:
+        String(
+          target.afterTransportDriverName || ''
+        ).trim(),
+      afterTransportVehicle:
+        String(
+          target.afterTransportVehicle || ''
+        ).trim(),
+      transportNote:
+        String(
+          target.transportNote || ''
+        ).trim(),
+      note:
+        String(
+          target.note || ''
+        ).trim()
+    };
+  }
+
+  function currentRequestSnapshot_() {
+    return {
+      targetDate:
+        E.singleDate?.value || '',
+      startTime:
+        E.start?.value || '',
+      endTime:
+        E.end?.value || '',
+      appointmentTime:
+        E.appt?.value || '',
+      appointmentPurpose:
+        E.apptPurpose?.value.trim() || '',
+      people:
+        String(
+          getPeopleCount() || ''
+        ),
+      supportContent:
+        E.support?.value.trim() || '',
+      destination:
+        E.destination?.value.trim() || '',
+      meetingPlace:
+        E.meeting?.value.trim() || '',
+      moveType:
+        E.moveType?.value || '',
+      mainStaff:
+        selected(E.mainStaff).name,
+      staff2:
+        selected(E.staff2).name,
+      staff3:
+        selected(E.staff3).name,
+      outDriver:
+        selected(E.outDriver).name,
+      outVehicle:
+        E.outVehicle?.value.trim() || '',
+      backDriver:
+        selected(E.backDriver).name,
+      backVehicle:
+        E.backVehicle?.value.trim() || '',
+      beforeTransportMeeting:
+        E.beforeTransportMeeting?.value.trim() || '',
+      beforeTransportMeetingTime:
+        E.beforeTransportMeetingTime?.value || '',
+      beforeTransportDriver:
+        selected(E.beforeTransportDriver).name,
+      beforeTransportVehicle:
+        E.beforeTransportVehicle?.value.trim() || '',
+      afterTransportDestination:
+        E.afterTransportDestination?.value.trim() || '',
+      afterTransportDepartureTime:
+        E.afterTransportDepartureTime?.value || '',
+      afterTransportDriver:
+        selected(E.afterTransportDriver).name,
+      afterTransportVehicle:
+        E.afterTransportVehicle?.value.trim() || '',
+      transportNote:
+        E.transportNote?.value.trim() || '',
+      note:
+        E.note?.value.trim() || ''
+    };
+  }
+
   function renderConfirmProcessBadge_() {
     if (!E.confirmProcessBadge) {
       return;
@@ -2421,32 +2631,41 @@
   }
 
   function renderRuleChangeConfirmation_() {
-    const isChange =
+    const isRuleChange =
       isRuleChangeMode_();
 
-    const isStaff =
+    const isRuleStaff =
       isRuleStaffChangeMode_();
+
+    const isRequestChange =
+      state.operationContext === 'request' &&
+      state.processMode === '変更';
+
+    const showChangeSummary =
+      isRuleChange ||
+      isRuleStaff ||
+      isRequestChange;
 
     E.confirmChangeSummaryWrap?.classList.toggle(
       'hidden',
-      !(isChange || isStaff)
+      !showChangeSummary
     );
 
     E.confirmNormalDetailWrap?.classList.toggle(
       'hidden',
-      isChange || isStaff
+      showChangeSummary
     );
 
     if (
       !E.confirmChangeSummary ||
-      !(isChange || isStaff)
+      !showChangeSummary
     ) {
       return;
     }
 
     const rows = [];
 
-    if (isStaff) {
+    if (isRuleStaff) {
       collectRuleStaffChanges_()
         .forEach(change => {
           rows.push({
@@ -2463,38 +2682,79 @@
     }
     else {
       const before =
-        state.ruleOriginalSnapshot || {};
+        isRequestChange
+          ? (
+              state.requestOriginalSnapshot ||
+              {}
+            )
+          : (
+              state.ruleOriginalSnapshot ||
+              {}
+            );
 
       const after =
-        currentRuleSnapshot_();
+        isRequestChange
+          ? currentRequestSnapshot_()
+          : currentRuleSnapshot_();
 
-      const defs = [
-        ['曜日', 'weekday'],
-        ['開始時刻', 'startTime'],
-        ['終了時刻', 'endTime'],
-        ['人数', 'people'],
-        ['支援内容', 'supportContent'],
-        ['行き先', 'destination'],
-        ['待合せ', 'meetingPlace'],
-        ['移動手段', 'moveType'],
-        ['主担当', 'mainStaff'],
-        ['担当2', 'staff2'],
-        ['担当3', 'staff3'],
-        ['行きドライバー', 'outDriver'],
-        ['行き車両', 'outVehicle'],
-        ['帰りドライバー', 'backDriver'],
-        ['帰り車両', 'backVehicle'],
-        ['支援前送迎・待合せ', 'beforeTransportMeeting'],
-        ['支援前送迎・待合せ時間', 'beforeTransportMeetingTime'],
-        ['支援前送迎・ドライバー', 'beforeTransportDriver'],
-        ['支援前送迎・車両', 'beforeTransportVehicle'],
-        ['支援後送迎・行き先', 'afterTransportDestination'],
-        ['支援後送迎・出発時間', 'afterTransportDepartureTime'],
-        ['支援後送迎・ドライバー', 'afterTransportDriver'],
-        ['支援後送迎・車両', 'afterTransportVehicle'],
-        ['送迎補足', 'transportNote'],
-        ['特記事項', 'note']
-      ];
+      const defs =
+        isRequestChange
+          ? [
+              ['対象日', 'targetDate'],
+              ['開始時刻', 'startTime'],
+              ['終了時刻', 'endTime'],
+              ['予約時間', 'appointmentTime'],
+              ['予約内容', 'appointmentPurpose'],
+              ['人数', 'people'],
+              ['支援内容', 'supportContent'],
+              ['行き先', 'destination'],
+              ['待合せ', 'meetingPlace'],
+              ['移動手段', 'moveType'],
+              ['主担当', 'mainStaff'],
+              ['担当2', 'staff2'],
+              ['担当3', 'staff3'],
+              ['行きドライバー', 'outDriver'],
+              ['行き車両', 'outVehicle'],
+              ['帰りドライバー', 'backDriver'],
+              ['帰り車両', 'backVehicle'],
+              ['支援前送迎・待合せ', 'beforeTransportMeeting'],
+              ['支援前送迎・待合せ時間', 'beforeTransportMeetingTime'],
+              ['支援前送迎・ドライバー', 'beforeTransportDriver'],
+              ['支援前送迎・車両', 'beforeTransportVehicle'],
+              ['支援後送迎・行き先', 'afterTransportDestination'],
+              ['支援後送迎・出発時間', 'afterTransportDepartureTime'],
+              ['支援後送迎・ドライバー', 'afterTransportDriver'],
+              ['支援後送迎・車両', 'afterTransportVehicle'],
+              ['送迎補足', 'transportNote'],
+              ['特記事項', 'note']
+            ]
+          : [
+              ['曜日', 'weekday'],
+              ['開始時刻', 'startTime'],
+              ['終了時刻', 'endTime'],
+              ['人数', 'people'],
+              ['支援内容', 'supportContent'],
+              ['行き先', 'destination'],
+              ['待合せ', 'meetingPlace'],
+              ['移動手段', 'moveType'],
+              ['主担当', 'mainStaff'],
+              ['担当2', 'staff2'],
+              ['担当3', 'staff3'],
+              ['行きドライバー', 'outDriver'],
+              ['行き車両', 'outVehicle'],
+              ['帰りドライバー', 'backDriver'],
+              ['帰り車両', 'backVehicle'],
+              ['支援前送迎・待合せ', 'beforeTransportMeeting'],
+              ['支援前送迎・待合せ時間', 'beforeTransportMeetingTime'],
+              ['支援前送迎・ドライバー', 'beforeTransportDriver'],
+              ['支援前送迎・車両', 'beforeTransportVehicle'],
+              ['支援後送迎・行き先', 'afterTransportDestination'],
+              ['支援後送迎・出発時間', 'afterTransportDepartureTime'],
+              ['支援後送迎・ドライバー', 'afterTransportDriver'],
+              ['支援後送迎・車両', 'afterTransportVehicle'],
+              ['送迎補足', 'transportNote'],
+              ['特記事項', 'note']
+            ];
 
       defs.forEach(([label, key]) => {
         const beforeText =
