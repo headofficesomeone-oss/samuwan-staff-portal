@@ -20,7 +20,8 @@
     processMode: '追加',
     selectedTarget: null,
     targetCandidates: [],
-    reviewLocked: false
+    reviewLocked: false,
+    ruleOriginalSnapshot: null
   };
 
   const E = {
@@ -114,6 +115,16 @@
     confirmService: $('confirmService'),
     confirmDateTime: $('confirmDateTime'),
     confirmDetail: $('confirmDetail'),
+    confirmProcessBadge: $('confirmProcessBadge'),
+    confirmChangeSummaryWrap: $('confirmChangeSummaryWrap'),
+    confirmChangeSummary: $('confirmChangeSummary'),
+    confirmNormalDetailWrap: $('confirmNormalDetailWrap'),
+    ruleStep2Summary: $('ruleStep2Summary'),
+    ruleStep3Summary: $('ruleStep3Summary'),
+    ruleStep3People: $('ruleStep3People'),
+    ruleStaffChangeEditor: $('ruleStaffChangeEditor'),
+    ruleStaffChangeRows: $('ruleStaffChangeRows'),
+    addRuleStaffChange: $('addRuleStaffChangeButton'),
     pcClient: $('pcSummaryClient'),
     pcService: $('pcSummaryService'),
     pcTime: $('pcSummaryTime'),
@@ -208,7 +219,15 @@
 
     E.reselectTarget?.addEventListener(
       'click',
-      openTargetSearchDialog_
+      () => {
+        clearSelectedTarget_();
+        openTargetSearchDialog_();
+      }
+    );
+
+    E.addRuleStaffChange?.addEventListener(
+      'click',
+      () => addRuleStaffChangeRow_()
     );
 
     E.closeTargetSearchDialog?.addEventListener(
@@ -661,6 +680,7 @@
 
     updateDateModeAvailability_();
     updateRequestMode();
+    updateRulePresentation_();
     updateRegistrationAvailability_();
     updateSummary();
   }
@@ -702,10 +722,33 @@
       E.footerMessage.textContent = '';
     }
 
+    const targetRequired =
+      state.operationContext === 'rule' &&
+      state.processMode !== '追加';
+
+    const targetReady =
+      !targetRequired ||
+      !!String(
+        state.selectedTarget?.ruleId || ''
+      ).trim();
+
+    if (E.desktopConfirm) {
+      E.desktopConfirm.disabled =
+        state.registered ||
+        !targetReady;
+    }
+
+    if (E.pcPreview) {
+      E.pcPreview.disabled =
+        state.registered ||
+        !targetReady;
+    }
+
     if (mobileQuery.matches && state.step === 4) {
       E.next.disabled =
         !live ||
-        state.registered;
+        state.registered ||
+        !targetReady;
 
       E.next.textContent =
         live
@@ -1204,6 +1247,11 @@
               state.selectedTarget
             );
 
+            state.ruleOriginalSnapshot =
+              captureRuleSnapshotFromTarget_(
+                state.selectedTarget
+              );
+
             const weekdayMap = {
               '0': '日',
               '1': '月',
@@ -1231,6 +1279,8 @@
               });
 
             renderSelectedTarget_();
+            updateRulePresentation_();
+            updateRegistrationAvailability_();
             E.targetSearchDialog.close();
             updateSummary();
             return;
@@ -1680,6 +1730,16 @@
       !visible
     );
 
+    if (
+      E.openTargetSearch &&
+      state.processMode !== '追加'
+    ) {
+      E.openTargetSearch.classList.toggle(
+        'hidden',
+        visible
+      );
+    }
+
     if (!visible) {
       return;
     }
@@ -1769,7 +1829,15 @@
         '';
     }
 
+    state.ruleOriginalSnapshot = null;
+
+    if (E.ruleStaffChangeRows) {
+      E.ruleStaffChangeRows.innerHTML = '';
+    }
+
     renderSelectedTarget_();
+    updateRulePresentation_();
+    updateRegistrationAvailability_();
   }
 
   function updateRequestMode() {
@@ -1777,7 +1845,10 @@
 
     E.staffChangeFields.classList.toggle(
       'hidden',
-      type !== '担当変更'
+      !(
+        type === '担当変更' &&
+        state.operationContext !== 'rule'
+      )
     );
 
     E.changeField.classList.toggle(
@@ -1790,6 +1861,645 @@
 
     updateRegistrationAvailability_();
     updateSummary();
+  }
+
+
+  const RULE_ROLE_DEFS_ = [
+    { key: 'mainStaff', label: '主担当', id: 'mainStaffId', name: 'mainStaffName' },
+    { key: 'staff2', label: '担当2', id: 'staff2Id', name: 'staff2Name' },
+    { key: 'staff3', label: '担当3', id: 'staff3Id', name: 'staff3Name' },
+    { key: 'outDriver', label: '行きドライバー', id: 'outDriverId', name: 'outDriverName' },
+    { key: 'backDriver', label: '帰りドライバー', id: 'backDriverId', name: 'backDriverName' },
+    { key: 'beforeTransportDriver', label: '支援前送迎ドライバー', id: 'beforeTransportDriverId', name: 'beforeTransportDriverName' },
+    { key: 'afterTransportDriver', label: '支援後送迎ドライバー', id: 'afterTransportDriverId', name: 'afterTransportDriverName' }
+  ];
+
+  function ruleTargetRoles_() {
+    const target =
+      state.selectedTarget || {};
+
+    return RULE_ROLE_DEFS_
+      .map(def => ({
+        roleKey: def.key,
+        roleLabel: def.label,
+        staffId:
+          String(
+            target[def.id] || ''
+          ).trim(),
+        staffName:
+          String(
+            target[def.name] || ''
+          ).trim()
+      }))
+      .filter(item => item.staffName);
+  }
+
+  function escapeRuleCompact_(value) {
+    return esc(
+      String(
+        value ?? ''
+      )
+    );
+  }
+
+  function captureRuleSnapshotFromTarget_(target) {
+    target = target || {};
+
+    return {
+      weekday:
+        String(target.weekday || '').trim(),
+      startTime:
+        String(target.startTime || '').slice(0, 5),
+      endTime:
+        String(target.endTime || '').slice(0, 5),
+      people:
+        String(target.people ?? '').trim(),
+      supportContent:
+        String(target.supportContent || '').trim(),
+      destination:
+        String(target.destination || '').trim(),
+      meetingPlace:
+        String(target.meetingPlace || '').trim(),
+      moveType:
+        String(target.moveType || '').trim(),
+      mainStaff:
+        String(target.mainStaffName || '').trim(),
+      staff2:
+        String(target.staff2Name || '').trim(),
+      staff3:
+        String(target.staff3Name || '').trim(),
+      outDriver:
+        String(target.outDriverName || '').trim(),
+      outVehicle:
+        String(target.outVehicle || '').trim(),
+      backDriver:
+        String(target.backDriverName || '').trim(),
+      backVehicle:
+        String(target.backVehicle || '').trim(),
+      beforeTransportMeeting:
+        String(target.beforeTransportMeeting || '').trim(),
+      beforeTransportMeetingTime:
+        String(target.beforeTransportMeetingTime || '').slice(0, 5),
+      beforeTransportDriver:
+        String(target.beforeTransportDriverName || '').trim(),
+      beforeTransportVehicle:
+        String(target.beforeTransportVehicle || '').trim(),
+      afterTransportDestination:
+        String(target.afterTransportDestination || '').trim(),
+      afterTransportDepartureTime:
+        String(target.afterTransportDepartureTime || '').slice(0, 5),
+      afterTransportDriver:
+        String(target.afterTransportDriverName || '').trim(),
+      afterTransportVehicle:
+        String(target.afterTransportVehicle || '').trim(),
+      transportNote:
+        String(target.transportNote || '').trim(),
+      note:
+        String(target.note || '').trim()
+    };
+  }
+
+  function currentRuleSnapshot_() {
+    return {
+      weekday:
+        getRuleWeekdays_()[0] || '',
+      startTime:
+        E.start?.value || '',
+      endTime:
+        E.end?.value || '',
+      people:
+        String(
+          getPeopleCount() || ''
+        ),
+      supportContent:
+        E.support?.value.trim() || '',
+      destination:
+        E.destination?.value.trim() || '',
+      meetingPlace:
+        E.meeting?.value.trim() || '',
+      moveType:
+        E.moveType?.value || '',
+      mainStaff:
+        selected(E.mainStaff).name,
+      staff2:
+        selected(E.staff2).name,
+      staff3:
+        selected(E.staff3).name,
+      outDriver:
+        selected(E.outDriver).name,
+      outVehicle:
+        E.outVehicle?.value.trim() || '',
+      backDriver:
+        selected(E.backDriver).name,
+      backVehicle:
+        E.backVehicle?.value.trim() || '',
+      beforeTransportMeeting:
+        E.beforeTransportMeeting?.value.trim() || '',
+      beforeTransportMeetingTime:
+        E.beforeTransportMeetingTime?.value || '',
+      beforeTransportDriver:
+        selected(E.beforeTransportDriver).name,
+      beforeTransportVehicle:
+        E.beforeTransportVehicle?.value.trim() || '',
+      afterTransportDestination:
+        E.afterTransportDestination?.value.trim() || '',
+      afterTransportDepartureTime:
+        E.afterTransportDepartureTime?.value || '',
+      afterTransportDriver:
+        selected(E.afterTransportDriver).name,
+      afterTransportVehicle:
+        E.afterTransportVehicle?.value.trim() || '',
+      transportNote:
+        E.transportNote?.value.trim() || '',
+      note:
+        E.note?.value.trim() || ''
+    };
+  }
+
+  function renderRuleCompactSummaries_() {
+    const target =
+      state.selectedTarget;
+
+    if (!target) {
+      if (E.ruleStep2Summary) {
+        E.ruleStep2Summary.innerHTML =
+          '<div class="rule-compact-row"><b>対象</b><span>規定値を選択してください。</span></div>';
+      }
+
+      if (E.ruleStep3People) {
+        E.ruleStep3People.innerHTML =
+          '<span class="rule-person-chip">規定値を選択してください。</span>';
+      }
+
+      return;
+    }
+
+    if (E.ruleStep2Summary) {
+      const rows = [
+        ['曜日', target.weekday ? `${target.weekday}曜日` : ''],
+        [
+          '時間',
+          [
+            String(target.startTime || '').slice(0, 5),
+            String(target.endTime || '').slice(0, 5)
+          ].filter(Boolean).join('～')
+        ],
+        ['支援内容', target.supportContent || ''],
+        ['行き先', target.destination || ''],
+        ['待合せ', target.meetingPlace || '']
+      ].filter(([,value]) => String(value || '').trim());
+
+      E.ruleStep2Summary.innerHTML =
+        rows.map(([label, value]) =>
+          `<div class="rule-compact-row"><b>${esc(label)}</b><span>${escapeRuleCompact_(value)}</span></div>`
+        ).join('');
+    }
+
+    if (E.ruleStep3People) {
+      const roles =
+        ruleTargetRoles_();
+
+      E.ruleStep3People.innerHTML =
+        roles.length
+          ? roles.map(item =>
+              `<span class="rule-person-chip">${esc(item.roleLabel)}：${esc(item.staffName)}</span>`
+            ).join('')
+          : '<span class="rule-person-chip">担当・運転手の登録なし</span>';
+    }
+  }
+
+  function ruleStaffOptionsHtml_() {
+    if (!E.mainStaff) {
+      return '<option value="">選択してください</option>';
+    }
+
+    const options =
+      [...E.mainStaff.options]
+        .filter(option =>
+          String(option.value || '').trim()
+        )
+        .map(option => {
+          const id =
+            String(option.value || '').trim();
+
+          const name =
+            String(
+              option.dataset?.name ||
+              option.textContent ||
+              ''
+            ).trim();
+
+          return `<option value="${escAttr(id)}" data-name="${escAttr(name)}">${esc(name)}</option>`;
+        })
+        .join('');
+
+    return '<option value="">選択してください</option>' + options;
+  }
+
+  function addRuleStaffChangeRow_(preset) {
+    if (
+      !E.ruleStaffChangeRows ||
+      !state.selectedTarget
+    ) {
+      return;
+    }
+
+    const roles =
+      ruleTargetRoles_();
+
+    if (!roles.length) {
+      return;
+    }
+
+    const row =
+      document.createElement('div');
+
+    row.className =
+      'rule-staff-change-row';
+
+    const roleOptions =
+      roles.map(item =>
+        `<option value="${escAttr(item.roleKey)}" data-old-id="${escAttr(item.staffId)}" data-old-name="${escAttr(item.staffName)}">${esc(item.roleLabel)}：${esc(item.staffName)}</option>`
+      ).join('');
+
+    row.innerHTML = `
+      <label class="field">
+        <span>変更前</span>
+        <select class="rule-change-role">
+          <option value="">選択してください</option>
+          ${roleOptions}
+        </select>
+      </label>
+      <div class="rule-staff-change-arrow">→</div>
+      <label class="field">
+        <span>変更後</span>
+        <select class="rule-change-new-staff">
+          ${ruleStaffOptionsHtml_()}
+        </select>
+      </label>
+      <button
+        type="button"
+        class="rule-staff-change-remove"
+        aria-label="担当変更を削除"
+      >×</button>
+    `;
+
+    row
+      .querySelector('.rule-staff-change-remove')
+      .addEventListener(
+        'click',
+        () => {
+          row.remove();
+
+          if (
+            !E.ruleStaffChangeRows.children.length
+          ) {
+            addRuleStaffChangeRow_();
+          }
+
+          updateSummary();
+        }
+      );
+
+    row
+      .querySelectorAll('select')
+      .forEach(select => {
+        select.addEventListener(
+          'change',
+          updateSummary
+        );
+      });
+
+    E.ruleStaffChangeRows.appendChild(
+      row
+    );
+
+    if (preset) {
+      row.querySelector('.rule-change-role').value =
+        preset.roleKey || '';
+
+      row.querySelector('.rule-change-new-staff').value =
+        preset.newStaffId || '';
+    }
+  }
+
+  function ensureRuleStaffChangeRows_() {
+    if (
+      !isRuleStaffChangeMode_() ||
+      !state.selectedTarget ||
+      !E.ruleStaffChangeRows
+    ) {
+      return;
+    }
+
+    if (
+      !E.ruleStaffChangeRows.children.length
+    ) {
+      addRuleStaffChangeRow_();
+    }
+  }
+
+  function collectRuleStaffChanges_() {
+    if (!E.ruleStaffChangeRows) {
+      return [];
+    }
+
+    return [
+      ...E.ruleStaffChangeRows.querySelectorAll(
+        '.rule-staff-change-row'
+      )
+    ]
+      .map(row => {
+        const roleSelect =
+          row.querySelector(
+            '.rule-change-role'
+          );
+
+        const staffSelect =
+          row.querySelector(
+            '.rule-change-new-staff'
+          );
+
+        const roleOption =
+          roleSelect?.selectedOptions?.[0];
+
+        const staffOption =
+          staffSelect?.selectedOptions?.[0];
+
+        const roleDef =
+          RULE_ROLE_DEFS_.find(
+            def =>
+              def.key ===
+              String(
+                roleSelect?.value || ''
+              )
+          );
+
+        return {
+          roleKey:
+            String(
+              roleSelect?.value || ''
+            ).trim(),
+          roleLabel:
+            roleDef?.label || '',
+          oldStaffId:
+            String(
+              roleOption?.dataset?.oldId || ''
+            ).trim(),
+          oldStaffName:
+            String(
+              roleOption?.dataset?.oldName || ''
+            ).trim(),
+          newStaffId:
+            String(
+              staffSelect?.value || ''
+            ).trim(),
+          newStaffName:
+            String(
+              staffOption?.dataset?.name ||
+              staffOption?.textContent ||
+              ''
+            ).trim()
+        };
+      })
+      .filter(change =>
+        change.roleKey ||
+        change.newStaffId
+      );
+  }
+
+  function updateRulePresentation_() {
+    const isRule =
+      state.operationContext === 'rule';
+
+    const nonAdd =
+      isRule &&
+      state.processMode !== '追加';
+
+    document.body.classList.toggle(
+      'rule-target-mode',
+      nonAdd
+    );
+
+    document.body.classList.toggle(
+      'rule-compact-step2',
+      nonAdd &&
+      (
+        state.processMode === '担当変更' ||
+        state.processMode === '取消'
+      )
+    );
+
+    document.body.classList.toggle(
+      'rule-compact-step3',
+      nonAdd &&
+      (
+        state.processMode === '担当変更' ||
+        state.processMode === '取消'
+      )
+    );
+
+    if (isRule && nonAdd) {
+      [E.client, E.system, E.service]
+        .filter(Boolean)
+        .forEach(element => {
+          element.disabled = true;
+        });
+    }
+    else {
+      [E.client, E.system, E.service]
+        .filter(Boolean)
+        .forEach(element => {
+          element.disabled = false;
+        });
+    }
+
+    E.ruleStep2Summary?.classList.toggle(
+      'hidden',
+      !(
+        nonAdd &&
+        (
+          state.processMode === '担当変更' ||
+          state.processMode === '取消'
+        )
+      )
+    );
+
+    E.ruleStep3Summary?.classList.toggle(
+      'hidden',
+      !(
+        nonAdd &&
+        (
+          state.processMode === '担当変更' ||
+          state.processMode === '取消'
+        )
+      )
+    );
+
+    E.ruleStaffChangeEditor?.classList.toggle(
+      'hidden',
+      !(
+        isRuleStaffChangeMode_() &&
+        !!state.selectedTarget
+      )
+    );
+
+    renderRuleCompactSummaries_();
+    ensureRuleStaffChangeRows_();
+
+    if (
+      E.openTargetSearch &&
+      nonAdd
+    ) {
+      E.openTargetSearch.classList.toggle(
+        'hidden',
+        !!state.selectedTarget
+      );
+    }
+  }
+
+  function renderConfirmProcessBadge_() {
+    if (!E.confirmProcessBadge) {
+      return;
+    }
+
+    const mode =
+      state.processMode;
+
+    E.confirmProcessBadge.textContent =
+      mode;
+
+    E.confirmProcessBadge.className =
+      'confirm-process-badge ' +
+      (
+        mode === '追加'
+          ? 'mode-add'
+          : mode === '変更'
+            ? 'mode-change'
+            : mode === '担当変更'
+              ? 'mode-staff'
+              : (
+                  mode === '取消' ||
+                  mode === 'キャンセル' ||
+                  mode === '依頼取消'
+                )
+                ? 'mode-cancel'
+                : 'mode-change'
+      );
+  }
+
+  function renderRuleChangeConfirmation_() {
+    const isChange =
+      isRuleChangeMode_();
+
+    const isStaff =
+      isRuleStaffChangeMode_();
+
+    E.confirmChangeSummaryWrap?.classList.toggle(
+      'hidden',
+      !(isChange || isStaff)
+    );
+
+    E.confirmNormalDetailWrap?.classList.toggle(
+      'hidden',
+      isChange || isStaff
+    );
+
+    if (
+      !E.confirmChangeSummary ||
+      !(isChange || isStaff)
+    ) {
+      return;
+    }
+
+    const rows = [];
+
+    if (isStaff) {
+      collectRuleStaffChanges_()
+        .forEach(change => {
+          rows.push({
+            label:
+              change.roleLabel,
+            before:
+              change.oldStaffName ||
+              '（空欄）',
+            after:
+              change.newStaffName ||
+              '（空欄）'
+          });
+        });
+    }
+    else {
+      const before =
+        state.ruleOriginalSnapshot || {};
+
+      const after =
+        currentRuleSnapshot_();
+
+      const defs = [
+        ['曜日', 'weekday'],
+        ['開始時刻', 'startTime'],
+        ['終了時刻', 'endTime'],
+        ['人数', 'people'],
+        ['支援内容', 'supportContent'],
+        ['行き先', 'destination'],
+        ['待合せ', 'meetingPlace'],
+        ['移動手段', 'moveType'],
+        ['主担当', 'mainStaff'],
+        ['担当2', 'staff2'],
+        ['担当3', 'staff3'],
+        ['行きドライバー', 'outDriver'],
+        ['行き車両', 'outVehicle'],
+        ['帰りドライバー', 'backDriver'],
+        ['帰り車両', 'backVehicle'],
+        ['支援前送迎・待合せ', 'beforeTransportMeeting'],
+        ['支援前送迎・待合せ時間', 'beforeTransportMeetingTime'],
+        ['支援前送迎・ドライバー', 'beforeTransportDriver'],
+        ['支援前送迎・車両', 'beforeTransportVehicle'],
+        ['支援後送迎・行き先', 'afterTransportDestination'],
+        ['支援後送迎・出発時間', 'afterTransportDepartureTime'],
+        ['支援後送迎・ドライバー', 'afterTransportDriver'],
+        ['支援後送迎・車両', 'afterTransportVehicle'],
+        ['送迎補足', 'transportNote'],
+        ['特記事項', 'note']
+      ];
+
+      defs.forEach(([label, key]) => {
+        const beforeText =
+          String(
+            before[key] ?? ''
+          );
+
+        const afterText =
+          String(
+            after[key] ?? ''
+          );
+
+        if (beforeText !== afterText) {
+          rows.push({
+            label,
+            before:
+              beforeText ||
+              '（空欄）',
+            after:
+              afterText ||
+              '（空欄）'
+          });
+        }
+      });
+    }
+
+    E.confirmChangeSummary.innerHTML =
+      rows.length
+        ? rows.map(item => `
+            <div class="confirm-change-row">
+              <b>${esc(item.label)}</b>
+              <span>${esc(item.before)}</span>
+              <div class="confirm-change-arrow">→</div>
+              <span><strong>${esc(item.after)}</strong></span>
+            </div>
+          `).join('')
+        : '<div class="confirm-change-empty">変更された項目はありません。</div>';
   }
 
   function setToday() {
@@ -2081,8 +2791,50 @@
         isLiveRegistrationMode_() &&
         E.type.value === '担当変更'
       ) {
-        if (!selected(E.oldStaff).name || !selected(E.newStaff).name) {
-          throw new Error('変更前担当・変更後担当を選択してください。');
+        if (isRuleStaffChangeMode_()) {
+          const changes =
+            collectRuleStaffChanges_();
+
+          if (!changes.length) {
+            throw new Error(
+              '担当変更を1件以上入力してください。'
+            );
+          }
+
+          const usedRoles = new Set();
+
+          changes.forEach(change => {
+            if (!change.roleKey || !change.newStaffId) {
+              throw new Error(
+                '担当変更の変更前・変更後を選択してください。'
+              );
+            }
+
+            if (usedRoles.has(change.roleKey)) {
+              throw new Error(
+                '同じ担当枠を複数回変更することはできません。'
+              );
+            }
+
+            usedRoles.add(change.roleKey);
+
+            if (
+              change.oldStaffId &&
+              change.oldStaffId === change.newStaffId
+            ) {
+              throw new Error(
+                `${change.roleLabel}の変更前担当と変更後担当が同じです。`
+              );
+            }
+          });
+        }
+        else if (
+          !selected(E.oldStaff).name ||
+          !selected(E.newStaff).name
+        ) {
+          throw new Error(
+            '変更前担当・変更後担当を選択してください。'
+          );
         }
       }
 
@@ -2393,6 +3145,11 @@
       oldStaffName: oldStaff.name,
       newStaffId: newStaff.id,
       newStaffName: newStaff.name,
+
+      staffChanges:
+        isRuleStaffChangeMode_()
+          ? collectRuleStaffChanges_()
+          : [],
 
       destination: E.destination.value.trim(),
       destinationPlaceId: E.destinationId.value.trim(),
@@ -2834,6 +3591,8 @@
     hideMessage();
     updateOperationModeUi();
     updateRequestMode();
+    updateRulePresentation_();
+    updateRegistrationAvailability_();
     updateView();
     updateSummary();
   }
@@ -2842,7 +3601,9 @@
     state.reviewLocked = !!locked;
 
     document
-      .querySelectorAll('[data-step="1"], [data-step="2"], [data-step="3"]')
+      .querySelectorAll(
+        '[data-step="1"], [data-step="2"], [data-step="3"], .request-mode-panel, .mobile-progress'
+      )
       .forEach(section => {
         section.inert = !!locked;
 
@@ -2855,6 +3616,14 @@
   }
 
   function showConfirmDesktop() {
+    if (
+      state.operationContext === 'rule' &&
+      state.processMode !== '追加' &&
+      !state.selectedTarget
+    ) {
+      return;
+    }
+
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     updateSummary();
@@ -2985,6 +3754,51 @@
           `<div class="confirm-row"><b>${esc(label)}</b><span>${esc(value)}</span></div>`
         ).join('')
       : '<div class="confirm-row"><b>その他</b><span>入力なし</span></div>';
+
+    renderConfirmProcessBadge_();
+    renderRuleChangeConfirmation_();
+
+    if (
+      isRuleCancelMode_() &&
+      E.confirmDetail
+    ) {
+      const target =
+        state.selectedTarget || {};
+
+      const cancelDetail = [
+        ['処理区分', '規定値・取消'],
+        ['規定値ID', target.ruleId || ''],
+        ['曜日', target.weekday ? `${target.weekday}曜日` : ''],
+        [
+          '時間',
+          [
+            String(target.startTime || '').slice(0, 5),
+            String(target.endTime || '').slice(0, 5)
+          ].filter(Boolean).join('～')
+        ],
+        ['主担当', target.mainStaffName || ''],
+        ['担当2', target.staff2Name || ''],
+        ['担当3', target.staff3Name || ''],
+        ['行きドライバー', target.outDriverName || ''],
+        ['帰りドライバー', target.backDriverName || ''],
+        ['支援前送迎ドライバー', target.beforeTransportDriverName || ''],
+        ['支援後送迎ドライバー', target.afterTransportDriverName || ''],
+        ['支援内容', target.supportContent || '']
+      ].filter(([,value]) => String(value || '').trim());
+
+      E.confirmNormalDetailWrap?.classList.remove(
+        'hidden'
+      );
+
+      E.confirmChangeSummaryWrap?.classList.add(
+        'hidden'
+      );
+
+      E.confirmDetail.innerHTML =
+        cancelDetail.map(([label, value]) =>
+          `<div class="confirm-row"><b>${esc(label)}</b><span>${esc(value)}</span></div>`
+        ).join('');
+    }
 
   }
 
