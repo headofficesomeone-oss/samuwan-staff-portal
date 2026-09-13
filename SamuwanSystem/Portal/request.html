@@ -5,6 +5,219 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>利用者依頼受付</title>
   <link rel="stylesheet" href="./css/request.css?v=20260906-candidate1">
+  <style>
+    /* 規定値 処理別UI v24 */
+    .request-mode-panel[aria-disabled="true"],
+    .mobile-progress[aria-disabled="true"] {
+      opacity: .58;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .rule-target-mode [data-step="1"] > label.field,
+    .rule-target-mode [data-step="1"] > .field-grid {
+      opacity: .58;
+      pointer-events: none;
+    }
+
+    .rule-target-mode #openTargetSearchButton:disabled,
+    #desktopConfirmButton:disabled,
+    #pcPreviewButton:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+      filter: grayscale(.35);
+    }
+
+    .rule-compact-step2 [data-step="2"] > :not(.section-title):not(#ruleStep2Summary) {
+      display: none !important;
+    }
+
+    .rule-compact-step3 [data-step="3"] > :not(.section-title):not(#ruleStep3Summary):not(#ruleStaffChangeEditor) {
+      display: none !important;
+    }
+
+    .rule-compact-summary {
+      border: 1px solid #d8e2db;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .rule-compact-row {
+      display: grid;
+      grid-template-columns: minmax(110px, 150px) 1fr;
+      border-top: 1px solid #e7ece8;
+    }
+
+    .rule-compact-row:first-child { border-top: 0; }
+
+    .rule-compact-row b,
+    .rule-compact-row span {
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .rule-compact-row b {
+      background: #f6f8f6;
+      color: #56675c;
+    }
+
+    .rule-person-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 4px 0 2px;
+    }
+
+    .rule-person-chip {
+      border: 1px solid #cddbd2;
+      background: #eef4f0;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .rule-staff-change-editor {
+      margin-top: 14px;
+      border: 1px solid #b9d3e8;
+      border-radius: 13px;
+      background: #f7fbff;
+      padding: 13px;
+    }
+
+    .rule-staff-change-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .rule-staff-change-head strong {
+      color: #285f92;
+      font-size: 14px;
+    }
+
+    .rule-staff-change-row {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) 34px minmax(0,1fr) 36px;
+      align-items: end;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .rule-staff-change-arrow {
+      text-align: center;
+      padding-bottom: 12px;
+      font-weight: 900;
+      color: #6b7d89;
+    }
+
+    .rule-staff-change-remove {
+      min-height: 42px;
+      border: 0;
+      background: transparent;
+      color: #b64a4a;
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    .confirm-process-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 110px;
+      padding: 10px 18px;
+      margin: 0 0 16px;
+      border-radius: 999px;
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 900;
+      border: 2px solid transparent;
+    }
+
+    .confirm-process-badge.mode-add {
+      background: #edf8f1;
+      color: #246f45;
+      border-color: #9fd1b1;
+    }
+
+    .confirm-process-badge.mode-change {
+      background: #fff5d9;
+      color: #8b6511;
+      border-color: #e4bf67;
+    }
+
+    .confirm-process-badge.mode-staff {
+      background: #eaf3fb;
+      color: #285f92;
+      border-color: #9cc1e2;
+    }
+
+    .confirm-process-badge.mode-cancel {
+      background: #fdecec;
+      color: #9d3d3d;
+      border-color: #e4a4a4;
+    }
+
+    .confirm-change-summary {
+      margin-top: 16px;
+    }
+
+    .confirm-change-list {
+      border: 1px solid #ead59b;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fffdf6;
+    }
+
+    .confirm-change-row {
+      display: grid;
+      grid-template-columns: minmax(100px,140px) 1fr 34px 1fr;
+      align-items: center;
+      border-top: 1px solid #efe1bc;
+    }
+
+    .confirm-change-row:first-child { border-top: 0; }
+
+    .confirm-change-row b,
+    .confirm-change-row span {
+      padding: 10px 11px;
+      font-size: 13px;
+    }
+
+    .confirm-change-row b {
+      background: #fff8e4;
+    }
+
+    .confirm-change-arrow {
+      text-align: center;
+      font-weight: 900;
+      color: #9a7117;
+    }
+
+    .confirm-change-empty {
+      padding: 12px;
+      color: #6d7b72;
+      font-size: 13px;
+    }
+
+    @media (max-width: 720px) {
+      .rule-staff-change-row {
+        grid-template-columns: 1fr;
+      }
+      .rule-staff-change-arrow {
+        padding: 0;
+      }
+      .confirm-change-row {
+        grid-template-columns: 100px 1fr;
+      }
+      .confirm-change-arrow {
+        grid-column: 1 / -1;
+        padding: 2px;
+      }
+    }
+  </style>
 </head>
 <body>
 <header class="request-header">
@@ -151,6 +364,8 @@
             </div>
           </div>
 
+          <div id="ruleStep2Summary" class="rule-compact-summary hidden"></div>
+
           <div id="ruleWeekdayArea" class="rule-weekday-area hidden">
             <div class="visual-only-note">規定値は曜日を基準として登録する想定です。現在は画面動作確認のみです。</div>
             <div class="weekday-select rule-weekday-select">
@@ -266,6 +481,18 @@
               <h2>場所・支援内容</h2>
               <p>場所辞書から選択します。該当がない場合は仮登録できます。</p>
             </div>
+          </div>
+
+          <div id="ruleStep3Summary" class="hidden">
+            <div id="ruleStep3People" class="rule-person-chips"></div>
+          </div>
+
+          <div id="ruleStaffChangeEditor" class="rule-staff-change-editor hidden">
+            <div class="rule-staff-change-head">
+              <strong>担当変更</strong>
+              <button type="button" id="addRuleStaffChangeButton" class="secondary-button">＋ 変更を追加</button>
+            </div>
+            <div id="ruleStaffChangeRows"></div>
           </div>
 
           <div class="place-field">
@@ -482,14 +709,23 @@
             </div>
           </div>
 
+          <div id="confirmProcessBadge" class="confirm-process-badge mode-add">追加</div>
+
           <div class="confirm-important">
             <div><span>利用者</span><strong id="confirmClient">未選択</strong></div>
             <div><span>サービス</span><strong id="confirmService">未選択</strong></div>
             <div><span>日時</span><strong id="confirmDateTime">未選択</strong></div>
           </div>
 
-          <h3 class="detail-heading">その他の依頼内容</h3>
-          <div id="confirmDetail" class="confirm-detail"></div>
+          <div id="confirmChangeSummaryWrap" class="confirm-change-summary hidden">
+            <h3 class="detail-heading">変更内容</h3>
+            <div id="confirmChangeSummary" class="confirm-change-list"></div>
+          </div>
+
+          <div id="confirmNormalDetailWrap">
+            <h3 class="detail-heading">その他の依頼内容</h3>
+            <div id="confirmDetail" class="confirm-detail"></div>
+          </div>
 
           <div id="successPanel" class="hidden" role="status" style="margin-top:18px">
             <div class="confirm-important">
