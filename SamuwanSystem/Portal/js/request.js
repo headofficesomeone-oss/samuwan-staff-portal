@@ -722,33 +722,65 @@
       E.footerMessage.textContent = '';
     }
 
-    const targetRequired =
-      state.operationContext === 'rule' &&
-      state.processMode !== '追加';
-
-    const targetReady =
-      !targetRequired ||
+    const clientReady =
       !!String(
-        state.selectedTarget?.ruleId || ''
+        selected(E.client).id ||
+        selected(E.client).name ||
+        ''
       ).trim();
+
+    let targetRequired = false;
+    let targetReady = true;
+
+    if (state.processMode !== '追加') {
+      targetRequired = true;
+
+      if (state.operationContext === 'rule') {
+        targetReady =
+          !!String(
+            state.selectedTarget?.ruleId || ''
+          ).trim();
+      }
+      else if (
+        state.operationContext === 'request' &&
+        state.processMode === '依頼取消'
+      ) {
+        targetReady =
+          !!String(
+            state.selectedTarget?.requestId || ''
+          ).trim();
+      }
+      else {
+        targetReady =
+          !!String(
+            E.targetShift?.value ||
+            state.selectedTarget?.shiftId ||
+            ''
+          ).trim();
+      }
+    }
+
+    const confirmReady =
+      clientReady &&
+      (!targetRequired || targetReady);
 
     if (E.desktopConfirm) {
       E.desktopConfirm.disabled =
         state.registered ||
-        !targetReady;
+        !confirmReady;
     }
 
     if (E.pcPreview) {
       E.pcPreview.disabled =
         state.registered ||
-        !targetReady;
+        !confirmReady;
     }
 
     if (mobileQuery.matches && state.step === 4) {
       E.next.disabled =
         !live ||
         state.registered ||
-        !targetReady;
+        !confirmReady;
 
       E.next.textContent =
         live
@@ -3799,6 +3831,8 @@
           `<div class="confirm-row"><b>${esc(label)}</b><span>${esc(value)}</span></div>`
         ).join('');
     }
+
+    updateRegistrationAvailability_();
 
   }
 
