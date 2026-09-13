@@ -149,10 +149,8 @@
     mobileSuccessFooterActions: $('mobileSuccessFooterActions'),
     pcSummary: document.querySelector('.pc-summary'),
     newRequest: $('newRequestButton'),
-    viewRegistered: $('viewRegisteredButton'),
     successPortal: $('successPortalButton'),
     mobileNewRequest: $('mobileNewRequestButton'),
-    mobileViewRegistered: $('mobileViewRegisteredButton'),
     mobileSuccessPortal: $('mobileSuccessPortalButton'),
     toast: $('toast')
   };
@@ -377,24 +375,21 @@
     });
 
     E.save.addEventListener('click', submit);
-    E.newRequest?.addEventListener('click', resetForNewRequest);
-    E.viewRegistered?.addEventListener('click', () => {
-      window.location.href = './request-view.html';
-    });
-    E.successPortal?.addEventListener('click', () => {
-      window.location.href = './index.html';
-    });
-
-    E.mobileNewRequest?.addEventListener(
+    E.newRequest?.addEventListener(
       'click',
       resetForNewRequest
     );
 
-    E.mobileViewRegistered?.addEventListener(
+    E.successPortal?.addEventListener(
       'click',
       () => {
-        window.location.href = './request-view.html';
+        window.location.href = './index.html';
       }
+    );
+
+    E.mobileNewRequest?.addEventListener(
+      'click',
+      resetForNewRequest
     );
 
     E.mobileSuccessPortal?.addEventListener(
@@ -3754,19 +3749,29 @@
           : '新しい依頼を入力';
     }
 
-    E.viewRegistered?.classList.toggle(
-      'hidden',
-      isRuleRegistration
-    );
+    // 登録完了後は「④ 登録した内容」だけを表示する。
+    // ①〜③、上部の処理選択、右サマリーは隠し、
+    // 次の操作は固定フッターの2ボタンだけにする。
+    document
+      .querySelectorAll(
+        '[data-step="1"], [data-step="2"], [data-step="3"], .request-mode-panel, .mobile-progress'
+      )
+      .forEach(section => {
+        section.classList.add(
+          'hidden'
+        );
+      });
 
-    E.mobileViewRegistered?.classList.toggle(
-      'hidden',
-      isRuleRegistration
-    );
+    document
+      .querySelectorAll(
+        '[data-step="4"]'
+      )
+      .forEach(section => {
+        section.classList.remove(
+          'hidden'
+        );
+      });
 
-    // 登録後も操作場所は固定フッターに統一する。
-    // 通常の「確認 / 修正 / 登録」を隠し、
-    // 「新しい依頼 / 登録済み依頼 / ポータル」を表示する。
     E.desktopFooter?.classList.remove('hidden');
     E.mobileFooter?.classList.remove('hidden');
     E.pcSummary?.classList.add('hidden');
@@ -3779,17 +3784,13 @@
       'hidden'
     );
 
-    if (E.mobileNormalFooterActions) {
-      E.mobileNormalFooterActions.classList.add(
-        'hidden'
-      );
-    }
+    E.mobileNormalFooterActions?.classList.add(
+      'hidden'
+    );
 
-    if (E.mobileSuccessFooterActions) {
-      E.mobileSuccessFooterActions.classList.remove(
-        'hidden'
-      );
-    }
+    E.mobileSuccessFooterActions?.classList.remove(
+      'hidden'
+    );
 
     E.successPanel.classList.remove('hidden');
 
@@ -3929,6 +3930,16 @@
       E.confirmSectionNote.textContent =
         '登録前に内容を確認してください。';
     }
+
+    document
+      .querySelectorAll(
+        '[data-step="1"], [data-step="2"], [data-step="3"], .request-mode-panel, .mobile-progress'
+      )
+      .forEach(section => {
+        section.classList.remove(
+          'hidden'
+        );
+      });
 
     E.desktopFooter?.classList.remove('hidden');
     E.mobileFooter?.classList.remove('hidden');
