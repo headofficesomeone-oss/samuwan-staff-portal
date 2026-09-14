@@ -1966,6 +1966,31 @@
     { key: 'afterTransportDriver', label: '支援後送迎ドライバー', id: 'afterTransportDriverId', name: 'afterTransportDriverName' }
   ];
 
+  function pendingStaffChanges_() {
+    const target =
+      state.selectedTarget || {};
+
+    return Array.isArray(
+      target.pendingStaffChanges
+    )
+      ? target.pendingStaffChanges
+      : [];
+  }
+
+  function pendingStaffChangeForRole_(
+    roleKey
+  ) {
+    return pendingStaffChanges_()
+      .find(change =>
+        String(
+          change?.roleKey || ''
+        ).trim() ===
+        String(
+          roleKey || ''
+        ).trim()
+      ) || null;
+  }
+
   function ruleTargetRoles_() {
     const target =
       state.selectedTarget || {};
@@ -1981,9 +2006,20 @@
         staffName:
           String(
             target[def.name] || ''
-          ).trim()
+          ).trim(),
+        pendingChange:
+          pendingStaffChangeForRole_(
+            def.key
+          )
       }))
       .filter(item => item.staffName);
+  }
+
+  function availableStaffChangeRoles_() {
+    return ruleTargetRoles_()
+      .filter(item =>
+        !item.pendingChange
+      );
   }
 
   function escapeRuleCompact_(value) {
@@ -2168,9 +2204,29 @@
 
       E.ruleStep3People.innerHTML =
         roles.length
-          ? roles.map(item =>
-              `<span class="rule-person-chip">${esc(item.roleLabel)}：${esc(item.staffName)}</span>`
-            ).join('')
+          ? roles.map(item => {
+              const pending =
+                item.pendingChange;
+
+              if (
+                isRequestStaffChangeMode_() &&
+                pending
+              ) {
+                return (
+                  `<span class="rule-person-chip">` +
+                  `${esc(item.roleLabel)}：${esc(item.staffName)}` +
+                  ` → ${esc(pending.newStaffName || '変更予定')}` +
+                  `（担当変更依頼済み）` +
+                  `</span>`
+                );
+              }
+
+              return (
+                `<span class="rule-person-chip">` +
+                `${esc(item.roleLabel)}：${esc(item.staffName)}` +
+                `</span>`
+              );
+            }).join('')
           : '<span class="rule-person-chip">担当・運転手の登録なし</span>';
     }
   }
@@ -2212,10 +2268,32 @@
     }
 
     const roles =
-      ruleTargetRoles_();
+      isRequestStaffChangeMode_()
+        ? availableStaffChangeRoles_()
+        : ruleTargetRoles_();
 
     if (!roles.length) {
+
+      if (
+        isRequestStaffChangeMode_() &&
+        E.ruleStaffChangeRows &&
+        !E.ruleStaffChangeRows.children.length
+      ) {
+        E.ruleStaffChangeRows.innerHTML =
+          '<div class="rule-compact-row"><b>担当変更</b><span>変更可能な担当・運転手がありません。未反映の担当変更依頼を確認してください。</span></div>';
+      }
+
       return;
+    }
+
+    if (
+      E.ruleStaffChangeRows &&
+      !E.ruleStaffChangeRows.querySelector(
+        '.rule-staff-change-row'
+      )
+    ) {
+      E.ruleStaffChangeRows.innerHTML =
+        '';
     }
 
     const row =
@@ -2300,7 +2378,9 @@
     }
 
     if (
-      !E.ruleStaffChangeRows.children.length
+      !E.ruleStaffChangeRows.querySelector(
+        '.rule-staff-change-row'
+      )
     ) {
       addRuleStaffChangeRow_();
     }
