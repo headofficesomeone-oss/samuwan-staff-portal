@@ -509,6 +509,13 @@
     );
   }
 
+  function isRequestSupportCancelMode_() {
+    return (
+      state.operationContext === 'request' &&
+      state.processMode === 'キャンセル'
+    );
+  }
+
   function isRuleChangeMode_() {
     return (
       state.operationContext === 'rule' &&
@@ -1246,6 +1253,13 @@
 	            ].join(' ～ ')
 	          : '';
 
+	      const cancelPending =
+	        !!item.pendingCancel;
+
+	      const cancelBlocked =
+	        isRequestSupportCancelMode_() &&
+	        cancelPending;
+
 	      return `
 	        <div class="target-search-result-card">
 	          <div>
@@ -1268,19 +1282,28 @@
 	                  : `<small>シフトID：${esc(item.shiftId || '')}</small>`
 	            }
 
+	            ${
+	              cancelPending
+	                ? `<small><b>キャンセル依頼済み${item.pendingCancelRequestId ? '：' + esc(item.pendingCancelRequestId) : ''}</b></small>`
+	                : ''
+	            }
+
 	          </div>
 
 	          <button
 	            type="button"
 	            class="primary-button"
 	            data-target-index="${index}"
+	            ${cancelBlocked ? 'disabled' : ''}
 	          >
 	            ${
-	              isRule
-	                ? 'この規定値を選択'
-	                : isRequest
-	                  ? 'この依頼を選択'
-	                  : 'この支援を選択'
+	              cancelBlocked
+	                ? 'キャンセル依頼済み'
+	                : isRule
+	                  ? 'この規定値を選択'
+	                  : isRequest
+	                    ? 'この依頼を選択'
+	                    : 'この支援を選択'
 	            }
 	          </button>
 	        </div>
@@ -1304,6 +1327,15 @@
 	            targets[index];
 
 	          if (!item) {
+	            return;
+	          }
+
+	          if (
+	            isRequestSupportCancelMode_() &&
+	            item.pendingCancel
+	          ) {
+	            E.targetSearchStatus.textContent =
+	              'この支援はすでにキャンセル依頼済みです。';
 	            return;
 	          }
 
@@ -2476,9 +2508,13 @@
     const compactRequestStaffMode =
       isRequestStaffChangeMode_();
 
+    const compactRequestCancelMode =
+      isRequestSupportCancelMode_();
+
     const compactMode =
       compactRuleMode ||
-      compactRequestStaffMode;
+      compactRequestStaffMode ||
+      compactRequestCancelMode;
 
     document.body.classList.toggle(
       'rule-target-mode',
@@ -2497,7 +2533,8 @@
 
     if (
       (isRule && nonAdd) ||
-      compactRequestStaffMode
+      compactRequestStaffMode ||
+      compactRequestCancelMode
     ) {
       [E.client, E.system, E.service]
         .filter(Boolean)
@@ -2538,7 +2575,8 @@
       E.openTargetSearch &&
       (
         nonAdd ||
-        compactRequestStaffMode
+        compactRequestStaffMode ||
+        compactRequestCancelMode
       )
     ) {
       E.openTargetSearch.classList.toggle(
@@ -4361,16 +4399,49 @@
     renderRuleChangeConfirmation_();
 
     if (
-      isRuleCancelMode_() &&
+      (
+        isRuleCancelMode_() ||
+        isRequestSupportCancelMode_()
+      ) &&
       E.confirmDetail
     ) {
       const target =
         state.selectedTarget || {};
 
+      const isRuleCancel =
+        isRuleCancelMode_();
+
       const cancelDetail = [
-        ['処理区分', '規定値・取消'],
-        ['規定値ID', target.ruleId || ''],
-        ['曜日', target.weekday ? `${target.weekday}曜日` : ''],
+        [
+          '処理区分',
+          isRuleCancel
+            ? '規定値・取消'
+            : '支援予定依頼・キャンセル'
+        ],
+        [
+          isRuleCancel
+            ? '規定値ID'
+            : 'シフトID',
+          isRuleCancel
+            ? (target.ruleId || '')
+            : (target.shiftId || '')
+        ],
+        [
+          isRuleCancel
+            ? '曜日'
+            : '対象日',
+          isRuleCancel
+            ? (
+                target.weekday
+                  ? `${target.weekday}曜日`
+                  : ''
+              )
+            : (
+                target.targetDate ||
+                target.date ||
+                ''
+              )
+        ],
         [
           '時間',
           [
@@ -4385,7 +4456,13 @@
         ['帰りドライバー', target.backDriverName || ''],
         ['支援前送迎ドライバー', target.beforeTransportDriverName || ''],
         ['支援後送迎ドライバー', target.afterTransportDriverName || ''],
-        ['支援内容', target.supportContent || '']
+        ['支援内容', target.supportContent || ''],
+        [
+          'キャンセル理由',
+          isRuleCancel
+            ? ''
+            : (E.reason?.value.trim() || '')
+        ]
       ].filter(([,value]) => String(value || '').trim());
 
       E.confirmNormalDetailWrap?.classList.remove(
