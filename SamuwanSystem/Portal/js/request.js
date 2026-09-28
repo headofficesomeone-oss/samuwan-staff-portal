@@ -1416,6 +1416,7 @@
 		    );
 
 		    renderSelectedTarget_();
+        updateRulePresentation_();
         updateRegistrationAvailability_();
 		    E.targetSearchDialog.close();
 		    updateSummary();
@@ -2210,7 +2211,16 @@
               ''
             ];
 
+      const requestUndoRows =
+        isRequestCancelMode_()
+          ? [
+              ['依頼ID', target.requestId || ''],
+              ['依頼区分', target.requestType || '']
+            ]
+          : [];
+
       const rows = [
+        ...requestUndoRows,
         firstRow,
         [
           '時間',
@@ -2511,10 +2521,14 @@
     const compactRequestCancelMode =
       isRequestSupportCancelMode_();
 
+    const compactRequestUndoMode =
+      isRequestCancelMode_();
+
     const compactMode =
       compactRuleMode ||
       compactRequestStaffMode ||
-      compactRequestCancelMode;
+      compactRequestCancelMode ||
+      compactRequestUndoMode;
 
     document.body.classList.toggle(
       'rule-target-mode',
@@ -2534,7 +2548,8 @@
     if (
       (isRule && nonAdd) ||
       compactRequestStaffMode ||
-      compactRequestCancelMode
+      compactRequestCancelMode ||
+      compactRequestUndoMode
     ) {
       [E.client, E.system, E.service]
         .filter(Boolean)
@@ -2576,7 +2591,8 @@
       (
         nonAdd ||
         compactRequestStaffMode ||
-        compactRequestCancelMode
+        compactRequestCancelMode ||
+        compactRequestUndoMode
       )
     ) {
       E.openTargetSearch.classList.toggle(
@@ -4401,7 +4417,8 @@
     if (
       (
         isRuleCancelMode_() ||
-        isRequestSupportCancelMode_()
+        isRequestSupportCancelMode_() ||
+        isRequestCancelMode_()
       ) &&
       E.confirmDetail
     ) {
@@ -4411,36 +4428,61 @@
       const isRuleCancel =
         isRuleCancelMode_();
 
+      const isRequestUndo =
+        isRequestCancelMode_();
+
       const cancelDetail = [
         [
           '処理区分',
           isRuleCancel
             ? '規定値・取消'
-            : '支援予定依頼・キャンセル'
+            : isRequestUndo
+              ? '支援予定依頼・依頼取消'
+              : '支援予定依頼・キャンセル'
         ],
         [
           isRuleCancel
             ? '規定値ID'
-            : 'シフトID',
+            : isRequestUndo
+              ? '取り消す依頼ID'
+              : 'シフトID',
           isRuleCancel
             ? (target.ruleId || '')
-            : (target.shiftId || '')
+            : isRequestUndo
+              ? (target.requestId || '')
+              : (target.shiftId || '')
         ],
         [
-          isRuleCancel
-            ? '曜日'
-            : '対象日',
-          isRuleCancel
-            ? (
-                target.weekday
-                  ? `${target.weekday}曜日`
-                  : ''
-              )
+          isRequestUndo
+            ? '元の依頼区分'
             : (
+                isRuleCancel
+                  ? '曜日'
+                  : '対象日'
+              ),
+          isRequestUndo
+            ? (target.requestType || '')
+            : isRuleCancel
+              ? (
+                  target.weekday
+                    ? `${target.weekday}曜日`
+                    : ''
+                )
+              : (
+                  target.targetDate ||
+                  target.date ||
+                  ''
+                )
+        ],
+        [
+          '対象日',
+          isRequestUndo
+            ? (
                 target.targetDate ||
                 target.date ||
                 ''
               )
+            : ''
         ],
         [
           '時間',
@@ -4458,7 +4500,9 @@
         ['支援後送迎ドライバー', target.afterTransportDriverName || ''],
         ['支援内容', target.supportContent || ''],
         [
-          'キャンセル理由',
+          isRequestUndo
+            ? '取消理由'
+            : 'キャンセル理由',
           isRuleCancel
             ? ''
             : (E.reason?.value.trim() || '')
