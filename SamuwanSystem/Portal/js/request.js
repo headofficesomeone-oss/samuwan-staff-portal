@@ -3799,7 +3799,35 @@
       payload = buildPayload();
       setSaving(true);
 
-      payload = await completePlaces(payload);
+      /*
+       * 場所辞書の補完は、場所を新規入力・変更する処理だけで行う。
+       *
+       * 依頼取消 / キャンセル / 担当変更では
+       * 元の依頼・シフトを参照するだけなので、
+       * 場所解決APIを呼ばない。
+       *
+       * これにより、依頼取消時に不要な場所解決待ちで
+       * 「登録中...」のまま止まることを防ぐ。
+       */
+      const needsPlaceCompletion =
+        (
+          state.operationContext === 'request' &&
+          (
+            state.processMode === '追加' ||
+            state.processMode === '変更'
+          )
+        ) ||
+        (
+          state.operationContext === 'rule' &&
+          (
+            state.processMode === '追加' ||
+            state.processMode === '変更'
+          )
+        );
+
+      if (needsPlaceCompletion) {
+        payload = await completePlaces(payload);
+      }
 
       const isRuleAdd =
         state.operationContext === 'rule' &&
