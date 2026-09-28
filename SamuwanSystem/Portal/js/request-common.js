@@ -317,9 +317,21 @@ window.RequestCommon = (() => {
     if (!data.startTime) {
       throw new Error('開始時刻を入力してください。');
     }
-    if (data.requestType !== '追加' && !data.targetShiftId) {
-      throw new Error('追加以外では対象シフトIDが必要です。');
+    if (
+      data.requestType !== '追加' &&
+      data.requestType !== '依頼取消' &&
+      !data.targetShiftId
+    ) {
+      throw new Error('対象シフトIDが必要です。');
     }
+
+    if (
+      data.requestType === '依頼取消' &&
+      !data.sourceRequestId
+    ) {
+      throw new Error('取り消す依頼IDが必要です。');
+    }
+
     if (
       data.requestType === '担当変更' &&
       (!data.oldStaffName || !data.newStaffName)
