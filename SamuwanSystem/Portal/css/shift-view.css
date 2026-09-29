@@ -1782,3 +1782,112 @@ body{
     gap:9px;
   }
 }
+
+
+/* ==================================================
+   v29.1 表示調整
+================================================== */
+
+/* 日付・開始・終了を少し大きく */
+.shift-sheet-table td.col-date,
+.shift-sheet-table td.col-start,
+.shift-sheet-table td.col-end{
+  font-size:13px;
+  font-weight:800;
+}
+
+/* ヘッダー側も少し強調 */
+.shift-sheet-table th.col-date,
+.shift-sheet-table th.col-start,
+.shift-sheet-table th.col-end{
+  font-size:12px;
+}
+
+/* 日付列を少し狭く */
+.shift-sheet-table .col-date{
+  width:56px;
+  min-width:56px;
+  max-width:56px;
+}
+
+/* 固定列の位置も日付列幅に合わせて調整 */
+.shift-sheet-table .sticky-dow{
+  left:56px;
+}
+
+.shift-sheet-table .sticky-start{
+  left:90px;
+}
+
+.shift-sheet-table .sticky-end{
+  left:142px;
+}
+
+.shift-sheet-table .sticky-client{
+  left:194px;
+}
+
+/* 制度 */
+.shift-sheet-table td.system-care{
+  color:#1565c0;
+  font-weight:800;
+}
+
+.shift-sheet-table td.system-disability{
+  color:#218653;
+  font-weight:800;
+}
+
+.shift-sheet-table td.system-other{
+  color:#1f2933;
+}
+
+/* サービス */
+.shift-sheet-table td.service-body{
+  color:#d24a2f; /* 朱色 */
+  font-weight:800;
+}
+
+.shift-sheet-table td.service-house{
+  color:#c58a00; /* 山吹色 */
+  font-weight:800;
+}
+
+.shift-sheet-table td.service-hospital{
+  color:#a02c70; /* 赤紫 */
+  font-weight:800;
+}
+
+.shift-sheet-table td.service-guide{
+  color:#218653; /* 緑 */
+  font-weight:800;
+}
+
+.shift-sheet-table td.service-other{
+  color:#1f2933;
+}
+
+/* 運転手は 名前(車種) 表示を想定。幅は極力抑える */
+.shift-sheet-table .col-driver{
+  width:100px;
+  min-width:100px;
+  max-width:100px;
+}
+
+/* 従業員別見出し */
+.employee-compact-group-title{
+  font-size:14px;
+  color:#1565c0;
+  font-weight:900;
+}
+
+.employee-compact-group-title.conflict{
+  color:#d32f2f;
+}
+
+/* スマホでも従業員名は少し見やすく */
+@media(max-width:720px){
+  .employee-compact-group-title{
+    font-size:13px;
+  }
+}
