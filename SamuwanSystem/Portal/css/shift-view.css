@@ -1891,3 +1891,118 @@ body{
     font-size:13px;
   }
 }
+
+
+/* ==================================================
+   v30 実運用チェック
+================================================== */
+
+.week-op-btn.refresh{
+  border-color:#d2d9de;
+  background:#fff;
+  color:#4d5964;
+}
+
+.week-check-summary{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:42px;
+  margin:0 0 10px;
+  padding:6px 8px;
+  border:1px solid #dce4df;
+  border-radius:10px;
+  background:#f8fbf9;
+}
+
+.week-check-summary.has-warning{
+  border-color:#e0b3a7;
+  background:#fff9f7;
+}
+
+.week-check-chip{
+  min-width:64px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:5px 8px;
+  border:1px solid #d7e1db;
+  border-radius:8px;
+  background:#fff;
+  white-space:nowrap;
+}
+
+.week-check-chip span{
+  font-size:10px;
+  color:#68766e;
+  font-weight:700;
+}
+
+.week-check-chip b{
+  font-size:14px;
+  color:#244d38;
+}
+
+.week-check-chip.warning b{
+  color:#c0442d;
+}
+
+.week-check-chip.cancel b{
+  color:#8d5e68;
+}
+
+.week-check-message{
+  min-width:0;
+  margin-left:5px;
+  font-size:11px;
+  color:#68766e;
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.week-check-message.warning{
+  color:#c0392b;
+}
+
+.week-check-message.ok{
+  color:#248151;
+}
+
+.week-confirm-warning{
+  margin-top:8px;
+  padding:8px 10px;
+  border:1px solid #edc1b6;
+  border-radius:8px;
+  background:#fff3ef;
+  color:#b53d27;
+  font-weight:700;
+  line-height:1.5;
+}
+
+.week-confirm-ok{
+  margin-top:8px;
+  padding:7px 9px;
+  border-radius:8px;
+  background:#eef8f2;
+  color:#237849;
+  font-weight:700;
+}
+
+@media(max-width:720px){
+  .week-check-summary{
+    flex-wrap:wrap;
+  }
+
+  .week-check-chip{
+    min-width:58px;
+  }
+
+  .week-check-message{
+    width:100%;
+    margin-left:0;
+    white-space:normal;
+  }
+}
