@@ -1351,3 +1351,434 @@ textarea{
   font-weight:600;
   color:#73808c;
 }
+
+
+/* ==================================================
+   v29 実運用向けシフト一覧
+   request画面との統一 + PCスプレッドシート表示
+================================================== */
+
+body{
+  background:#f4f7f5;
+}
+
+.shift-fixed-header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:#fff;
+  border-bottom:1px solid #dfe5ea;
+}
+
+.shift-title-bar{
+  min-height:78px;
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) 48px;
+  align-items:center;
+  border-bottom:1px solid #e5e9ec;
+}
+
+.shift-title-center{
+  text-align:center;
+  min-width:0;
+}
+
+.shift-title-center .title{
+  font-size:19px;
+  line-height:1.25;
+}
+
+.shift-title-center .sub{
+  margin-top:4px;
+  font-size:11px;
+}
+
+.shift-back-link{
+  width:40px;
+  height:40px;
+  margin-left:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#36515f;
+  text-decoration:none;
+  border-radius:10px;
+  font-size:28px;
+  line-height:1;
+}
+
+.shift-back-link:hover{
+  background:#f2f5f6;
+}
+
+.shift-title-spacer{
+  width:40px;
+  height:40px;
+}
+
+.shift-page-app{
+  width:100%;
+  max-width:1600px;
+  min-height:auto;
+  padding:16px 14px 28px;
+}
+
+.week-operation-panel{
+  width:100%;
+  margin:0 auto 12px;
+  padding:12px;
+  background:#fff;
+  border:1px solid #dfe5ea;
+  border-radius:14px;
+  box-shadow:0 6px 20px rgba(28,47,39,.05);
+}
+
+.week-operation-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.week-operation-title{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.week-operation-title>strong{
+  font-size:16px;
+}
+
+.shift-week-info{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+
+.week-operation-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:7px;
+}
+
+.week-op-btn{
+  min-height:38px;
+  padding:0 13px;
+  border:1px solid #cfd7df;
+  border-radius:9px;
+  background:#fff;
+  font-weight:800;
+  font-size:12px;
+  cursor:pointer;
+}
+
+.week-op-btn.build{
+  border-color:#8bcaa6;
+  background:#eff9f3;
+  color:#187344;
+}
+
+.week-op-btn.apply{
+  border-color:#9fc1e6;
+  background:#eef5fc;
+  color:#245f9f;
+}
+
+.week-op-btn.confirm{
+  border-color:#8bcaa6;
+  background:#2f9961;
+  color:#fff;
+}
+
+.week-op-btn:disabled{
+  opacity:.55;
+  cursor:default;
+}
+
+.selected-day-left{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.all-days-btn{
+  min-height:32px;
+  padding:0 10px;
+  border:1px solid #d7dde3;
+  border-radius:8px;
+  background:#fff;
+  color:#4e5b67;
+  font-size:11px;
+  font-weight:800;
+}
+
+.all-days-btn.active{
+  border-color:#83b79a;
+  background:#edf8f1;
+  color:#1f7047;
+}
+
+.shift-filter-input{
+  width:230px;
+  min-height:34px;
+  border:1px solid #d7dde3;
+  border-radius:8px;
+  padding:5px 9px;
+  font-size:12px;
+  background:#fff;
+}
+
+.shift-table-content{
+  width:100%;
+  padding:0;
+}
+
+.shift-table-content .message{
+  padding:10px;
+}
+
+.shift-table-content .list{
+  display:block;
+  width:100%;
+}
+
+/* ---------- スプレッドシート型 ---------- */
+
+.shift-sheet-wrap{
+  width:100%;
+  overflow:auto;
+  max-height:calc(100vh - 285px);
+  background:#fff;
+  border:1px solid #cfd8df;
+  border-radius:10px;
+}
+
+.shift-sheet-table{
+  width:max-content;
+  min-width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+  font-size:11px;
+  line-height:1.2;
+}
+
+.shift-sheet-table th,
+.shift-sheet-table td{
+  height:32px;
+  padding:3px 5px;
+  border-right:1px solid #dce3e8;
+  border-bottom:1px solid #dce3e8;
+  background:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  vertical-align:middle;
+}
+
+.shift-sheet-table th{
+  position:sticky;
+  top:0;
+  z-index:8;
+  height:34px;
+  background:#f1f5f3;
+  color:#33443c;
+  font-weight:800;
+  text-align:left;
+}
+
+.shift-sheet-table tbody tr:hover td{
+  background:#f6faf8;
+}
+
+.shift-sheet-table tr.is-cancelled td{
+  background:#fff0f0;
+  color:#9a5555;
+  text-decoration:line-through;
+}
+
+.shift-sheet-table tr.is-expected td{
+  background:#f7f8f9;
+  color:#77828c;
+}
+
+.shift-sheet-table tr.is-unassigned td.col-staff:first-of-type{
+  background:#fff1d9;
+}
+
+.shift-sheet-table .sticky-col{
+  position:sticky;
+  z-index:5;
+  background:#fff;
+}
+
+.shift-sheet-table th.sticky-col{
+  z-index:12;
+  background:#eaf1ed;
+}
+
+.shift-sheet-table .sticky-date{
+  left:0;
+}
+
+.shift-sheet-table .sticky-dow{
+  left:64px;
+}
+
+.shift-sheet-table .sticky-start{
+  left:98px;
+}
+
+.shift-sheet-table .sticky-end{
+  left:150px;
+}
+
+.shift-sheet-table .sticky-client{
+  left:202px;
+  box-shadow:2px 0 2px rgba(0,0,0,.06);
+}
+
+.shift-sheet-table tr:hover .sticky-col{
+  background:#f6faf8;
+}
+
+.shift-sheet-table tr.is-cancelled .sticky-col{
+  background:#fff0f0;
+}
+
+.shift-sheet-table tr.is-expected .sticky-col{
+  background:#f7f8f9;
+}
+
+.shift-sheet-table .col-date{width:64px;min-width:64px;max-width:64px;}
+.shift-sheet-table .col-dow{width:34px;min-width:34px;max-width:34px;text-align:center;}
+.shift-sheet-table .col-start,
+.shift-sheet-table .col-end{width:52px;min-width:52px;max-width:52px;text-align:center;}
+.shift-sheet-table .col-client{width:108px;min-width:108px;max-width:108px;font-weight:800;}
+.shift-sheet-table .col-system{width:68px;min-width:68px;max-width:68px;}
+.shift-sheet-table .col-service{width:86px;min-width:86px;max-width:86px;}
+.shift-sheet-table .col-staff{width:88px;min-width:88px;max-width:88px;}
+.shift-sheet-table .col-support{width:140px;min-width:140px;max-width:140px;}
+.shift-sheet-table .col-destination{width:112px;min-width:112px;max-width:112px;}
+.shift-sheet-table .col-meeting{width:106px;min-width:106px;max-width:106px;}
+.shift-sheet-table .col-driver{width:86px;min-width:86px;max-width:86px;}
+.shift-sheet-table .col-status{width:62px;min-width:62px;max-width:62px;text-align:center;}
+.shift-sheet-table .col-action{width:58px;min-width:58px;max-width:58px;text-align:center;}
+
+.table-detail-btn{
+  min-height:25px;
+  padding:2px 7px;
+  border:1px solid #cbd5dc;
+  border-radius:6px;
+  background:#fff;
+  color:#334956;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+/* PCではカード幅制限を解除 */
+@media(min-width:721px){
+  .app{
+    max-width:1600px;
+  }
+
+  .content{
+    padding:0;
+  }
+
+  .week-nav-row{
+    grid-template-columns:38px minmax(0,1fr) 38px;
+    padding:0 0 10px;
+  }
+
+  .days{
+    gap:5px;
+  }
+
+  .day-btn{
+    min-height:42px;
+    border:1px solid #dde4e8;
+    border-radius:8px;
+  }
+
+  .selected-day-row{
+    padding:0;
+  }
+
+  .day-tools{
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+}
+
+/* スマホは従来のカード表示を維持 */
+@media(max-width:720px){
+  .shift-fixed-header{
+    position:sticky;
+  }
+
+  .shift-title-bar{
+    min-height:64px;
+  }
+
+  .shift-title-center .title{
+    font-size:17px;
+  }
+
+  .shift-page-app{
+    max-width:560px;
+    padding:8px 6px 18px;
+  }
+
+  .week-operation-panel{
+    padding:8px 6px;
+    border-radius:10px;
+  }
+
+  .week-operation-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .week-operation-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .week-op-btn{
+    min-height:34px;
+    padding:0 9px;
+    font-size:11px;
+  }
+
+  .selected-day-row{
+    align-items:flex-start;
+    gap:6px;
+  }
+
+  .day-tools{
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .shift-filter-input{
+    width:min(100%,220px);
+    min-height:32px;
+  }
+
+  .shift-table-content{
+    padding:8px 4px;
+  }
+
+  .shift-table-content .list{
+    display:grid;
+    gap:9px;
+  }
+}
