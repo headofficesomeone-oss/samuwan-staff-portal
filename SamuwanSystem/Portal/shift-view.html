@@ -4,84 +4,99 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260904-nav1">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260929-table1">
 </head>
 <body>
 
-<div class="app">
+<header class="shift-fixed-header">
+  <div class="shift-title-bar">
+    <a class="shift-back-link" href="./index.html" aria-label="ポータルへ戻る">‹</a>
 
-  <header class="header">
+    <div class="shift-title-center">
+      <div class="title">シフト一覧</div>
+      <div id="headerReporter" class="sub">職員情報確認中...</div>
+    </div>
 
-    <div class="title-row">
+    <div class="shift-title-spacer" aria-hidden="true"></div>
+  </div>
 
-      <div>
-        <div class="title">シフト一覧</div>
-        <div id="weekLabel" class="sub">読み込み中...</div>
+  <nav class="samuwan-page-nav" aria-label="画面移動">
+    <a class="samuwan-page-nav-link" href="./index.html">ポータル</a>
+    <a class="samuwan-page-nav-link" href="./request.html">新規依頼</a>
+    <a class="samuwan-page-nav-link" href="./request-view.html">依頼情報</a>
+    <a class="samuwan-page-nav-link" href="./office_new.html">シフト表</a>
+  </nav>
+</header>
+
+<div class="app shift-page-app">
+
+  <section class="week-operation-panel">
+
+    <div class="week-operation-head">
+      <div class="week-operation-title">
+        <strong id="weekLabel">読み込み中...</strong>
+        <div class="shift-week-info">
+          <span id="weekState" class="shift-week-state">状態確認中</span>
+          <span id="weekSource" class="shift-week-source"></span>
+        </div>
       </div>
 
-      <div class="header-actions">
+      <div class="week-operation-actions">
+        <button
+          id="weekBuildButton"
+          class="week-op-btn build"
+          type="button"
+          hidden
+        >
+          週編成を作成
+        </button>
+
+        <button
+          id="applyWeekRequestsButton"
+          class="week-op-btn apply"
+          type="button"
+          hidden
+        >
+          依頼を反映
+        </button>
 
         <button
           id="confirmWeekButton"
-          class="register-btn confirm-week-btn"
+          class="week-op-btn confirm"
           type="button"
           hidden
         >
           週を確定
         </button>
-
-        <a class="register-btn shift-request-link" href="./request-view.html">
-          依頼情報
-        </a>
-
       </div>
-
     </div>
-
-
-<nav class="samuwan-page-nav" aria-label="画面移動">
-  <a class="samuwan-page-nav-link" href="./index.html">ポータル</a>
-  <a class="samuwan-page-nav-link" href="./request.html">新規依頼</a>
-  <a class="samuwan-page-nav-link" href="./request-view.html">依頼情報</a>
-  <a class="samuwan-page-nav-link" href="./office_new.html">シフト表</a>
-</nav>
-
-    <div class="shift-week-info">
-      <span id="weekState" class="shift-week-state">状態確認中</span>
-      <span id="weekSource" class="shift-week-source"></span>
-    </div>
-
 
     <div class="week-nav-row">
-
-      <button
-        id="prevWeek"
-        class="week-nav-btn"
-        type="button"
-      >
-        ‹
-      </button>
-
+      <button id="prevWeek" class="week-nav-btn" type="button">‹</button>
       <div id="daysNav" class="days"></div>
-
-      <button
-        id="nextWeek"
-        class="week-nav-btn"
-        type="button"
-      >
-        ›
-      </button>
-
+      <button id="nextWeek" class="week-nav-btn" type="button">›</button>
     </div>
 
-
     <div class="selected-day-row">
-      <div id="dayTitle" class="selected-day-title">-</div>
+      <div class="selected-day-left">
+        <div id="dayTitle" class="selected-day-title">-</div>
+        <button id="showAllDaysButton" type="button" class="all-days-btn">全日</button>
+      </div>
+
       <div class="day-tools">
+        <input
+          id="shiftFilterText"
+          class="shift-filter-input"
+          type="search"
+          placeholder="利用者・担当・サービスで絞込"
+          autocomplete="off"
+        >
+
         <div class="shift-view-toggle">
-          <button id="timeViewButton" type="button" class="shift-view-btn active">時間順</button>
+          <button id="timeViewButton" type="button" class="shift-view-btn active">一覧</button>
           <button id="staffViewButton" type="button" class="shift-view-btn">従業員別</button>
         </div>
+
         <button
           id="addConfirmedShiftButton"
           type="button"
@@ -90,14 +105,15 @@
         >
           ＋追加
         </button>
+
         <span id="dayCount" class="count">0件</span>
       </div>
     </div>
 
-  </header>
+  </section>
 
 
-  <main class="content">
+  <main class="content shift-table-content">
 
     <div id="message" class="message">
       シフトを取得しています...
@@ -538,6 +554,6 @@
 
 <script src="./js/request-view-config.js?v=20260831-01"></script>
 <script src="./js/samuwan-data-cache.js?v=20260905-2"></script>
-<script src="./js/shift-view.js?v=20260905-cache2"></script>
+<script src="./js/shift-view.js?v=20260929-table1"></script>
 </body>
 </html>
