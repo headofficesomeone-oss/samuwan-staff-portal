@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>シフト一覧</title>
-  <link rel="stylesheet" href="./css/shift-view.css?v=20260929-table2">
+  <link rel="stylesheet" href="./css/shift-view.css?v=20260929-ops1">
 </head>
 <body>
 
@@ -43,6 +43,14 @@
 
       <div class="week-operation-actions">
         <button
+          id="refreshWeekButton"
+          class="week-op-btn refresh"
+          type="button"
+        >
+          更新
+        </button>
+
+        <button
           id="weekBuildButton"
           class="week-op-btn build"
           type="button"
@@ -69,6 +77,33 @@
           週を確定
         </button>
       </div>
+    </div>
+
+    <div id="weekCheckSummary" class="week-check-summary">
+      <div class="week-check-chip">
+        <span>有効</span>
+        <b id="weekCheckActive">0</b>
+      </div>
+
+      <div class="week-check-chip warning">
+        <span>未担当</span>
+        <b id="weekCheckUnassigned">0</b>
+      </div>
+
+      <div class="week-check-chip warning">
+        <span>重複</span>
+        <b id="weekCheckConflict">0</b>
+      </div>
+
+      <div class="week-check-chip cancel">
+        <span>キャンセル</span>
+        <b id="weekCheckCancelled">0</b>
+      </div>
+
+      <div
+        id="weekCheckMessage"
+        class="week-check-message"
+      ></div>
     </div>
 
     <div class="week-nav-row">
@@ -554,6 +589,6 @@
 
 <script src="./js/request-view-config.js?v=20260831-01"></script>
 <script src="./js/samuwan-data-cache.js?v=20260905-2"></script>
-<script src="./js/shift-view.js?v=20260929-table2"></script>
+<script src="./js/shift-view.js?v=20260929-ops1"></script>
 </body>
 </html>
