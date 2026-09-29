@@ -75,9 +75,16 @@
     shiftHistorySummary: $('shiftHistorySummary'),
     shiftHistoryList: $('shiftHistoryList'),
 
+    refreshWeekButton: $('refreshWeekButton'),
     weekBuildButton: $('weekBuildButton'),
     applyWeekRequestsButton: $('applyWeekRequestsButton'),
     confirmWeekButton: $('confirmWeekButton'),
+    weekCheckSummary: $('weekCheckSummary'),
+    weekCheckActive: $('weekCheckActive'),
+    weekCheckUnassigned: $('weekCheckUnassigned'),
+    weekCheckConflict: $('weekCheckConflict'),
+    weekCheckCancelled: $('weekCheckCancelled'),
+    weekCheckMessage: $('weekCheckMessage'),
     showAllDaysButton: $('showAllDaysButton'),
     shiftFilterText: $('shiftFilterText'),
     weekConfirmDialog: $('weekConfirmDialog'),
@@ -604,6 +611,7 @@
     E.prevWeek.disabled = S.weekOffset <= -1;
     E.nextWeek.disabled = S.weekOffset >= 1;
 
+    renderWeekOperationalCheck_();
     renderDays();
     renderDay();
   }
@@ -1120,8 +1128,26 @@
     const groups = new Map();
 
     rows.forEach(row => {
-      const key = row.staffId || row.staffName;
-      if (!groups.has(key)) groups.set(key,[]);
+      /*
+       * 同じ職員でも別日は重複扱いにしない。
+       * 週全体表示でも、日付単位で重複判定する。
+       */
+      const staffKey =
+        row.staffId ||
+        row.staffName;
+
+      const dateKey =
+        String(
+          row.item?.date || ''
+        ).trim();
+
+      const key =
+        `${staffKey}|${dateKey}`;
+
+      if (!groups.has(key)) {
+        groups.set(key,[]);
+      }
+
       groups.get(key).push(row);
     });
 
@@ -1142,6 +1168,204 @@
     });
 
     return keys;
+  }
+
+
+  function isInactiveShift_(
+    item
+  ) {
+    return [
+      'キャンセル',
+      '無効',
+      '変更前'
+    ].includes(
+      String(
+        item?.state || ''
+      ).trim()
+    );
+  }
+
+
+  function weekOperationalCheck_() {
+    const allItems =
+      S.weekData?.items || [];
+
+    const activeItems =
+      allItems.filter(
+        item =>
+          !isInactiveShift_(
+            item
+          )
+      );
+
+    const cancelledItems =
+      allItems.filter(
+        item =>
+          isInactiveShift_(
+            item
+          )
+      );
+
+    const unassigned =
+      activeItems.filter(
+        item =>
+          !String(
+            item.mainStaffName ||
+            item.mainStaffId ||
+            ''
+          ).trim()
+      );
+
+    /*
+     * 重複確認は主担当 / 担当2 / 担当3を対象。
+     * employeeConflictKeys_ は日付単位で判定する。
+     */
+    const rows =
+      employeeCompactRows_(
+        activeItems
+      );
+
+    const conflictKeys =
+      employeeConflictKeys_(
+        rows
+      );
+
+    const conflictShiftIds =
+      new Set();
+
+    rows.forEach(
+      row => {
+        const key =
+          (
+            row.staffId ||
+            row.staffName
+          ) +
+          '|' +
+          row.item.shiftId;
+
+        if (
+          conflictKeys.has(
+            key
+          )
+        ) {
+          conflictShiftIds.add(
+            row.item.shiftId
+          );
+        }
+      }
+    );
+
+    return {
+      activeCount:
+        activeItems.length,
+      unassignedCount:
+        unassigned.length,
+      conflictCount:
+        conflictShiftIds.size,
+      cancelledCount:
+        cancelledItems.length,
+      unassignedItems:
+        unassigned,
+      conflictShiftIds:
+        conflictShiftIds
+    };
+  }
+
+
+  function renderWeekOperationalCheck_() {
+    const check =
+      weekOperationalCheck_();
+
+    if (E.weekCheckActive) {
+      E.weekCheckActive.textContent =
+        String(
+          check.activeCount
+        );
+    }
+
+    if (E.weekCheckUnassigned) {
+      E.weekCheckUnassigned.textContent =
+        String(
+          check.unassignedCount
+        );
+    }
+
+    if (E.weekCheckConflict) {
+      E.weekCheckConflict.textContent =
+        String(
+          check.conflictCount
+        );
+    }
+
+    if (E.weekCheckCancelled) {
+      E.weekCheckCancelled.textContent =
+        String(
+          check.cancelledCount
+        );
+    }
+
+    if (
+      E.weekCheckSummary
+    ) {
+      E.weekCheckSummary.classList.toggle(
+        'has-warning',
+        check.unassignedCount > 0 ||
+        check.conflictCount > 0
+      );
+    }
+
+    if (
+      E.weekCheckMessage
+    ) {
+      if (
+        check.unassignedCount ||
+        check.conflictCount
+      ) {
+        const parts = [];
+
+        if (
+          check.unassignedCount
+        ) {
+          parts.push(
+            `未担当 ${check.unassignedCount}件`
+          );
+        }
+
+        if (
+          check.conflictCount
+        ) {
+          parts.push(
+            `担当重複 ${check.conflictCount}件`
+          );
+        }
+
+        E.weekCheckMessage.textContent =
+          '確認が必要です：' +
+          parts.join(' / ');
+
+        E.weekCheckMessage.className =
+          'week-check-message warning';
+      }
+      else if (
+        S.weekData?.status ===
+        '未作成'
+      ) {
+        E.weekCheckMessage.textContent =
+          'この週はまだ作成されていません。';
+
+        E.weekCheckMessage.className =
+          'week-check-message';
+      }
+      else {
+        E.weekCheckMessage.textContent =
+          '担当・時間重複の基本チェックは問題ありません。';
+
+        E.weekCheckMessage.className =
+          'week-check-message ok';
+      }
+    }
+
+    return check;
   }
 
 
@@ -1555,6 +1779,7 @@
     busy
   ) {
     [
+      E.refreshWeekButton,
       E.weekBuildButton,
       E.applyWeekRequestsButton,
       E.confirmWeekButton
@@ -1564,6 +1789,25 @@
         button.disabled =
           !!busy;
       });
+  }
+
+
+  async function refreshCurrentWeek_() {
+    setWeekOperationBusy_(true);
+
+    try {
+      S.cache = {};
+
+      window.SamuwanLocalData
+        ?.removePrefix(
+          'shift-week:'
+        );
+
+      await loadWeek();
+    }
+    finally {
+      setWeekOperationBusy_(false);
+    }
   }
 
 
@@ -1776,8 +2020,34 @@
         .length;
 
 
-    E.weekConfirmSummary.textContent =
-      `${data.weekStart || ''}〜${data.weekEnd || ''}　${activeCount}件`;
+    const check =
+      weekOperationalCheck_();
+
+    const warnings = [];
+
+    if (
+      check.unassignedCount
+    ) {
+      warnings.push(
+        `未担当 ${check.unassignedCount}件`
+      );
+    }
+
+    if (
+      check.conflictCount
+    ) {
+      warnings.push(
+        `担当重複 ${check.conflictCount}件`
+      );
+    }
+
+    E.weekConfirmSummary.innerHTML =
+      `<b>${esc(data.weekStart || '')}〜${esc(data.weekEnd || '')}　${activeCount}件</b>` +
+      (
+        warnings.length
+          ? `<div class="week-confirm-warning">⚠ ${esc(warnings.join(' / '))}<br>内容を確認してから確定してください。</div>`
+          : `<div class="week-confirm-ok">基本チェック：問題なし</div>`
+      );
 
 
     E.weekConfirmDialog.showModal();
@@ -3478,6 +3748,21 @@
       ) {
         E.shiftDetailDialog.showModal();
       }
+    }
+  );
+
+
+  E.refreshWeekButton?.addEventListener(
+    'click',
+    () => {
+      refreshCurrentWeek_()
+        .catch(
+          err =>
+            alert(
+              err?.message ||
+              err
+            )
+        );
     }
   );
 
