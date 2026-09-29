@@ -804,6 +804,132 @@
   }
 
 
+  function systemClass_(
+    value
+  ) {
+    const text =
+      String(value || '').trim();
+
+    if (
+      text.includes(
+        '介護保険'
+      )
+    ) {
+      return 'system-care';
+    }
+
+    if (
+      text.includes(
+        '障害福祉'
+      )
+    ) {
+      return 'system-disability';
+    }
+
+    return 'system-other';
+  }
+
+
+  function serviceClass_(
+    value
+  ) {
+    const text =
+      String(value || '').trim();
+
+    // 「身」が入るサービスを最優先
+    if (
+      text.includes(
+        '身'
+      )
+    ) {
+      return 'service-body';
+    }
+
+    if (
+      text.includes(
+        '家事'
+      ) ||
+      text.includes(
+        '生活援助'
+      )
+    ) {
+      return 'service-house';
+    }
+
+    if (
+      text.includes(
+        '通院介助'
+      )
+    ) {
+      return 'service-hospital';
+    }
+
+    if (
+      text.includes(
+        '同行援護'
+      )
+    ) {
+      return 'service-guide';
+    }
+
+    return 'service-other';
+  }
+
+
+  function driverVehicle_(
+    item,
+    direction
+  ) {
+    if (
+      direction === 'out'
+    ) {
+      return String(
+        item.outVehicle ||
+        item.outDriverVehicle ||
+        item.outboundVehicle ||
+        item['行き車両'] ||
+        ''
+      ).trim();
+    }
+
+    return String(
+      item.backVehicle ||
+      item.backDriverVehicle ||
+      item.returnVehicle ||
+      item['帰り車両'] ||
+      ''
+    ).trim();
+  }
+
+
+  function driverDisplay_(
+    name,
+    vehicle
+  ) {
+    const staffName =
+      String(
+        name || ''
+      ).trim();
+
+    const vehicleName =
+      String(
+        vehicle || ''
+      ).trim();
+
+    if (
+      staffName &&
+      vehicleName
+    ) {
+      return `${staffName}(${vehicleName})`;
+    }
+
+    return (
+      staffName ||
+      vehicleName
+    );
+  }
+
+
   function shiftTableHtml_(
     items
   ) {
@@ -869,16 +995,40 @@
             ${tableCell_(item.startTime || '', 'col-start sticky-col sticky-start')}
             ${tableCell_(effectiveEndTime_(item) || item.endTime || '', 'col-end sticky-col sticky-end')}
             ${tableCell_(item.clientName || '', 'col-client sticky-col sticky-client')}
-            ${tableCell_(item.system || '', 'col-system')}
-            ${tableCell_(item.service || '', 'col-service')}
+            ${tableCell_(
+              item.system || '',
+              `col-system ${systemClass_(item.system)}`
+            )}
+            ${tableCell_(
+              item.service || '',
+              `col-service ${serviceClass_(item.service)}`
+            )}
             ${tableCell_(item.mainStaffName || '', 'col-staff')}
             ${tableCell_(item.staff2Name || '', 'col-staff')}
             ${tableCell_(item.staff3Name || '', 'col-staff')}
             ${tableCell_(item.supportContent || '', 'col-support')}
             ${tableCell_(item.destination || '', 'col-destination')}
             ${tableCell_(item.meetingPlace || '', 'col-meeting')}
-            ${tableCell_(item.outDriverName || '', 'col-driver')}
-            ${tableCell_(item.backDriverName || '', 'col-driver')}
+            ${tableCell_(
+              driverDisplay_(
+                item.outDriverName,
+                driverVehicle_(
+                  item,
+                  'out'
+                )
+              ),
+              'col-driver'
+            )}
+            ${tableCell_(
+              driverDisplay_(
+                item.backDriverName,
+                driverVehicle_(
+                  item,
+                  'back'
+                )
+              ),
+              'col-driver'
+            )}
             ${tableCell_(item.state || (item.isActual ? '予定' : '予定候補'), 'col-status')}
             <td class="col-action">${operation}</td>
           </tr>
