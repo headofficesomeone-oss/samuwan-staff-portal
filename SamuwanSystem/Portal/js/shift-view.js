@@ -15,13 +15,15 @@
     },
     selectedShift: null,
     detailShift: null,
-    viewMode: 'time'
+    viewMode: 'time',
+    filterText: ''
   };
 
   const $ = id => document.getElementById(id);
 
   const E = {
     weekLabel: $('weekLabel'),
+    headerReporter: $('headerReporter'),
     weekState: $('weekState'),
     weekSource: $('weekSource'),
     daysNav: $('daysNav'),
@@ -73,7 +75,11 @@
     shiftHistorySummary: $('shiftHistorySummary'),
     shiftHistoryList: $('shiftHistoryList'),
 
+    weekBuildButton: $('weekBuildButton'),
+    applyWeekRequestsButton: $('applyWeekRequestsButton'),
     confirmWeekButton: $('confirmWeekButton'),
+    showAllDaysButton: $('showAllDaysButton'),
+    shiftFilterText: $('shiftFilterText'),
     weekConfirmDialog: $('weekConfirmDialog'),
     weekConfirmForm: $('weekConfirmForm'),
     closeWeekConfirmDialog: $('closeWeekConfirmDialog'),
@@ -570,14 +576,29 @@
     E.weekState.textContent = data.status || '未作成';
     E.weekSource.textContent = data.source ? `参照：${data.source}` : '';
 
-    // テスト中はログイン有無に関係なく、
-    // 作成中 / 確認中 の週なら確定ボタンを表示する。
+    const weekStatus =
+      data.status ||
+      '未作成';
+
+    // 実運用用の週操作。
+    E.weekBuildButton.hidden =
+      weekStatus !==
+      '未作成';
+
+    E.applyWeekRequestsButton.hidden =
+      ![
+        '作成中',
+        '確認中'
+      ].includes(
+        weekStatus
+      );
+
     E.confirmWeekButton.hidden =
       ![
         '作成中',
         '確認中'
       ].includes(
-        data.status
+        weekStatus
       );
 
     E.prevWeek.disabled = S.weekOffset <= -1;
@@ -610,23 +631,110 @@
 
   function renderDay() {
     const start = weekStart();
-    const date = addDays(start,S.selectedDay);
-    const dateKey = ymd(date);
 
-    E.dayTitle.textContent = DOW[S.selectedDay] + '曜日';
+    const allDays =
+      S.selectedDay === -1;
+
+    const date =
+      allDays
+        ? null
+        : addDays(
+            start,
+            S.selectedDay
+          );
+
+    const dateKey =
+      date
+        ? ymd(date)
+        : '';
+
+    E.dayTitle.textContent =
+      allDays
+        ? '1週間すべて'
+        : DOW[S.selectedDay] + '曜日';
+
+    E.showAllDaysButton?.classList.toggle(
+      'active',
+      allDays
+    );
 
     E.addConfirmedShiftButton.hidden =
       !(
+        !allDays &&
         S.weekData?.status === '確定' &&
         dateKey >= ymd(new Date())
       );
 
-    const items = (S.weekData?.items || [])
-      .filter(x => x.date === dateKey)
-      .sort((a,b) => String(a.startTime||'').localeCompare(String(b.startTime||'')));
+    let items =
+      (S.weekData?.items || [])
+        .filter(
+          x =>
+            allDays ||
+            x.date === dateKey
+        )
+        .sort((a,b) => {
+          const d =
+            String(a.date || '')
+              .localeCompare(
+                String(b.date || '')
+              );
 
-    E.timeViewButton.classList.toggle('active',S.viewMode === 'time');
-    E.staffViewButton.classList.toggle('active',S.viewMode === 'staff');
+          if (d !== 0) {
+            return d;
+          }
+
+          return String(
+            a.startTime || ''
+          ).localeCompare(
+            String(
+              b.startTime || ''
+            )
+          );
+        });
+
+    const filterText =
+      String(
+        S.filterText || ''
+      )
+        .trim()
+        .toLowerCase();
+
+    if (filterText) {
+      items =
+        items.filter(item =>
+          [
+            item.clientName,
+            item.system,
+            item.service,
+            item.mainStaffName,
+            item.staff2Name,
+            item.staff3Name,
+            item.outDriverName,
+            item.backDriverName,
+            item.supportContent,
+            item.destination,
+            item.meetingPlace,
+            item.state
+          ]
+            .some(value =>
+              String(value || '')
+                .toLowerCase()
+                .includes(
+                  filterText
+                )
+            )
+        );
+    }
+
+    E.timeViewButton.classList.toggle(
+      'active',
+      S.viewMode === 'time'
+    );
+
+    E.staffViewButton.classList.toggle(
+      'active',
+      S.viewMode === 'staff'
+    );
 
     E.dayCount.textContent =
       S.viewMode === 'staff'
@@ -634,23 +742,179 @@
         : items.length + '件';
 
     if (S.weekData?.warning) {
-      E.message.innerHTML = `<div class="warning">${esc(S.weekData.warning)}</div>`;
-    } else {
+      E.message.innerHTML =
+        `<div class="warning">${esc(S.weekData.warning)}</div>`;
+    }
+    else {
       E.message.textContent = '';
     }
 
     if (!items.length) {
       E.list.innerHTML = '';
-      if (!S.weekData?.warning) E.message.textContent = 'この日のシフトはありません。';
+
+      if (!S.weekData?.warning) {
+        E.message.textContent =
+          filterText
+            ? '条件に一致するシフトはありません。'
+            : (
+                allDays
+                  ? 'この週のシフトはありません。'
+                  : 'この日のシフトはありません。'
+              );
+      }
+
       return;
     }
 
     if (S.viewMode === 'staff') {
-      E.list.innerHTML = employeeCompactHtml_(items);
+      E.list.innerHTML =
+        employeeCompactHtml_(items);
       return;
     }
 
-    E.list.innerHTML = items.map(cardHtml).join('');
+    if (
+      window.matchMedia(
+        '(min-width: 721px)'
+      ).matches
+    ) {
+      E.list.innerHTML =
+        shiftTableHtml_(items);
+      return;
+    }
+
+    E.list.innerHTML =
+      items.map(cardHtml).join('');
+  }
+
+
+  function tableCell_(
+    value,
+    className
+  ) {
+    const text =
+      String(
+        value || ''
+      );
+
+    return (
+      `<td class="${className || ''}" title="${esc(text)}">` +
+      `${esc(text)}` +
+      `</td>`
+    );
+  }
+
+
+  function shiftTableHtml_(
+    items
+  ) {
+    const rows =
+      items.map(item => {
+
+        const date =
+          String(
+            item.date || ''
+          );
+
+        const weekday =
+          date
+            ? DOW[
+                (
+                  new Date(
+                    `${date}T00:00:00`
+                  ).getDay() + 6
+                ) % 7
+              ] || ''
+            : '';
+
+        const rowClasses = [
+          !item.isActual
+            ? 'is-expected'
+            : '',
+          [
+            'キャンセル',
+            '無効',
+            '変更前'
+          ].includes(
+            item.state
+          )
+            ? 'is-cancelled'
+            : '',
+          !String(
+            item.mainStaffName || ''
+          ).trim()
+            ? 'is-unassigned'
+            : ''
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+        const operation =
+          item.isActual
+            ? `
+              <button
+                type="button"
+                class="table-detail-btn"
+                data-action="detail"
+                data-shift-id="${esc(item.shiftId)}"
+              >
+                詳細
+              </button>
+            `
+            : '－';
+
+        return `
+          <tr class="${rowClasses}">
+            ${tableCell_(date ? date.slice(5).replace('-', '/') : '', 'col-date sticky-col sticky-date')}
+            ${tableCell_(weekday, 'col-dow sticky-col sticky-dow')}
+            ${tableCell_(item.startTime || '', 'col-start sticky-col sticky-start')}
+            ${tableCell_(effectiveEndTime_(item) || item.endTime || '', 'col-end sticky-col sticky-end')}
+            ${tableCell_(item.clientName || '', 'col-client sticky-col sticky-client')}
+            ${tableCell_(item.system || '', 'col-system')}
+            ${tableCell_(item.service || '', 'col-service')}
+            ${tableCell_(item.mainStaffName || '', 'col-staff')}
+            ${tableCell_(item.staff2Name || '', 'col-staff')}
+            ${tableCell_(item.staff3Name || '', 'col-staff')}
+            ${tableCell_(item.supportContent || '', 'col-support')}
+            ${tableCell_(item.destination || '', 'col-destination')}
+            ${tableCell_(item.meetingPlace || '', 'col-meeting')}
+            ${tableCell_(item.outDriverName || '', 'col-driver')}
+            ${tableCell_(item.backDriverName || '', 'col-driver')}
+            ${tableCell_(item.state || (item.isActual ? '予定' : '予定候補'), 'col-status')}
+            <td class="col-action">${operation}</td>
+          </tr>
+        `;
+      }).join('');
+
+    return `
+      <div class="shift-sheet-wrap">
+        <table class="shift-sheet-table">
+          <thead>
+            <tr>
+              <th class="col-date sticky-col sticky-date">日付</th>
+              <th class="col-dow sticky-col sticky-dow">曜</th>
+              <th class="col-start sticky-col sticky-start">開始</th>
+              <th class="col-end sticky-col sticky-end">終了</th>
+              <th class="col-client sticky-col sticky-client">利用者</th>
+              <th class="col-system">制度</th>
+              <th class="col-service">サービス</th>
+              <th class="col-staff">主担当</th>
+              <th class="col-staff">担当2</th>
+              <th class="col-staff">担当3</th>
+              <th class="col-support">支援内容</th>
+              <th class="col-destination">行き先</th>
+              <th class="col-meeting">待合せ</th>
+              <th class="col-driver">行運転</th>
+              <th class="col-driver">帰運転</th>
+              <th class="col-status">状態</th>
+              <th class="col-action">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
   }
 
 
@@ -1134,6 +1398,188 @@
     ]
       .filter(Boolean)
       .join('　');
+  }
+
+
+  function setWeekOperationBusy_(
+    busy
+  ) {
+    [
+      E.weekBuildButton,
+      E.applyWeekRequestsButton,
+      E.confirmWeekButton
+    ]
+      .filter(Boolean)
+      .forEach(button => {
+        button.disabled =
+          !!busy;
+      });
+  }
+
+
+  async function buildCurrentWeek_() {
+    const start =
+      weekStart();
+
+    const key =
+      ymd(start);
+
+    if (
+      !window.confirm(
+        `${key} の週編成Wを作成しますか？\n\n規定値Mから初回生成した後、現在の未反映依頼も続けて反映します。`
+      )
+    ) {
+      return;
+    }
+
+    const reporter =
+      currentUser() ||
+      {};
+
+    setWeekOperationBusy_(true);
+
+    try {
+      const buildResult =
+        await api({
+          action:
+            'week.build',
+          weekStart:
+            key,
+          updaterId:
+            reporter.id ||
+            'WEB',
+          updaterName:
+            reporter.name ||
+            'WEB'
+        });
+
+      if (
+        !buildResult?.ok
+      ) {
+        throw new Error(
+          buildResult?.message ||
+          buildResult?.error ||
+          '週編成Wを作成できませんでした。'
+        );
+      }
+
+      let applyResult = null;
+
+      try {
+        applyResult =
+          await api({
+            action:
+              'week.request.apply',
+            weekStart:
+              key,
+            updaterId:
+              reporter.id ||
+              'WEB',
+            updaterName:
+              reporter.name ||
+              'WEB'
+          });
+      }
+      catch (error) {
+        console.warn(
+          '週編成作成後の依頼反映に失敗しました。',
+          error
+        );
+      }
+
+      S.cache = {};
+
+      window.SamuwanLocalData
+        ?.removePrefix(
+          'shift-week:'
+        );
+
+      await loadWeek();
+
+      const messages = [
+        buildResult.message ||
+        '週編成Wを作成しました。'
+      ];
+
+      if (applyResult?.message) {
+        messages.push(
+          applyResult.message
+        );
+      }
+
+      alert(
+        messages.join('\n')
+      );
+    }
+    finally {
+      setWeekOperationBusy_(false);
+    }
+  }
+
+
+  async function applyCurrentWeekRequests_() {
+    const start =
+      weekStart();
+
+    const key =
+      ymd(start);
+
+    if (
+      !window.confirm(
+        `${key} の未反映依頼を週編成Wへ反映しますか？`
+      )
+    ) {
+      return;
+    }
+
+    const reporter =
+      currentUser() ||
+      {};
+
+    setWeekOperationBusy_(true);
+
+    try {
+      const result =
+        await api({
+          action:
+            'week.request.apply',
+          weekStart:
+            key,
+          updaterId:
+            reporter.id ||
+            'WEB',
+          updaterName:
+            reporter.name ||
+            'WEB'
+        });
+
+      if (
+        !result?.ok
+      ) {
+        throw new Error(
+          result?.message ||
+          result?.error ||
+          '依頼を反映できませんでした。'
+        );
+      }
+
+      S.cache = {};
+
+      window.SamuwanLocalData
+        ?.removePrefix(
+          'shift-week:'
+        );
+
+      await loadWeek();
+
+      alert(
+        result.message ||
+        '依頼を反映しました。'
+      );
+    }
+    finally {
+      setWeekOperationBusy_(false);
+    }
   }
 
 
@@ -2709,6 +3155,24 @@
     renderDay();
   });
 
+  E.showAllDaysButton?.addEventListener(
+    'click',
+    () => {
+      S.selectedDay = -1;
+      renderDays();
+      renderDay();
+    }
+  );
+
+  E.shiftFilterText?.addEventListener(
+    'input',
+    () => {
+      S.filterText =
+        E.shiftFilterText.value || '';
+      renderDay();
+    }
+  );
+
   E.list.addEventListener(
     'click',
     event => {
@@ -2868,6 +3332,36 @@
   );
 
 
+  E.weekBuildButton?.addEventListener(
+    'click',
+    () => {
+      buildCurrentWeek_()
+        .catch(
+          err =>
+            alert(
+              err?.message ||
+              err
+            )
+        );
+    }
+  );
+
+
+  E.applyWeekRequestsButton?.addEventListener(
+    'click',
+    () => {
+      applyCurrentWeekRequests_()
+        .catch(
+          err =>
+            alert(
+              err?.message ||
+              err
+            )
+        );
+    }
+  );
+
+
   E.confirmWeekButton.addEventListener(
     'click',
     openWeekConfirm_
@@ -2905,6 +3399,28 @@
     () =>
       E.weekConfirmDialog.close()
   );
+
+
+  const desktopTableQuery =
+    window.matchMedia(
+      '(min-width: 721px)'
+    );
+
+  desktopTableQuery.addEventListener?.(
+    'change',
+    () => renderDay()
+  );
+
+
+  const loggedInUser =
+    currentUser();
+
+  if (E.headerReporter) {
+    E.headerReporter.textContent =
+      loggedInUser?.name
+        ? `${loggedInUser.name} さん`
+        : '職員情報未取得';
+  }
 
 
   Promise.all([
